@@ -1,0 +1,13 @@
+active:
+  core_mode: main
+  persona: comtrade_host
+  context: comtrade_office
+  phase: reception_host
+composition_order:
+- base
+- persona
+- context
+- phase
+variables:
+  company_name: Comtrade System Integration
+  robot_name: TITAN

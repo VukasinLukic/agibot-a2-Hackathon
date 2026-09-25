@@ -21,11 +21,6 @@ robot_supervisor_v2/state/
 robot_supervisor_v2/config.yaml
 
 # Local content overrides. The matching *.example.yaml files are tracked defaults.
-livekit_config/prompt_config.yaml
-livekit_config/prompts/base.yaml
-livekit_config/prompts/personas.yaml
-livekit_config/prompts/contexts.yaml
-livekit_config/prompts/event_parts.yaml
 livekit_config/quizzes.yaml
 livekit_config/surveys.yaml
 !livekit_config/**/*.example.yaml
