@@ -1,0 +1,7 @@
+keys:
+  devkey: secret
+
+logging:
+  level: debug
+  json: true
+  pion_level: error

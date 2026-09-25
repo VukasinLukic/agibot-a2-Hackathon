@@ -1,0 +1,42 @@
+.DS_Store
+.venv
+.venv*/
+.camera-bridge-venv/
+.env
+*.pyc
+__pycache__/
+*.log
+robot_supervisor/logs/
+.venv*
+livekit-client/agent_two_stage.py
+robot_services/audio/audio_bridge.py
+knowledge_storage/
+
+/rag_service/data/
+bge-m3-local
+tmp/
+.azure_sp_test
+.envs
+robot_supervisor_v2/state/
+robot_supervisor_v2/config.yaml
+
+# Local content overrides. The matching *.example.yaml files are tracked defaults.
+livekit_config/prompt_config.yaml
+livekit_config/prompts/base.yaml
+livekit_config/prompts/personas.yaml
+livekit_config/prompts/contexts.yaml
+livekit_config/prompts/event_parts.yaml
+livekit_config/quizzes.yaml
+livekit_config/surveys.yaml
+!livekit_config/**/*.example.yaml
+!livekit_config/*.example.yaml
+
+yolo26n.pt
+
+.env prod
+
+.env ctguest
+.claude/agents/robot-supervisor-export-auditor.md
+.gitignore
+SURVEY_GATHERING_IMPROVEMENT_PLAN.md
+.claude/settings.json

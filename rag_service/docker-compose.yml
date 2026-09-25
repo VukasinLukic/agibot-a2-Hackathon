@@ -1,0 +1,38 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: humanoid-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+
+  rag-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: humanoid-rag-api
+    restart: unless-stopped
+    depends_on:
+      - qdrant
+    ports:
+      - "8098:8098"
+    environment:
+      LOG_LEVEL: INFO
+      RAG_QDRANT_URL: http://qdrant:6333
+      RAG_QDRANT_COLLECTION: robot_knowledge
+      RAG_STORAGE_PATH: /data/knowledge
+      RAG_EMBED_MODEL: /models/bge-m3-local
+      RAG_OFFLINE: "1"
+      RAG_DEVICE: cpu
+      RAG_MAX_LENGTH: 256
+      RAG_TOP_K: 5
+      RAG_CHUNK_CHARS: 2500
+      RAG_OVERLAP_CHARS: 300
+      HF_HOME: /hf-cache
+
+    volumes:
+      - ./data/knowledge:/data/knowledge
+      - ../bge-m3-local:/models/bge-m3-local:ro
+      - ./data/hf-cache:/hf-cache # not to download the same model every time

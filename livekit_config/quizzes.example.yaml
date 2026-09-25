@@ -1,0 +1,40 @@
+active: petrol_station_quiz
+quizzes:
+  - slug: petrol_station_quiz
+    title: Kviz o benzinskoj pumpi
+    description: Kratak govorni kviz za interakcije na benzinskoj pumpi.
+    max_attempts: 2
+    questions:
+      - question_key: fuel_tank
+        question: Gde se pravilno sipa gorivo u automobil?
+        options:
+          - motor
+          - gepek
+          - rezervoar za gorivo
+          - gume
+        correct_answer: rezervoar za gorivo
+        hint: To je deo vozila namenjen skladištenju goriva.
+        explanation: Gorivo se sipa u rezervoar za gorivo.
+        order_index: 0
+      - question_key: no_smoking
+        question: Zašto je pušenje na benzinskim pumpama zabranjeno?
+        options:
+          - Jer neprijatno miriše
+          - Jer ometa vozače
+          - Jer može izazvati požar
+          - Jer je skupo
+        correct_answer: Jer može izazvati požar
+        hint: Razlog je povezan sa bezbednošću i zapaljivim isparenjima goriva.
+        explanation: Pušenje je zabranjeno jer su isparenja goriva zapaljiva i mogu izazvati požar.
+        order_index: 1
+      - question_key: tire_pressure
+        question: Koja je česta dodatna usluga na benzinskim pumpama?
+        options:
+          - Frizerske usluge
+          - Punjenje guma vazduhom
+          - Bioskopske karte
+          - Rezervacija hotela
+        correct_answer: Punjenje guma vazduhom
+        hint: Ova usluga pomaže održavanju pravilnog pritiska u gumama.
+        explanation: Mnoge benzinske pumpe nude punjenje guma vazduhom kako bi vozači mogli proveriti i dopuniti pritisak.
+        order_index: 2

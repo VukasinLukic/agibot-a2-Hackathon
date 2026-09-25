@@ -1,0 +1,74 @@
+{
+  "quiz_id": "second_quiz_petrol_general_knowledge",
+  "started_at": "2026-06-02T14:36:40.683576+00:00",
+  "active": false,
+  "phase": "finished",
+  "current_index": 3,
+  "total_questions": 3,
+  "responses_recorded": 3,
+  "score": 2,
+  "max_attempts": 2,
+  "contact_info": "ime mi je matej",
+  "questions": [
+    {
+      "id": "kaj_pomeni_rde_a_lu_na_semaforju",
+      "question": "Kaj pomeni rdeča luč na semaforju?",
+      "options": [
+        "Pospeši",
+        "Ustavi",
+        "Zavij levo",
+        "Ignoriraj"
+      ],
+      "correct_answer": "Ustavi",
+      "hint": "Gre za osnovno prometno pravilo.",
+      "explanation": "Rdeča luč pomeni, da mora voznik ustaviti vozilo.",
+      "response": {
+        "question_id": "kaj_pomeni_rde_a_lu_na_semaforju",
+        "raw_input": "ustavi",
+        "is_correct": true,
+        "attempts_used": 1,
+        "correct_answer_revealed": false
+      }
+    },
+    {
+      "id": "kje_mora_nositi_varnostni_pas",
+      "question": "Kje moraš nositi varnostni pas?",
+      "options": [
+        "Samo na avtocesti",
+        "Samo ponoči",
+        "Vedno med vožnjo",
+        "Samo kot voznik"
+      ],
+      "correct_answer": "Vedno med vožnjo",
+      "hint": "Pravilo velja za vse udeležence v vozilu.",
+      "explanation": "Varnostni pas je treba uporabljati vedno med vožnjo za večjo varnost.",
+      "response": {
+        "question_id": "kje_mora_nositi_varnostni_pas",
+        "raw_input": "druga",
+        "is_correct": false,
+        "attempts_used": 2,
+        "correct_answer_revealed": true
+      }
+    },
+    {
+      "id": "kaj_mora_storiti_pred_pre_kanjem_ceste_kot_pe_ec",
+      "question": "Kaj moraš storiti pred prečkanjem ceste kot pešec?",
+      "options": [
+        "Teči čez cesto",
+        "Pogledati levo in desno",
+        "Uporabiti telefon",
+        "Zapreti oči"
+      ],
+      "correct_answer": "Pogledati levo in desno",
+      "hint": "Pomembno je preveriti promet iz obeh smeri.",
+      "explanation": "Pešec mora pred prečkanjem pogledati levo in desno, da se prepriča, da je varno.",
+      "response": {
+        "question_id": "kaj_mora_storiti_pred_pre_kanjem_ceste_kot_pe_ec",
+        "raw_input": "pogledati levo in desno",
+        "is_correct": true,
+        "attempts_used": 1,
+        "correct_answer_revealed": false
+      }
+    }
+  ]
+}

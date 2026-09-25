@@ -1,0 +1,12 @@
+ultralytics
+lap>=0.5.12
+facenet-pytorch==2.6.0
+supervision
+opencv-python
+numpy
+Pillow
+tqdm
+requests
+fastapi
+uvicorn
+python-multipart

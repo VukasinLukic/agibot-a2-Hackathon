@@ -1,0 +1,24 @@
+[Unit]
+Description=Humanoid PC3 Remote Audio Bridge Manager
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=agi
+SupplementaryGroups=audio
+WorkingDirectory=/agibot/data/home/agi/humanoid-livekit
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/etc/humanoid-livekit/audio-bridge-manager.env
+ExecStart=/agibot/data/home/agi/humanoid-livekit/.venv/bin/python robot_services/audio/audio_bridge_manager.py --config /etc/humanoid-livekit/audio_bridge_manager.yaml
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=10
+KillMode=control-group
+
+# Keep the manager small and always-on. The actual audio_bridge.py child is
+# started and stopped by manager API calls, not by a separate systemd unit.
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

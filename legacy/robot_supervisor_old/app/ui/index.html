@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Robot Supervisor</title>
+    <style>
+      :root {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at top, #0f172a, #020617);
+        color: #e2e8f0;
+        min-height: 100vh;
+      }
+      .app-shell {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px clamp(16px, 4vw, 48px);
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+      }
+      .title-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .title {
+        font-size: clamp(1.5rem, 3vw, 2.5rem);
+        font-weight: 600;
+      }
+      header p {
+        margin: 4px 0 0;
+        color: #94a3b8;
+        font-size: 0.95rem;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .tab-bar {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(15, 23, 42, 0.6);
+        padding: 6px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+      }
+      .tab-btn {
+        border: none;
+        background: transparent;
+        color: #94a3b8;
+        font-weight: 600;
+        padding: 8px 18px;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background 120ms ease, color 120ms ease;
+      }
+      .tab-btn.active {
+        background: rgba(255, 255, 255, 0.08);
+        color: #f8fafc;
+      }
+      .tab-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .tab-panel.hidden {
+        display: none;
+      }
+      .engagement-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        background: rgba(15, 23, 42, 0.85);
+        border-radius: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        padding: 20px;
+        box-shadow: 0 20px 35px rgba(2, 6, 23, 0.45);
+      }
+      .engagement-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .engagement-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .engagement-actions button {
+        flex: 1;
+        min-width: 160px;
+      }
+      .engagement-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        font-size: 0.9rem;
+        color: #94a3b8;
+      }
+      .engagement-status-label {
+        font-weight: 600;
+        border-radius: 999px;
+        padding: 6px 14px;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+      }
+      .engagement-error {
+        color: #f87171;
+        font-size: 0.85rem;
+      }
+      button, .ghost-btn {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 18px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        transition: transform 120ms ease, box-shadow 120ms ease;
+      }
+      button.primary {
+        background: linear-gradient(135deg, #22d3ee, #6366f1);
+        color: white;
+        box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+      }
+      button.secondary, .ghost-btn {
+        background: rgba(255, 255, 255, 0.04);
+        color: #e2e8f0;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+      }
+      button:active {
+        transform: translateY(1px);
+      }
+      .services-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .card {
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(12px);
+        border-radius: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        min-height: 200px;
+        width: 100%;
+        box-shadow: 0 20px 35px rgba(2, 6, 23, 0.45);
+      }
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .status-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        text-transform: capitalize;
+      }
+      .card-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .card-actions button {
+        flex: 1;
+        justify-content: center;
+      }
+      .mode-control {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .mode-label {
+        font-size: 0.8rem;
+        color: #94a3b8;
+      }
+      .mode-select {
+        appearance: none;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.6);
+        color: #e2e8f0;
+        padding: 8px 12px;
+        font-weight: 600;
+      }
+      .mode-select:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 0.85rem;
+        color: #94a3b8;
+      }
+      .log-panel {
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: rgba(2, 6, 23, 0.3);
+        overflow: hidden;
+        display: none;
+        flex-direction: column;
+      }
+      .log-panel.show {
+        display: flex;
+      }
+      .log-panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+      .log-panel-header button {
+        border: none;
+        background: rgba(148, 163, 184, 0.15);
+        color: #f1f5f9;
+        border-radius: 999px;
+        padding: 4px 10px;
+        cursor: pointer;
+      }
+      .log-panel pre {
+        margin: 0;
+        padding: 14px;
+        max-height: 220px;
+        overflow-y: auto;
+        font-family: "JetBrains Mono", SFMono-Regular, Consolas, monospace;
+        font-size: 0.8rem;
+        line-height: 1.35;
+        white-space: pre-wrap;
+      }
+      .message-bar {
+        min-height: 24px;
+        font-size: 0.9rem;
+        color: #fca5a5;
+      }
+      .conversation-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        background: rgba(15, 23, 42, 0.85);
+        border-radius: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        padding: 20px;
+        box-shadow: 0 20px 35px rgba(2, 6, 23, 0.45);
+      }
+      .conversation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      .conversation-feed {
+        min-height: 220px;
+        max-height: 420px;
+        overflow-y: auto;
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: rgba(2, 6, 23, 0.35);
+        padding: 16px;
+        font-family: "JetBrains Mono", SFMono-Regular, Consolas, monospace;
+        font-size: 0.85rem;
+        line-height: 1.45;
+      }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 4px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+      }
+      .status-pill.online {
+        color: #22c55e;
+        border-color: rgba(34, 197, 94, 0.4);
+        background: rgba(34, 197, 94, 0.12);
+      }
+      .status-pill.offline {
+        color: #f87171;
+        border-color: rgba(248, 113, 113, 0.4);
+        background: rgba(248, 113, 113, 0.12);
+      }
+      .conversation-entry {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+      }
+      .conversation-entry:last-child {
+        border-bottom: none;
+      }
+      .conversation-session {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(59, 130, 246, 0.15);
+        color: #bfdbfe;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin: 8px 0;
+      }
+      .conversation-role {
+        font-weight: 600;
+        color: #38bdf8;
+        margin-right: 8px;
+      }
+      .conversation-role.agent {
+        color: #a78bfa;
+      }
+      .conversation-timestamp {
+        color: #94a3b8;
+        font-size: 0.75rem;
+        margin-left: 4px;
+      }
+      .conversation-text {
+        margin-top: 4px;
+        color: #e2e8f0;
+      }
+      .conversation-empty {
+        color: #94a3b8;
+        font-style: italic;
+      }
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.85);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        z-index: 50;
+      }
+      .modal-backdrop.show {
+        display: flex;
+      }
+      .modal-card {
+        width: min(520px, 100%);
+        background: rgba(15, 23, 42, 0.96);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        border-radius: 20px;
+        box-shadow: 0 25px 50px rgba(2, 6, 23, 0.65);
+        display: flex;
+        flex-direction: column;
+        max-height: 92vh;
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 24px 24px 12px;
+      }
+      .modal-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+      .modal-subtitle {
+        color: #94a3b8;
+        font-size: 0.85rem;
+      }
+      .modal-body {
+        padding: 4px 24px 12px;
+        overflow-y: auto;
+      }
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 24px 24px;
+        border-top: 1px solid rgba(148, 163, 184, 0.15);
+      }
+      .config-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 12px;
+      }
+      .config-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .config-field-label {
+        font-size: 0.85rem;
+        color: #94a3b8;
+      }
+      .config-input {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 12px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .config-flag {
+        font-family: "JetBrains Mono", SFMono-Regular, Consolas, monospace;
+        font-size: 0.8rem;
+        color: #a5b4fc;
+      }
+      .config-input input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: #e2e8f0;
+        font-size: 0.95rem;
+      }
+      .config-input input:focus {
+        outline: none;
+      }
+      .config-command {
+        font-family: "JetBrains Mono", SFMono-Regular, Consolas, monospace;
+        font-size: 0.75rem;
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 12px;
+        padding: 12px;
+        margin-top: 16px;
+        color: #cbd5f5;
+      }
+      .config-empty {
+        font-size: 0.9rem;
+        color: #94a3b8;
+        margin-top: 16px;
+      }
+      .config-error {
+        color: #f87171;
+        font-size: 0.85rem;
+        min-height: 20px;
+        margin-top: 12px;
+      }
+      .modal-loading {
+        font-size: 0.9rem;
+        color: #94a3b8;
+        margin-top: 4px;
+      }
+      @media (max-width: 640px) {
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .card-actions button {
+          flex: unset;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header>
+        <div>
+          <div class="title-row">
+            <div class="title">Robot Supervisor</div>
+            <button class="ghost-btn" id="global-toggle-btn">▶ Start All</button>
+          </div>
+          <p>Monitor and control your G1 service stack.</p>
+        </div>
+        <div class="toolbar">
+          <button class="secondary" id="token-btn">Set Token</button>
+          <span style="font-size:0.85rem;color:#94a3b8;">Auto-refresh enabled</span>
+        </div>
+      </header>
+      <div class="tab-bar" role="tablist">
+        <button class="tab-btn active" data-tab="services" aria-selected="true">Services</button>
+        <button class="tab-btn" data-tab="conversations" aria-selected="false">Conversations</button>
+      </div>
+      <div class="tab-panel" data-panel="services">
+        <div class="engagement-shell" id="engagement-card">
+          <div class="engagement-header">
+            <div>
+              <div style="font-weight:600;font-size:1.1rem;">Engagement Control</div>
+              <div style="color:#94a3b8;font-size:0.9rem;">Manage dispatch and wrap cycles</div>
+            </div>
+            <span class="engagement-status-label" id="engagement-state">Idle</span>
+          </div>
+          <div class="engagement-actions">
+            <button class="primary" id="engagement-dispatch-btn">🎯 Dispatch</button>
+            <button class="secondary" id="engagement-wrap-btn">⏹ Wrap Up</button>
+          </div>
+          <div class="engagement-meta">
+            <span>Last room: <strong id="engagement-room">-</strong></span>
+            <span>Last job: <strong id="engagement-job">-</strong></span>
+            <span>Updated: <strong id="engagement-updated">-</strong></span>
+          </div>
+          <div class="engagement-error" id="engagement-error"></div>
+        </div>
+        <div class="message-bar" id="message"></div>
+        <div class="services-grid" id="services"></div>
+      </div>
+      <div class="tab-panel hidden" data-panel="conversations">
+        <div class="conversation-shell">
+          <div class="conversation-header">
+            <div>
+              <div style="font-weight:600;font-size:1.1rem;">Active Conversation</div>
+              <div style="color:#94a3b8;font-size:0.9rem;">Live agent/user transcript</div>
+            </div>
+            <span class="status-pill offline" id="conversation-status">Offline</span>
+          </div>
+          <div class="conversation-feed" id="conversation-feed">
+            <div class="conversation-empty">No active conversation yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-backdrop" id="config-modal" aria-hidden="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <div class="modal-title" id="config-modal-title">Configure Service</div>
+            <div class="modal-subtitle" id="config-modal-subtitle"></div>
+          </div>
+          <button type="button" class="secondary" id="config-modal-close">✕</button>
+        </div>
+        <form id="config-form" autocomplete="off">
+          <div class="modal-body">
+            <div class="modal-loading" id="config-loading">Loading configuration…</div>
+            <div class="config-empty" id="config-empty" hidden>No editable parameters.</div>
+            <div class="config-fields" id="config-parameter-list"></div>
+            <div class="config-command" id="config-command"></div>
+            <div class="config-error" id="config-error"></div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="secondary" id="config-cancel-btn">Cancel</button>
+            <button type="submit" class="primary" id="config-save-btn">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script>
+      const API_BASE = "/api/v1";
+      let authToken = window.localStorage.getItem("robotSupervisorToken") || "";
+      const messageEl = document.getElementById("message");
+      const servicesEl = document.getElementById("services");
+      const globalToggleBtn = document.getElementById("global-toggle-btn");
+      const tabButtons = document.querySelectorAll(".tab-btn");
+      const tabPanels = document.querySelectorAll(".tab-panel");
+      const engagementStateEl = document.getElementById("engagement-state");
+      const engagementRoomEl = document.getElementById("engagement-room");
+      const engagementJobEl = document.getElementById("engagement-job");
+      const engagementUpdatedEl = document.getElementById("engagement-updated");
+      const engagementErrorEl = document.getElementById("engagement-error");
+      const engagementDispatchBtn = document.getElementById("engagement-dispatch-btn");
+      const engagementWrapBtn = document.getElementById("engagement-wrap-btn");
+      const conversationFeed = document.getElementById("conversation-feed");
+      const conversationStatusEl = document.getElementById("conversation-status");
+      const configModal = document.getElementById("config-modal");
+      const configModalTitle = document.getElementById("config-modal-title");
+      const configModalSubtitle = document.getElementById("config-modal-subtitle");
+      const configParameterList = document.getElementById("config-parameter-list");
+      const configLoadingEl = document.getElementById("config-loading");
+      const configEmptyEl = document.getElementById("config-empty");
+      const configCommandEl = document.getElementById("config-command");
+      const configErrorEl = document.getElementById("config-error");
+      const configForm = document.getElementById("config-form");
+      const configSaveBtn = document.getElementById("config-save-btn");
+      const configCancelBtn = document.getElementById("config-cancel-btn");
+      const configModalClose = document.getElementById("config-modal-close");
+      let configService = null;
+      let configParameters = [];
+
+      const stateColors = {
+        active: { bg: "rgba(34,197,94,0.15)", dot: "#22c55e" },
+        inactive: { bg: "rgba(148,163,184,0.15)", dot: "#94a3b8" },
+        failed: { bg: "rgba(248,113,113,0.15)", dot: "#f87171" },
+        unknown: { bg: "rgba(250,204,21,0.15)", dot: "#facc15" },
+      };
+      const engagementStateColors = {
+        idle: { color: "#94a3b8", border: "rgba(148, 163, 184, 0.4)", bg: "rgba(148, 163, 184, 0.1)" },
+        dispatching: { color: "#facc15", border: "rgba(250, 204, 21, 0.5)", bg: "rgba(250, 204, 21, 0.15)" },
+        engaged: { color: "#22c55e", border: "rgba(34, 197, 94, 0.4)", bg: "rgba(34, 197, 94, 0.15)" },
+        wrapping: { color: "#38bdf8", border: "rgba(56, 189, 248, 0.4)", bg: "rgba(56, 189, 248, 0.15)" },
+        error: { color: "#f87171", border: "rgba(248, 113, 113, 0.4)", bg: "rgba(248, 113, 113, 0.15)" },
+      };
+      const logSessions = new Map();
+      const MAX_LOG_LINES = 400;
+
+      const ensureLogScrollListener = (session) => {
+        if (!session.outputEl || session.scrollListenerAttached) {
+          return;
+        }
+        const el = session.outputEl;
+        const threshold = 12;
+        const handleScroll = () => {
+          const distance = el.scrollHeight - (el.scrollTop + el.clientHeight);
+          session.autoScroll = distance <= threshold;
+        };
+        el.addEventListener("scroll", handleScroll);
+        session.scrollListenerAttached = true;
+      };
+
+      const updateLogOutput = (session, emptyText = "(no logs yet)") => {
+        if (!session.outputEl) {
+          return;
+        }
+        ensureLogScrollListener(session);
+        if (!session.buffer.length) {
+          session.outputEl.textContent = emptyText;
+        } else {
+          session.outputEl.textContent = session.buffer.join("\n");
+        }
+        if (session.autoScroll !== false) {
+          session.outputEl.scrollTop = session.outputEl.scrollHeight;
+        }
+      };
+      const captureScrollPosition = () => {
+        const el = document.scrollingElement || document.documentElement;
+        return { top: el ? el.scrollTop : 0, left: el ? el.scrollLeft : 0 };
+      };
+
+      const restoreScrollPosition = (pos) => {
+        if (!pos) return;
+        window.scrollTo({
+          top: pos.top ?? 0,
+          left: pos.left ?? 0,
+          behavior: "auto",
+        });
+      };
+
+      let servicesCache = [];
+      const REFRESH_INTERVAL_MS = 4000;
+      let refreshTimer = null;
+      let refreshInFlight = false;
+      let refreshQueued = false;
+      let engagementCache = null;
+      let engagementInFlight = false;
+      let engagementQueued = false;
+      const CONVERSATION_REFRESH_INTERVAL_MS = 3000;
+      let conversationTimer = null;
+      let conversationInFlight = false;
+      let conversationQueued = false;
+      let activeTab = "services";
+      const conversationEmptyMessage = "No active conversation yet.";
+
+      const ensureToken = () => {
+        if (!authToken) {
+          const input = window.prompt("Enter supervisor API token:");
+          if (input) {
+            authToken = input.trim();
+            window.localStorage.setItem("robotSupervisorToken", authToken);
+          }
+        }
+        return !!authToken;
+      };
+
+      const apiFetch = async (path, options = {}) => {
+        if (!ensureToken()) {
+          throw new Error("Token required");
+        }
+        const headers = new Headers(options.headers || {});
+        headers.set("Authorization", `Bearer ${authToken}`);
+        headers.set("Content-Type", "application/json");
+        const response = await fetch(`${API_BASE}${path}`, {
+          ...options,
+          headers,
+        });
+        if (!response.ok) {
+          const detail = await response.json().catch(() => ({}));
+          throw new Error(detail.detail || response.statusText);
+        }
+        return response.json();
+      };
+
+      const escapeHtml = (value = "") =>
+        value
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+
+      const setConversationStatus = (connected, enabled) => {
+        if (!conversationStatusEl) return;
+        conversationStatusEl.classList.remove("online", "offline");
+        if (!enabled) {
+          conversationStatusEl.textContent = "Disabled";
+          conversationStatusEl.classList.add("offline");
+          return;
+        }
+        if (connected) {
+          conversationStatusEl.textContent = "Live";
+          conversationStatusEl.classList.add("online");
+        } else {
+          conversationStatusEl.textContent = "Connecting…";
+          conversationStatusEl.classList.add("offline");
+        }
+      };
+
+      const renderConversationEntries = (entries) => {
+        if (!conversationFeed) {
+          return;
+        }
+        if (!entries.length) {
+          conversationFeed.innerHTML = `<div class="conversation-empty">${conversationEmptyMessage}</div>`;
+          return;
+        }
+        const parts = [];
+        let lastSession = null;
+        entries.forEach((entry) => {
+          const sessionId = entry.session_id ?? 0;
+          if (sessionId !== lastSession) {
+            const label = sessionId ? `Session ${sessionId}` : "Session";
+            parts.push(`<div class="conversation-session">🗂️ ${label}</div>`);
+            lastSession = sessionId;
+          }
+          parts.push(`
+            <div class="conversation-entry">
+              <div>
+                <span class="conversation-role ${
+                  entry.role === "agent" ? "agent" : entry.role === "user" ? "user" : "agent"
+                }">${(entry.role || "user").toUpperCase()}</span>
+                <span class="conversation-timestamp">${
+                  entry.updated_at ? new Date(entry.updated_at * 1000).toLocaleTimeString() : ""
+                }</span>
+                ${
+                  entry.participant_identity
+                    ? `<span class="conversation-timestamp">${escapeHtml(entry.participant_identity)}</span>`
+                    : ""
+                }
+                ${
+                  entry.final
+                    ? ""
+                    : '<span class="conversation-timestamp" style="color:#facc15;">…</span>'
+                }
+              </div>
+              <div class="conversation-text">${escapeHtml(entry.text)}</div>
+            </div>`);
+        });
+        conversationFeed.innerHTML = parts.join("");
+        conversationFeed.scrollTop = conversationFeed.scrollHeight;
+      };
+
+      const loadEngagement = async ({ auto = false } = {}) => {
+        if (!ensureToken()) {
+          return;
+        }
+        if (engagementInFlight) {
+          engagementQueued = true;
+          return;
+        }
+        engagementInFlight = true;
+        try {
+          const data = await apiFetch("/engagement");
+          engagementCache = data;
+          renderEngagementStatus(data);
+        } catch (err) {
+          engagementErrorEl.textContent = err.message || "Failed to load engagement";
+          if (!auto) {
+            messageEl.style.color = "#f87171";
+            messageEl.textContent = err.message || "Engagement request failed";
+          }
+        } finally {
+          engagementInFlight = false;
+          if (engagementQueued) {
+            engagementQueued = false;
+            loadEngagement({ auto: true });
+          }
+        }
+      };
+
+      const renderEngagementStatus = (status) => {
+        if (!engagementStateEl) {
+          return;
+        }
+        const colors = engagementStateColors[status?.state] || engagementStateColors.idle;
+        const label = status?.state ? status.state.replace(/_/g, " ") : "idle";
+        engagementStateEl.textContent = label;
+        engagementStateEl.style.color = colors.color;
+        engagementStateEl.style.borderColor = colors.border;
+        engagementStateEl.style.background = colors.bg;
+        engagementRoomEl.textContent = status?.last_room || "-";
+        engagementJobEl.textContent = status?.last_job_id || "-";
+        engagementUpdatedEl.textContent = status?.updated_at
+          ? new Date(status.updated_at * 1000).toLocaleTimeString()
+          : "-";
+        engagementErrorEl.textContent = status?.last_error || "";
+      };
+
+      const formatDuration = (seconds) => {
+        if (!seconds || seconds < 1) return "just now";
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        if (hours) return `${hours}h ${minutes}m`;
+        if (minutes) return `${minutes}m`;
+        return `${Math.floor(seconds)}s`;
+      };
+
+      const setLogBuffer = (session, text) => {
+        const normalized = (text || "").replace(/\r/g, "");
+        session.buffer = normalized ? normalized.split("\n") : [];
+        if (session.buffer.length > MAX_LOG_LINES) {
+          session.buffer = session.buffer.slice(-MAX_LOG_LINES);
+        }
+        updateLogOutput(session);
+      };
+
+      const appendLogLine = (session, line) => {
+        session.buffer.push(line);
+        if (session.buffer.length > MAX_LOG_LINES) {
+          session.buffer.shift();
+        }
+        updateLogOutput(session);
+      };
+
+      const stopLogStream = (session) => {
+        if (session.socket) {
+          session.socket.close();
+          session.socket = null;
+        }
+      };
+
+      const startLogStream = (session) => {
+        stopLogStream(session);
+        const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+        const ws = new WebSocket(
+          `${protocol}://${window.location.host}/api/v1/services/${session.service}/logs/stream?token=${encodeURIComponent(authToken)}`
+        );
+        ws.onmessage = (event) => {
+          if (event.data) {
+            appendLogLine(session, event.data);
+          }
+        };
+        ws.onclose = () => {
+          if (session.socket === ws) {
+            session.socket = null;
+          }
+        };
+        ws.onerror = () => {};
+        session.socket = ws;
+      };
+
+      const syncLogPanel = (service, card) => {
+        const panel = card.querySelector(`[data-log-panel="${service}"]`);
+        const output = card.querySelector(`[data-log-output="${service}"]`);
+        const closeBtn = card.querySelector(`[data-log-close="${service}"]`);
+        let session = logSessions.get(service);
+        if (!session) {
+          session = {
+            service,
+            buffer: [],
+            socket: null,
+            panelEl: panel,
+            outputEl: output,
+            open: false,
+            autoScroll: true,
+            scrollListenerAttached: false,
+          };
+          logSessions.set(service, session);
+        } else {
+          session.panelEl = panel;
+          session.outputEl = output;
+          session.scrollListenerAttached = false;
+        }
+        ensureLogScrollListener(session);
+        if (closeBtn) {
+          closeBtn.onclick = () => closeLogPanel(service);
+        }
+        if (session.open) {
+          panel.classList.add("show");
+          updateLogOutput(session, "(streaming...)");
+        } else {
+          panel.classList.remove("show");
+          if (session.outputEl) {
+            session.outputEl.textContent = "(Logs closed)";
+          }
+        }
+      };
+
+      const openLogPanel = async (service, displayName) => {
+        if (!ensureToken()) {
+          return;
+        }
+        let session = logSessions.get(service);
+        if (!session) {
+          session = {
+            service,
+            buffer: [],
+            socket: null,
+            panelEl: null,
+            outputEl: null,
+            open: false,
+            autoScroll: true,
+            scrollListenerAttached: false,
+          };
+          logSessions.set(service, session);
+        }
+        const panel = document.querySelector(`[data-log-panel="${service}"]`);
+        const output = document.querySelector(`[data-log-output="${service}"]`);
+        if (panel) {
+          session.panelEl = panel;
+        }
+        if (output) {
+          session.outputEl = output;
+          session.scrollListenerAttached = false;
+        }
+        ensureLogScrollListener(session);
+        if (session.panelEl) {
+          session.panelEl.classList.add("show");
+        }
+        if (session.outputEl) {
+          session.outputEl.textContent = "Loading logs…";
+          session.autoScroll = true;
+        }
+        session.open = true;
+        try {
+          const data = await apiFetch(`/services/${service}/logs?lines=200`);
+          setLogBuffer(session, data.text);
+        } catch (err) {
+          if (session.outputEl) {
+            session.outputEl.textContent = err.message || "Failed to load logs";
+          }
+          session.open = false;
+          return;
+        }
+        startLogStream(session);
+      };
+
+      const closeLogPanel = (service) => {
+        const session = logSessions.get(service);
+        if (!session) return;
+        session.open = false;
+        stopLogStream(session);
+        if (session.panelEl) {
+          session.panelEl.classList.remove("show");
+        }
+        if (session.outputEl) {
+          session.outputEl.textContent = "(Logs closed)";
+        }
+      };
+
+      const resetConfigModal = () => {
+        configParameterList.innerHTML = "";
+        configCommandEl.textContent = "";
+        configCommandEl.style.display = "none";
+        configErrorEl.textContent = "";
+        configEmptyEl.hidden = true;
+        configLoadingEl.style.display = "block";
+        configSaveBtn.disabled = true;
+        configCancelBtn.disabled = false;
+      };
+
+      const renderConfigParameters = (params) => {
+        configParameterList.innerHTML = "";
+        if (!params.length) {
+          configEmptyEl.hidden = false;
+          configSaveBtn.disabled = true;
+          return;
+        }
+        configEmptyEl.hidden = true;
+        params.forEach((param) => {
+          const field = document.createElement("div");
+          field.className = "config-field";
+          const label = document.createElement("div");
+          label.className = "config-field-label";
+          label.textContent = param.label || param.id;
+          const inputWrap = document.createElement("div");
+          inputWrap.className = "config-input";
+          const flag = document.createElement("span");
+          flag.className = "config-flag";
+          flag.textContent = param.flag || "--";
+          const input = document.createElement("input");
+          input.type = "text";
+          input.autocomplete = "off";
+          input.dataset.paramId = param.id;
+          input.value = param.value ?? "";
+          inputWrap.append(flag, input);
+          field.append(label, inputWrap);
+          configParameterList.appendChild(field);
+        });
+        configSaveBtn.disabled = false;
+      };
+
+      const openConfigModal = async (service, displayName) => {
+        if (!ensureToken()) {
+          return;
+        }
+        configService = service;
+        configParameters = [];
+        configModalTitle.textContent = displayName || service;
+        configModalSubtitle.textContent = service;
+        resetConfigModal();
+        configModal.classList.add("show");
+        try {
+          const data = await apiFetch(`/services/${service}/config`);
+          configParameters = data.parameters || [];
+          const commandLine = Array.isArray(data.command) ? data.command.join(" ") : "";
+          if (commandLine) {
+            configCommandEl.textContent = commandLine;
+            configCommandEl.style.display = "block";
+          }
+          configLoadingEl.style.display = "none";
+          renderConfigParameters(configParameters);
+        } catch (err) {
+          configLoadingEl.style.display = "none";
+          configErrorEl.textContent = err.message || "Failed to load configuration";
+        }
+      };
+
+      const closeConfigModal = () => {
+        configModal.classList.remove("show");
+        configService = null;
+        configParameters = [];
+      };
+
+      const setConfigBusy = (busy) => {
+        configSaveBtn.disabled = busy || !configParameters.length;
+        configCancelBtn.disabled = busy;
+      };
+
+      configCancelBtn.addEventListener("click", closeConfigModal);
+      configModalClose.addEventListener("click", closeConfigModal);
+      configModal.addEventListener("click", (event) => {
+        if (event.target === configModal) {
+          closeConfigModal();
+        }
+      });
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && configModal.classList.contains("show")) {
+          closeConfigModal();
+        }
+      });
+      configForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!configService || !configParameters.length) {
+          closeConfigModal();
+          return;
+        }
+        const inputs = configParameterList.querySelectorAll("input[data-param-id]");
+        const payload = Array.from(inputs).map((input) => ({
+          id: input.dataset.paramId,
+          value: input.value,
+        }));
+        configErrorEl.textContent = "";
+        setConfigBusy(true);
+        try {
+          await apiFetch(`/services/${configService}/config`, {
+            method: "PUT",
+            body: JSON.stringify({ parameters: payload }),
+          });
+          closeConfigModal();
+          messageEl.style.color = "#38bdf8";
+          messageEl.textContent = `Updated configuration for ${configService}`;
+          await loadStatus();
+        } catch (err) {
+          configErrorEl.textContent = err.message || "Failed to update configuration";
+        } finally {
+          setConfigBusy(false);
+        }
+      });
+
+      const renderServices = (services) => {
+        const previousScroll = captureScrollPosition();
+        servicesEl.innerHTML = "";
+        services.forEach((svc) => {
+          const colors = stateColors[svc.state] || stateColors.unknown;
+          const isActive = svc.state === "active";
+          const displayName = svc.display_name || svc.name;
+          const toggleIcon = isActive ? "■" : "▶";
+          const toggleLabel = isActive ? "Stop" : "Start";
+          const toggleAction = isActive ? "stop" : "start";
+          const modes = Array.isArray(svc.modes) ? svc.modes : [];
+          const currentModeName = svc.mode || (modes[0] && modes[0].name) || "";
+          const currentModeDisplay =
+            svc.mode_display_name ||
+            (modes.find((m) => m.name === currentModeName)?.display_name) ||
+            currentModeName ||
+            "";
+          const metaMode = currentModeDisplay ? `<span>Mode: ${currentModeDisplay}</span>` : "";
+          let modeControlHtml = "";
+          if (modes.length) {
+            const options = modes
+              .map(
+                (mode) => `
+                  <option value="${mode.name}" ${
+                    mode.name === currentModeName ? "selected" : ""
+                  }>${mode.display_name || mode.name}</option>
+                `
+              )
+              .join("");
+            const disabledAttr = modes.length <= 1 ? "disabled" : "";
+            const labelText = modes.length > 1 ? "Select Mode" : "Mode";
+            modeControlHtml = `
+              <div class="mode-control">
+                <div class="mode-label">${labelText}</div>
+                <select class="mode-select" data-action="mode-select" data-name="${svc.name}" data-current-mode="${currentModeName}" ${disabledAttr}>
+                  ${options}
+                </select>
+              </div>
+            `;
+          }
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="card-header">
+              <div>
+                <div style="font-weight: 600; font-size: 1.1rem;">${displayName}</div>
+                <div style="color:#94a3b8;font-size:0.85rem;">${svc.name}</div>
+              </div>
+              <div class="status-label" style="background:${colors.bg}; color:${colors.dot};">
+                <span class="status-dot" style="background:${colors.dot};"></span>
+                ${svc.state}
+              </div>
+            </div>
+            <div class="meta">
+              <span>PID: ${svc.pid ?? "-"}</span>
+              <span>Backend: ${svc.backend}</span>
+              <span>Uptime: ${svc.uptime_s ? formatDuration(svc.uptime_s) : "-"}</span>
+              ${metaMode}
+            </div>
+            ${modeControlHtml}
+            <div class="card-actions">
+              <button class="secondary" data-action="${toggleAction}" data-name="${svc.name}">${toggleIcon} ${toggleLabel}</button>
+              <button class="secondary" data-action="restart" data-name="${svc.name}">↻ Reset</button>
+              <button class="secondary" data-action="config" data-name="${svc.name}" data-display="${encodeURIComponent(displayName)}">⚙️ Config</button>
+              <button class="secondary" data-action="logs" data-name="${svc.name}" data-display="${encodeURIComponent(displayName)}">🧾 Logs</button>
+            </div>
+            <div class="log-panel" data-log-panel="${svc.name}">
+              <div class="log-panel-header">
+                <span>Logs</span>
+                <button data-log-close="${svc.name}">✕</button>
+              </div>
+              <pre class="log-output" data-log-output="${svc.name}">(Logs closed)</pre>
+            </div>
+          `;
+          servicesEl.appendChild(card);
+          syncLogPanel(svc.name, card);
+        });
+        restoreScrollPosition(previousScroll);
+      };
+
+      const setGlobalButtonState = () => {
+        if (!servicesCache.length) {
+          globalToggleBtn.textContent = "▶ Start All";
+          globalToggleBtn.dataset.mode = "start";
+          return;
+        }
+        const allInactive = servicesCache.every((svc) => svc.state !== "active");
+        if (allInactive) {
+          globalToggleBtn.textContent = "▶ Start All";
+          globalToggleBtn.dataset.mode = "start";
+        } else {
+          globalToggleBtn.textContent = "■ Stop All";
+          globalToggleBtn.dataset.mode = "stop";
+        }
+      };
+
+      const cancelScheduledRefresh = () => {
+        if (refreshTimer) {
+          clearTimeout(refreshTimer);
+          refreshTimer = null;
+        }
+      };
+
+      const scheduleRefresh = () => {
+        cancelScheduledRefresh();
+        if (document.hidden || activeTab !== "services") {
+          return;
+        }
+        refreshTimer = setTimeout(() => {
+          refreshTimer = null;
+          loadStatus({ auto: true });
+        }, REFRESH_INTERVAL_MS);
+      };
+
+      const cancelConversationRefresh = () => {
+        if (conversationTimer) {
+          clearTimeout(conversationTimer);
+          conversationTimer = null;
+        }
+      };
+
+      const scheduleConversationRefresh = () => {
+        cancelConversationRefresh();
+        if (document.hidden || activeTab !== "conversations") {
+          return;
+        }
+        conversationTimer = setTimeout(() => {
+          conversationTimer = null;
+          loadConversations({ auto: true });
+        }, CONVERSATION_REFRESH_INTERVAL_MS);
+      };
+
+      const setActiveTab = (tab) => {
+        if (!tab || tab === activeTab) {
+          return;
+        }
+        activeTab = tab;
+        tabButtons.forEach((btn) => {
+          const isActive = btn.dataset.tab === tab;
+          btn.classList.toggle("active", isActive);
+          btn.setAttribute("aria-selected", isActive ? "true" : "false");
+        });
+        tabPanels.forEach((panel) => {
+          panel.classList.toggle("hidden", panel.dataset.panel !== tab);
+        });
+        if (tab === "services") {
+          cancelConversationRefresh();
+          loadStatus({ auto: true });
+        } else if (tab === "conversations") {
+          cancelScheduledRefresh();
+          loadConversations();
+        }
+      };
+
+      const loadStatus = async ({ auto = false } = {}) => {
+        if (refreshInFlight) {
+          refreshQueued = true;
+          return;
+        }
+        refreshInFlight = true;
+        try {
+          if (!auto) {
+            messageEl.style.color = "#94a3b8";
+            messageEl.textContent = "Refreshing status…";
+          }
+          const data = await apiFetch("/status");
+          servicesCache = data.services;
+          setGlobalButtonState();
+          renderServices(servicesCache);
+          await loadEngagement({ auto: true });
+          messageEl.style.color = "#4ade80";
+          const ts = new Date(data.now * 1000).toLocaleTimeString();
+          messageEl.textContent = `Updated ${ts}`;
+        } catch (err) {
+          messageEl.style.color = "#f87171";
+          messageEl.textContent = err.message || "Request failed";
+        } finally {
+          refreshInFlight = false;
+          if (refreshQueued) {
+            refreshQueued = false;
+            loadStatus({ auto: true });
+            return;
+          }
+          scheduleRefresh();
+        }
+      };
+
+      const loadConversations = async ({ auto = false } = {}) => {
+        if (!ensureToken()) {
+          return;
+        }
+        if (conversationInFlight) {
+          conversationQueued = true;
+          return;
+        }
+        conversationInFlight = true;
+        try {
+          const data = await apiFetch("/conversations");
+          setConversationStatus(data.connected, data.enabled);
+          renderConversationEntries(Array.isArray(data.entries) ? data.entries : []);
+        } catch (err) {
+          setConversationStatus(false, true);
+          if (conversationFeed) {
+            conversationFeed.innerHTML = `<div class="conversation-empty">${escapeHtml(
+              err.message || "Failed to load conversation"
+            )}</div>`;
+          }
+          if (!auto) {
+            messageEl.style.color = "#f87171";
+            messageEl.textContent = err.message || "Failed to load conversation";
+          }
+        } finally {
+          conversationInFlight = false;
+          if (conversationQueued) {
+            conversationQueued = false;
+            loadConversations({ auto: true });
+            return;
+          }
+          scheduleConversationRefresh();
+        }
+      };
+
+      const performServiceAction = async (name, action) => {
+        await apiFetch(`/services/${name}/${action}`, { method: "POST" });
+      };
+
+      const serviceAction = async (name, action) => {
+        try {
+          messageEl.textContent = `${action} ${name}...`;
+          await performServiceAction(name, action);
+          await loadStatus();
+          messageEl.style.color = "#38bdf8";
+          messageEl.textContent = `${action} sent to ${name}`;
+        } catch (err) {
+          messageEl.style.color = "#f87171";
+          messageEl.textContent = err.message || "Action failed";
+        }
+      };
+
+      const serviceModeAction = async (name, nextMode) => {
+        try {
+          messageEl.textContent = `mode ${name}...`;
+          await apiFetch(`/services/${name}/mode`, {
+            method: "POST",
+            body: JSON.stringify({ mode: nextMode }),
+          });
+          await loadStatus();
+          messageEl.style.color = "#38bdf8";
+          messageEl.textContent = `Mode switch sent to ${name}`;
+        } catch (err) {
+          messageEl.style.color = "#f87171";
+          messageEl.textContent = err.message || "Mode change failed";
+        }
+      };
+
+      const engagementAction = async (endpoint, pendingText, successText) => {
+        if (!ensureToken()) {
+          return;
+        }
+        messageEl.style.color = "#38bdf8";
+        messageEl.textContent = pendingText;
+        try {
+          await apiFetch(endpoint, { method: "POST" });
+          await loadStatus({ auto: true });
+          messageEl.style.color = "#4ade80";
+          messageEl.textContent = successText;
+        } catch (err) {
+          messageEl.style.color = "#f87171";
+          messageEl.textContent = err.message || "Engagement action failed";
+        }
+      };
+
+      const globalToggle = async () => {
+        if (!servicesCache.length) return;
+        const mode = globalToggleBtn.dataset.mode || "start";
+        const shouldStart = mode === "start";
+        messageEl.style.color = "#38bdf8";
+        messageEl.textContent = shouldStart ? "Starting all services..." : "Stopping all services...";
+        globalToggleBtn.disabled = true;
+        try {
+          for (const svc of servicesCache) {
+            if (shouldStart && svc.state !== "active") {
+              await performServiceAction(svc.name, "start");
+            } else if (!shouldStart && svc.state === "active") {
+              await performServiceAction(svc.name, "stop");
+            }
+          }
+          await loadStatus();
+          messageEl.style.color = "#4ade80";
+          messageEl.textContent = shouldStart ? "All services started" : "All services stopped";
+        } catch (err) {
+          messageEl.style.color = "#f87171";
+          messageEl.textContent = err.message || "Global action failed";
+        } finally {
+          globalToggleBtn.disabled = false;
+        }
+      };
+
+      document.getElementById("token-btn").addEventListener("click", () => {
+        authToken = "";
+        window.localStorage.removeItem("robotSupervisorToken");
+        ensureToken();
+      });
+      globalToggleBtn.addEventListener("click", globalToggle);
+      if (engagementDispatchBtn) {
+        engagementDispatchBtn.addEventListener("click", () =>
+          engagementAction("/engagement/dispatch", "Dispatching engagement...", "Dispatch started")
+        );
+      }
+      if (engagementWrapBtn) {
+        engagementWrapBtn.addEventListener("click", () =>
+          engagementAction("/engagement/wrap", "Wrapping up engagement...", "Wrap complete")
+        );
+      }
+
+      servicesEl.addEventListener("click", (event) => {
+        const target = event.target.closest("button[data-action]");
+        if (!target) return;
+        const { name, action } = target.dataset;
+        if (action === "logs") {
+          const displayName = decodeURIComponent(target.dataset.display || name);
+          openLogPanel(name, displayName);
+          return;
+        }
+        if (action === "config") {
+          const displayName = decodeURIComponent(target.dataset.display || name);
+          openConfigModal(name, displayName);
+          return;
+        }
+        serviceAction(name, action);
+      });
+
+      servicesEl.addEventListener("change", async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLSelectElement)) {
+          return;
+        }
+        if (target.dataset.action !== "mode-select") {
+          return;
+        }
+        const service = target.dataset.name;
+        const newMode = target.value;
+        const previousMode = target.dataset.currentMode || "";
+        if (!service || !newMode || newMode === previousMode) {
+          return;
+        }
+        target.disabled = true;
+        try {
+          await serviceModeAction(service, newMode);
+          target.dataset.currentMode = newMode;
+        } catch (err) {
+          target.value = previousMode;
+          console.error(err);
+        } finally {
+          if (target.options.length > 1) {
+            target.disabled = false;
+          }
+        }
+      });
+
+      renderConversationEntries([]);
+      tabButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const nextTab = btn.dataset.tab;
+          if (!nextTab) {
+            return;
+          }
+          setActiveTab(nextTab);
+        });
+      });
+
+      window.addEventListener("load", () => {
+        ensureToken();
+        loadStatus();
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          cancelScheduledRefresh();
+          cancelConversationRefresh();
+        } else {
+          if (activeTab === "services") {
+            loadStatus({ auto: true });
+          } else if (activeTab === "conversations") {
+            loadConversations({ auto: true });
+          }
+        }
+      });
+
+      window.addEventListener("beforeunload", () => {
+        logSessions.forEach((session) => stopLogStream(session));
+      });
+    </script>
+  </body>
+</html>

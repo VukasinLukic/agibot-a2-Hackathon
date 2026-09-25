@@ -1,0 +1,10 @@
+event:
+  id: hall_of_fame
+  name: Comtrade Hall of Fame
+  location: Comtrade System Integration, Belgrade
+  language: en
+robot:
+  name: TITAN
+  role: guided_tour_host
+scripts:
+- panels

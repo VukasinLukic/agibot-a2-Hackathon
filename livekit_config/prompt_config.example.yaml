@@ -1,0 +1,13 @@
+active:
+  context: petrol_planning_conference_2026
+  core_mode: main
+  persona: ceremony_host
+  phase: workshop_part
+composition_order:
+- base
+- persona
+- context
+- phase
+variables:
+  company_name: Petrol
+  robot_name: Robot

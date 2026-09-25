@@ -1,0 +1,43 @@
+active: petrol_survey
+surveys:
+  - slug: petrol_survey
+    title: Anketa o benzinskoj pumpi
+    description: Kratka govorna anketa za interakcije na benzinskoj pumpi.
+    questions:
+      - question_key: favorite_part
+        question: Šta vam se najviše svidelo tokom današnje posete?
+        response_kind: free_text
+        options: []
+        allow_skip: true
+        order_index: 0
+      - question_key: visit_frequency
+        question: Koliko često posećujete benzinsku pumpu?
+        response_kind: single_choice
+        options:
+          - Svaki dan
+          - Više puta nedeljno
+          - Jednom nedeljno
+          - Retko
+        allow_skip: true
+        order_index: 1
+      - question_key: important_factors
+        question: Šta vam je važno prilikom posete servisu?
+        response_kind: multiple_choice
+        options:
+          - Brzina
+          - Cena
+          - Lokacija
+          - Ljubaznost osoblja
+          - Čistoća
+        allow_skip: true
+        order_index: 2
+      - question_key: rank_experience
+        question: Rangirajte ove osobine po važnosti za dobro korisničko iskustvo.
+        response_kind: ranking
+        options:
+          - Čistoća
+          - Brzina
+          - Ljubaznost
+          - Dostupnost
+        allow_skip: true
+        order_index: 3

@@ -1,0 +1,12 @@
+cyclonedds==0.10.2
+numpy
+opencv-python
+pymodbus
+pyserial
+requests
+scipy
+pyqtgraph
+colorcet
+rich
+websocket-client
+SimpleWebSocketServer

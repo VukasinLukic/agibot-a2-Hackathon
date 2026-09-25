@@ -1,0 +1,8 @@
+event:
+  id: finance_day
+  name: Finance Day
+  language: sr
+robot:
+  name: A2 Ultra
+  role: event_host
+scripts: []
