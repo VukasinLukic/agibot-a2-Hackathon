@@ -122,7 +122,7 @@ DEBUG                    = str_to_bool(os.getenv("DEBUG", "False"))
 LLM_CONTEXT_RESULTS      = int(os.getenv("LLM_CONTEXT_RESULTS", "5"))
 MAX_HISTORY_ROUNDS       = int(os.getenv("MAX_HISTORY_ROUNDS ", "5"))
 
-AZURE_MANAGED_IDENTITY_CLIENT_ID = _require("AZURE_MANAGED_IDENTITY_CLIENT_ID")
+AZURE_MANAGED_IDENTITY_CLIENT_ID = os.getenv("AZURE_MANAGED_IDENTITY_CLIENT_ID", "")
 
 # ---------------------------------------------------------------------------
 #  Rate Limiting
@@ -137,11 +137,11 @@ MAX_TOTAL_TOKENS_DAILY   = int(os.getenv("MAX_TOTAL_TOKENS_DAILY", "1000000"))
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-#  Azure AI Search
+#  Azure AI Search (legacy, optional: RAG now uses the local Qdrant rag_service)
 # ---------------------------------------------------------------------------
 
-AI_SEARCH_ENDPOINT      = _require("AI_SEARCH_ENDPOINT")
-AI_SEARCH_ADMIN_KEY     = _require("AI_SEARCH_ADMIN_KEY")
+AI_SEARCH_ENDPOINT      = os.getenv("AI_SEARCH_ENDPOINT", "")
+AI_SEARCH_ADMIN_KEY     = os.getenv("AI_SEARCH_ADMIN_KEY", "")
 INDEX_NAME              = os.getenv("INDEX_NAME", "kc-crm-ai-knowledgebase")
 
 # ---------------------------------------------------------------------------

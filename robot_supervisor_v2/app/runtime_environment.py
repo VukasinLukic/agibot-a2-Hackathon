@@ -19,12 +19,14 @@ REQUIRED_AZURE_ENV_KEYS = (
     "AZURE_OPENAI_BASE",
     "AZURE_OPENAI_API_KEY",
     "OPENAI_API_VERSION",
+)
+
+# Azure AI Search is no longer on the runtime path (RAG goes through the local
+# Qdrant rag_service), so these are passed through when present but optional.
+OPTIONAL_AZURE_ENV_KEYS = (
     "AI_SEARCH_ENDPOINT",
     "AI_SEARCH_ADMIN_KEY",
     "INDEX_NAME",
-)
-
-OPTIONAL_AZURE_ENV_KEYS = (
     "CHOSEN_COMPLETION_MODEL",
     "AZURE_OPENAI_DEPLOYMENT",
     "CHOSEN_EMB_MODEL",
@@ -43,7 +45,8 @@ REQUIRED_TRUEBAR_ENV_KEYS = (
 
 TRUEBAR_ENV_PREFIX = "TRUEBAR_"
 AZURE_ENV_KEYS = REQUIRED_AZURE_ENV_KEYS + OPTIONAL_AZURE_ENV_KEYS
-REQUIRED_ENV_KEYS = REQUIRED_AZURE_ENV_KEYS + REQUIRED_TRUEBAR_ENV_KEYS
+# Truebar STT/TTS was replaced by Soniox/ElevenLabs; TRUEBAR_* stay pass-through only.
+REQUIRED_ENV_KEYS = REQUIRED_AZURE_ENV_KEYS
 PROCESS_METADATA_KEYS = ("ROBOT_SUPERVISOR_ENVIRONMENT", "ROBOT_ENV_FILE")
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]

@@ -95,7 +95,8 @@ class RuntimeEnvironmentTests(unittest.TestCase):
         loaded = runtime_env.load_runtime_environment("DEV")
 
         self.assertIn("AZURE_OPENAI_API_KEY", loaded.missing_required)
-        self.assertIn("INDEX_NAME", loaded.missing_required)
+        self.assertNotIn("INDEX_NAME", loaded.missing_required)
+        self.assertNotIn("TRUEBAR_USERNAME", loaded.missing_required)
 
     def test_builds_child_environment_updates(self):
         self._write_env("dev.env", self._complete_values())

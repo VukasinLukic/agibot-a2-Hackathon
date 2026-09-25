@@ -202,6 +202,9 @@ class LocalRAGService:
         default_hf_model = "BAAI/bge-m3"
 
         self.qdrant_url = _env_str("RAG_QDRANT_URL", "http://127.0.0.1:6333")
+        # Namespace for a shared Qdrant: only collections with this prefix are
+        # created, discovered, queried or deleted by this service instance.
+        self.collection_prefix = _env_str("RAG_COLLECTION_PREFIX", "").strip()
         default_data_root = Path(__file__).resolve().parent / "data"
         self.data_root = Path(_env_str("RAG_DATA_ROOT", str(default_data_root))).resolve()
         self.data_root.mkdir(parents=True, exist_ok=True)
@@ -297,16 +300,32 @@ class LocalRAGService:
             path = (self.data_root / path).resolve()
         return str(path)
     
+    def _default_collection_name(self, slug: str) -> str:
+        base = "robot_knowledge" if slug == MAIN_INDEX_SLUG else f"robot_knowledge_{slug}"
+        return f"{self.collection_prefix}{base}"
+
+    def _collection_allowed(self, collection_name: str) -> bool:
+        return not self.collection_prefix or collection_name.startswith(self.collection_prefix)
+
+    def _require_allowed_collection(self, collection_name: str) -> None:
+        if not self._collection_allowed(collection_name):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Collection '{collection_name}' must start with prefix '{self.collection_prefix}'",
+            )
+
     def _bootstrap_state(self) -> IndexState:
         slug = _env_str("RAG_ACTIVE_INDEX_SLUG", "main")
         kind = _env_str("RAG_INDEX_KIND", "managed").strip().lower()
         if kind not in {"managed", "external"}:
             kind = "managed"
 
-        collection_name = _env_str(
-            "RAG_QDRANT_COLLECTION",
-            "robot_knowledge" if slug == "main" else f"robot_knowledge_{slug}",
-        )
+        collection_name = _env_str("RAG_QDRANT_COLLECTION", self._default_collection_name(slug))
+        if not self._collection_allowed(collection_name):
+            raise ValueError(
+                f"RAG_QDRANT_COLLECTION '{collection_name}' must start with RAG_COLLECTION_PREFIX "
+                f"'{self.collection_prefix}'"
+            )
 
         storage_path = None
         if kind == "managed":
@@ -341,6 +360,14 @@ class LocalRAGService:
         if self.state_path.exists():
             try:
                 state = IndexState(**json.loads(self.state_path.read_text(encoding="utf-8")))
+                foreign = [item.slug for item in state.indexes if not self._collection_allowed(item.collection_name)]
+                if foreign:
+                    logger.warning(
+                        "Ignoring indexes outside RAG_COLLECTION_PREFIX '%s': %s",
+                        self.collection_prefix,
+                        ", ".join(foreign),
+                    )
+                    state.indexes = [item for item in state.indexes if self._collection_allowed(item.collection_name)]
                 if not state.indexes:
                     raise ValueError("No indexes in state file")
                 if not state.active_slug:
@@ -409,7 +436,7 @@ class LocalRAGService:
             discovered: List[IndexProfile] = []
             for collection in sorted(collections, key=lambda item: item.name):
                 collection_name = collection.name
-                if collection_name in configured_collections:
+                if collection_name in configured_collections or not self._collection_allowed(collection_name):
                     continue
                 discovered.append(self._make_discovered_index(collection_name, used_slugs))
         except Exception as exc:
@@ -987,9 +1014,8 @@ class LocalRAGService:
         if any(item.slug == payload.slug for item in self._all_indexes(force_refresh=True)):
             raise HTTPException(status_code=409, detail=f"Index '{payload.slug}' already exists")
 
-        collection_name = (payload.collection_name or (
-            "robot_knowledge" if payload.slug == "main" else f"robot_knowledge_{payload.slug}"
-        )).strip()
+        collection_name = (payload.collection_name or self._default_collection_name(payload.slug)).strip()
+        self._require_allowed_collection(collection_name)
         if any(item.collection_name == collection_name for item in self._all_indexes(force_refresh=True)):
             raise HTTPException(
                 status_code=409,

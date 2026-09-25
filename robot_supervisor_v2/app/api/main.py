@@ -4183,6 +4183,10 @@ async def _qdrant_collections() -> list[str]:
 
     collections = payload.get("result", {}).get("collections", [])
     names = [str(item.get("name")) for item in collections if item.get("name")]
+    # Match rag_service: with a shared Qdrant only this deployment's namespace is visible.
+    prefix = os.getenv("RAG_COLLECTION_PREFIX", "").strip()
+    if prefix:
+        names = [name for name in names if name.startswith(prefix)]
     return sorted(names)
 
 async def _knowledge_indexes_state() -> Dict[str, Any]:
