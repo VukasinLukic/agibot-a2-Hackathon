@@ -22,6 +22,7 @@ from typing import Any, Callable, Optional
 from table_tennis.contracts import MatchSnapshot, RobotCall, RobotCallRequest, RobotStatus
 from table_tennis.core.ports import Clock, SystemClock
 
+from .gesture_output import GESTURE_HINTS, GestureJob, GestureSession, MotionCoordinator
 from .readiness import NavFacts, assess
 from .score_display import ScoreboardSession
 
@@ -91,25 +92,53 @@ class A2ScoreDisplay(_A2Base):
 
 
 class A2GestureOutput(_A2Base):
+    def __init__(self, coordinator: Optional[MotionCoordinator] = None, **kw: Any):
+        super().__init__(**kw)
+        self.session = GestureSession(self._playback, self._neutral)
+        if coordinator is not None:
+            coordinator.bind(self.session)
+
+    def _playback(self, job: GestureJob) -> None:
+        # REAL: robot_services.gestures motion_player, resolved by display_name_en.
+        # Catalog ids are not hardcoded; handshake is not a grasp.
+        self._send(
+            "gesture.play",
+            {
+                "name": job.name,
+                "hint": GESTURE_HINTS.get(job.name, ""),
+                "event_id": job.event_id,
+                "revision": job.revision,
+                "accepted_is_not_completed": True,
+            },
+        )
+
+    def _neutral(self) -> None:
+        # REAL: return to neutral. Do not hold a raised arm, and do not invert a started gesture.
+        self._send("gesture.neutral", {})
+
     def present_point(self, event: Any, snapshot: MatchSnapshot) -> None:
-        if event.type != "point.confirmed":
-            return
-        side = getattr(snapshot.robot_side_by_player, event.payload.winner_id)
-        # REAL: robot_services.gestures motion_player (A2 curated catalog:
-        # "point left"/"point right"). Check the preset exists on this firmware.
-        self._send("gesture.play", {"name": f"point {side}", "event_id": event.event_id, "revision": event.revision})
+        self.session.present(event, snapshot)
 
     def cancel_pending(self, match_id: str) -> None:
-        self._send("gesture.cancel_pending", {"match_id": match_id})
+        dropped = self.session.cancel_pending(match_id)
+        if dropped:
+            self._send("gesture.cancel_pending", {"match_id": match_id, "dropped": dropped})
 
 
 class A2RobotNavigator(_A2Base):
     """Named-waypoint call to one known table. Real lifecycle is person 3's work."""
 
-    def __init__(self, clock: Optional[Clock] = None, facts: Optional[NavFacts] = None, **kw: Any):
+    def __init__(
+        self,
+        clock: Optional[Clock] = None,
+        facts: Optional[NavFacts] = None,
+        coordinator: Optional[MotionCoordinator] = None,
+        **kw: Any,
+    ):
         super().__init__(**kw)
         self.clock = clock or SystemClock()
         self.facts = facts or NavFacts()
+        self.coordinator = coordinator
         self.calls: dict[str, RobotCall] = {}
 
     def request_call(self, request: RobotCallRequest, call_id: str) -> RobotCall:

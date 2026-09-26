@@ -67,6 +67,21 @@ Drugi worker na isti slot se odbija.
 Fizička provera da li se skor vidi sa stola, i ko u sali drži taj slot dok
 agent pali sat ili kviz, i dalje čekaju termin. Ovaj kod ne zove ekran robota.
 
+## Faza 3 u kodu
+
+Gest se kači na backendov `point.confirmed` i `match.finished`. Strana dolazi
+iz snapshot-a (`robot_side_by_player`), istog polja koje operator potvrdi u
+meču. Persona i dalje izgovara poen. Vizija ne pokreće gest.
+
+Jedan worker pusti samo najnoviji nepušteni gest. Stariji se odbace. Isti
+`event_id` se ne ponavlja. Gest stariji od 20 s se ne pušta. Undo briše red.
+Započet pokret se ne poništava suprotnim. Dok je poziv u hodu, ili je razmena
+aktivna, gest se ne pušta. Kad poziv stigne u `ready`, jednom se maše (`wave`).
+Kraj meča je `nod thanks`. `handshake` se ne šalje.
+
+Imena u kodu nisu id-jevi firmware-a. Da li se `wave`, `point left`,
+`point right` i `nod thanks` i dalje razrešavaju na robotu, ostaje za termin.
+
 ## Čeka termin sa mentorom
 
 Ne raditi ove stavke dok nema robota. Ne upisivati privremena imena kao prava.

@@ -15,6 +15,7 @@ from table_tennis.contracts.primitives import ROBOT_CALL_TERMINAL_STATES
 from table_tennis.core.fake_log import FakeOutputLog
 from table_tennis.core.ports import Clock, SystemClock
 
+from .gesture_output import GestureJob, GestureSession, MotionCoordinator
 from .readiness import NavFacts, assess
 from .score_display import ScoreboardSession
 
@@ -56,49 +57,54 @@ class FakeScoreDisplay:
 
 
 class FakeGestureOutput:
-    """Maps winner_id -> robot_side_by_player -> gesture, and records it."""
+    """Maps winner_id -> robot_side_by_player -> gesture. Accepted is not completed."""
 
-    def __init__(self, log: FakeOutputLog):
+    def __init__(self, log: FakeOutputLog, coordinator: Optional[MotionCoordinator] = None):
         self.log = log
+        self.session = GestureSession(self._play, self._neutral)
         self.performed: list[dict[str, Any]] = []
-        self._seen: set[tuple[str, str]] = set()
         self.cancelled: list[str] = []
+        if coordinator is not None:
+            coordinator.bind(self.session)
 
-    def present_point(self, event: Any, snapshot: MatchSnapshot) -> None:
-        key = (event.event_id, "gesture")
-        if key in self._seen:
-            return  # dedup event_id + kind
-        self._seen.add(key)
-        if event.type == "point.confirmed":
-            winner = event.payload.winner_id
-            side = getattr(snapshot.robot_side_by_player, winner)
-            gesture = f"point {side}"
-        elif event.type == "match.finished":
-            winner = event.payload.winner_id
-            side = getattr(snapshot.robot_side_by_player, winner) if winner else None
-            gesture = "wave"
+    def _play(self, job: GestureJob) -> None:
+        if job.event_id == "greeting":
+            text = "wave (greeting)"
+            winner, side = None, None
         else:
-            return
-        rec = {
-            "match_id": event.match_id,
-            "event_id": event.event_id,
-            "revision": event.revision,
-            "winner_id": winner,
-            "robot_side": side,
-            "gesture": gesture,
-        }
-        self.performed.append(rec)
-        score = snapshot.score_by_player
+            text = (
+                f"{job.name} (winner={job.winner_id}, robot_side={job.robot_side}, "
+                f"score={job.score[0]}:{job.score[1]})"
+            )
+            winner, side = job.winner_id, job.robot_side
+        self.performed.append(
+            {
+                "match_id": job.match_id,
+                "event_id": job.event_id,
+                "revision": job.revision,
+                "winner_id": winner,
+                "robot_side": side,
+                "gesture": job.name,
+                "completed": True,
+            }
+        )
         self.log.record(
             "gesture",
-            f"{gesture} (winner={winner}, robot_side={side}, score={score.p1}:{score.p2})",
-            match_id=event.match_id,
-            event_id=event.event_id,
-            revision=event.revision,
+            text,
+            match_id=job.match_id,
+            event_id=None if job.event_id == "greeting" else job.event_id,
+            revision=job.revision or None,
         )
+
+    def _neutral(self) -> None:
+        return None
+
+    def present_point(self, event: Any, snapshot: MatchSnapshot) -> None:
+        self.session.present(event, snapshot)
 
     def cancel_pending(self, match_id: str) -> None:
         self.cancelled.append(match_id)
+        self.session.cancel_pending(match_id)
 
 
 # --------------------------------------------------------------------------- navigation
@@ -119,10 +125,12 @@ class FakeRobotNavigator:
         clock: Optional[Clock] = None,
         fail_waypoints: Optional[set[str]] = None,
         facts: Optional[NavFacts] = None,
+        coordinator: Optional[MotionCoordinator] = None,
     ):
         self.clock = clock or SystemClock()
         self.fail_waypoints = set(fail_waypoints or ())
         self.facts = facts or NavFacts()
+        self.coordinator = coordinator
         self.calls: dict[str, RobotCall] = {}
         self._lock = threading.Lock()
         self.native_calls: list[str] = []  # would-be native actions (for assertions)
@@ -160,6 +168,7 @@ class FakeRobotNavigator:
             )
             self.calls[call_id] = call
             self.native_calls.append(f"WOULD navigate to {request.table_id}/{request.named_waypoint_id}")
+            self._note_motion(call)
             return call
 
     def _blocked_call(self, request: RobotCallRequest, call_id: str) -> Optional[RobotCall]:
@@ -238,4 +247,9 @@ class FakeRobotNavigator:
                 call = call.model_copy(update={"state": new_state, "updated_at": self.clock.now(), "reason": reason})
                 self.calls[cid] = call
                 changed.append(call)
+                self._note_motion(call)
         return changed
+
+    def _note_motion(self, call: RobotCall) -> None:
+        if self.coordinator is not None:
+            self.coordinator.note_call_state(call.state, call.match_id)
