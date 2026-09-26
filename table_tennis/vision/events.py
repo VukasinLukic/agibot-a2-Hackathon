@@ -1,9 +1,9 @@
 """One point proposal per rally, built with the existing fixture command path.
 
-A proposal is only a clear missed return: the ball was seen on both halves,
-the last event before it disappeared is a bounce on the receiving half, and
-then the track went missing. A ball that only flies over a half is not a
-winner. Predicted samples and a missing sample by themselves are not a point.
+A proposal is one ending of the rally: a bad serve, a ball that does not
+bounce on the far half, a second bounce, or a missed return. The half comes
+from the bounce. The ball has to stay missing for half a second, and not over
+the middle of the table. Predicted samples by themselves are not a point.
 When a sound source is attached, the proposal waits until sound concludes and
 names the same winner. A contact from before this rally is ignored. The
 command is ``point.propose`` from ``stub.build_proposal``. This module does
@@ -21,8 +21,8 @@ from collections.abc import Callable
 from typing import Any
 
 from table_tennis.vision.calibration import TableCalibration
+from table_tennis.vision.point_logic import conclude
 from table_tennis.vision.rally_events import RallyEvent, RallyEventDetector
-from table_tennis.vision.table import table_half
 from table_tennis.vision.track import TrackSample
 
 
@@ -41,7 +41,7 @@ class RallyJudge:
         self._sound_consulted = False
         self._sound: dict[str, Any] | None = None
         self._detector = RallyEventDetector(calibration.width, calibration)
-        self._last_event: RallyEvent | None = None
+        self._events: list[RallyEvent] = []
 
     def add(self, sample: TrackSample, rally_id: str | None = None) -> None:
         if sample.proves_bounce:
@@ -54,8 +54,7 @@ class RallyJudge:
         if self._rally_started_ns is None:
             self._rally_started_ns = sample.capture_monotonic_ns
         self._samples.append(sample)
-        for event in self._detector.add(sample):
-            self._last_event = event
+        self._events.extend(self._detector.add(sample))
 
     def require_sound(self) -> None:
         """Do not propose until ``hear`` has seen this rally's sound conclusion."""
@@ -75,15 +74,15 @@ class RallyJudge:
             return None
         if not _snapshot_ready(snapshot):
             return None
-        found = self._missed_return(snapshot)
+        found = self._conclusion(snapshot)
         if found is None:
             return None
-        winner_id, start_seq, end_seq = found
+        winner_id, reason, start_seq, end_seq = found
         if self._sound_required and not self._sound_consulted:
             return None
         if _sound_stale(self._sound, self._rally_started_ns):
             return None
-        if self._sound_consulted and not _sound_agrees(self._sound, winner_id):
+        if self._sound_consulted and not _sound_agrees(self._sound, winner_id, reason):
             self._closed = True
             return None
         from table_tennis.vision.stub import FROM_CONTEXT, build_proposal, propose_command
@@ -93,7 +92,7 @@ class RallyJudge:
             {
                 "winner_id": winner_id,
                 "confidence": _observed_confidence(self._samples),
-                "reason": "missed_return",
+                "reason": reason,
                 "capture_start_seq": start_seq,
                 "capture_end_seq": end_seq,
                 "rally_id": FROM_CONTEXT,
@@ -129,7 +128,7 @@ class RallyJudge:
         self._samples.clear()
         self._command = None
         self._closed = False
-        self._last_event = None
+        self._events.clear()
         self._detector.reset()
         self._clear_sound()
 
@@ -137,41 +136,23 @@ class RallyJudge:
         self._sound_consulted = False
         self._sound = None
 
-    def _missed_return(self, snapshot: Any) -> tuple[str, int, int] | None:
+    def _conclusion(self, snapshot: Any) -> tuple[str, str, int, int] | None:
+        if getattr(snapshot, "status", "rally") != "rally":
+            return None
         if snapshot.active_rally_id is None or snapshot.active_proposal_id is not None:
             return None
         if snapshot.calibration_id != self._calibration.calibration_id:
             return None
-        sides: list[tuple[str, int]] = []
-        last_observed: int | None = None
-        missing_seq: int | None = None
-        for sample in self._samples:
-            if sample.observation_kind == "observed" and sample.x_px is not None and sample.y_px is not None:
-                side = self._side(sample.x_px, sample.y_px)
-                if side is None:
-                    continue
-                last_observed = sample.frame_seq
-                if not sides or sides[-1][0] != side:
-                    sides.append((side, sample.frame_seq))
-            elif (
-                sample.observation_kind == "missing"
-                and last_observed is not None
-                and sample.frame_seq > last_observed
-            ):
-                missing_seq = sample.frame_seq
-        if len(sides) < 2 or missing_seq is None:
+        found = conclude(
+            self._samples,
+            self._events,
+            server_id=str(getattr(snapshot, "server_id", "")),
+            ends=snapshot.court_end_by_player,
+            calibration=self._calibration,
+        )
+        if found is None:
             return None
-        receiver = sides[-1][0]
-        bounce = self._last_event
-        if bounce is None or bounce.kind != "bounce" or bounce.side != receiver or bounce.frame_seq > last_observed:
-            return None
-        return _other_player(snapshot.court_end_by_player, receiver), sides[0][1], missing_seq
-
-    def _side(self, x_px: float, y_px: float) -> str | None:
-        projected = self._calibration.project_to_table_plane(x_px, y_px)
-        if not projected.inside_table:
-            return None
-        return table_half(projected.y_mm)
+        return found.winner_id, found.reason, found.start_seq, found.end_seq
 
 
 class MatchVisionProducer:
@@ -205,30 +186,46 @@ class MatchVisionProducer:
         self._camera_ready = False
         self.sent: list[dict[str, Any]] = []
 
-    def run(self, sink: Callable[[dict[str, Any]], Any], context_provider: Callable[[], Any]) -> None:
-        self._set_camera(sink, True, "raw fisheye receiving")
-        for frame in self._frames:
-            if self._closed or self._camera_lost():
+    def run(
+        self,
+        sink: Callable[[dict[str, Any]], Any],
+        context_provider: Callable[[], Any],
+        on_frame: Callable[[Any, Any], None] | None = None,
+    ) -> None:
+        rally_id = None
+        try:
+            self._set_camera(sink, True, "raw fisheye receiving")
+            for frame in self._frames:
+                if self._closed or self._camera_lost():
+                    self._set_camera(sink, False, "camera_missing")
+                    return
+                snapshot = context_provider()
+                if snapshot is not None:
+                    rally_id = getattr(snapshot, "active_rally_id", None)
+                sample = self._tracker.update(frame)
+                self._judge.add(sample, rally_id)
+                if on_frame is not None:
+                    on_frame(frame, sample)
+                if snapshot is None or getattr(snapshot, "scoring_mode", "assisted") != "assisted":
+                    continue
+                if self._sound is not None:
+                    heard = self._sound()
+                    if heard is not None:
+                        self._judge.hear(heard)
+                command = self._judge.proposal_command(snapshot)
+                if command is None:
+                    continue
+                reply = sink(command)
+                self.sent.append(command)
+                if _is_conflict(reply):
+                    self._judge.on_conflict(snapshot)
+            if self._camera_lost():
                 self._set_camera(sink, False, "camera_missing")
-                return
-            snapshot = context_provider()
-            sample = self._tracker.update(frame)
-            self._judge.add(sample, getattr(snapshot, "active_rally_id", None))
-            if getattr(snapshot, "scoring_mode", "assisted") != "assisted":
-                continue
-            if self._sound is not None:
-                heard = self._sound()
-                if heard is not None:
-                    self._judge.hear(heard)
-            command = self._judge.proposal_command(snapshot)
-            if command is None:
-                continue
-            reply = sink(command)
-            self.sent.append(command)
-            if _is_conflict(reply):
-                self._judge.on_conflict(snapshot)
-        if self._camera_lost():
-            self._set_camera(sink, False, "camera_missing")
+        finally:
+            try:
+                self._set_camera(sink, False, "vision_stopped")
+            except Exception:
+                pass
 
     def close(self) -> None:
         self._closed = True
@@ -273,10 +270,10 @@ def _sound_stale(proposal: dict[str, Any] | None, rally_started_ns: int | None) 
     return type(contact) is int and contact < rally_started_ns
 
 
-def _sound_agrees(proposal: dict[str, Any] | None, winner_id: str) -> bool:
+def _sound_agrees(proposal: dict[str, Any] | None, winner_id: str, reason: str) -> bool:
     if not isinstance(proposal, dict):
         return False
-    return proposal.get("winner_id") == winner_id and proposal.get("reason") == "missed_return"
+    return proposal.get("winner_id") == winner_id and proposal.get("reason") == reason
 
 
 def _is_conflict(reply: Any) -> bool:

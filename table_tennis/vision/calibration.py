@@ -14,6 +14,7 @@ only. A projected image point is never a bounce.
 from __future__ import annotations
 
 import json
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -157,6 +158,24 @@ class CalibrationGate:
         self._rejected_seq = None
         self.current = result
         return result
+
+
+def calibration_from_clicks(
+    frame: Frame,
+    clicks: Sequence[tuple[int, int]],
+    *,
+    margin_px: int = 8,
+) -> TableCalibration:
+    """Six clicks: four corners in ``CORNER_ORDER``, then the two net points."""
+    if len(clicks) != 6:
+        raise ValueError("need four corners and two net points")
+    gate = CalibrationGate(ids=_UuidIds(), margin_px=margin_px)
+    return gate.submit(frame, clicks[:4], clicks[4:])
+
+
+class _UuidIds:
+    def new_id(self) -> str:
+        return str(uuid.uuid4())
 
 
 def write_calibration(path: Path | str, calibration: TableCalibration) -> None:

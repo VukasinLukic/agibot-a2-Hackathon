@@ -75,6 +75,49 @@ class A2FisheyeTests(unittest.TestCase):
         self.assertTrue(capture.camera_missing)
         self.assertFalse(reader.released)
 
+    def test_the_same_picture_for_a_second_means_the_camera_stopped(self) -> None:
+        image = _image((1, 1, 1))
+
+        class _Stuck:
+            def read(self):
+                return True, image
+
+            def release(self) -> None:
+                return None
+
+        times = iter((100, 100 + 1_000_000_000))
+        with A2FisheyeCapture("CHEST_LEFT_FISHEYE", reader=_Stuck(), now_ns=lambda: next(times)) as capture:
+            frames = list(capture)
+        self.assertEqual([frame.frame_seq for frame in frames], [0])
+        self.assertTrue(capture.camera_missing)
+        self.assertEqual(capture.stats.duplicate_frames, 1)
+
+    def test_a_counted_reader_waits_instead_of_comparing_bytes(self) -> None:
+        class _Counted:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def read_if_new(self, after_seq: int, timeout_s: float):
+                del after_seq, timeout_s
+                self.calls += 1
+                if self.calls == 1:
+                    return True, _image((1, 2, 3)), 1, 5_000
+                if self.calls == 2:
+                    return True, _image((4, 5, 6)), 2, 6_000
+                return False, None, 2, 6_000
+
+            def release(self) -> None:
+                return None
+
+        reader = _Counted()
+        with A2FisheyeCapture("CHEST_LEFT_FISHEYE", reader=reader, now_ns=_Clock()) as capture:
+            frames = list(capture)
+        self.assertEqual([frame.frame_seq for frame in frames], [0, 1])
+        self.assertEqual(frames[0].capture_monotonic_ns, 5_000)
+        self.assertEqual(capture.stats.duplicate_frames, 0)
+        self.assertTrue(capture.camera_missing)
+        self.assertEqual(reader.calls, 5)
+
     def test_one_empty_read_does_not_drop_the_camera(self) -> None:
         image = _image((7, 8, 9))
 
