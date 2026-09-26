@@ -114,6 +114,7 @@ from rag import (
     panel_explanation_gesture,
 )
 from startup_greeting import speak_startup_greeting
+from referee_mode import RefereeMode, describe_match, parse_referee_command
 
 # Survey / Quiz flow
 from survey_flow import SurveyFlowTask, load_survey_state
@@ -345,6 +346,8 @@ class HumanoidAgent(Agent):
         self._current_tts_text = ""
         self._current_tts_updated_at = 0.0
         self._speech_echo_window = SpeechEchoWindow()
+        # Table tennis referee mode (TitanSudija), switched by the table tennis backend.
+        self._referee = RefereeMode()
 
         super().__init__(
             instructions=self._render_instructions(),
@@ -737,6 +740,16 @@ class HumanoidAgent(Agent):
                 participant_identity,
                 len(steps),
             )
+            referee = (
+                parse_referee_command(steps[0].text)
+                if len(steps) == 1 and not steps[0].gesture
+                else None
+            )
+            if referee is not None:
+                self._referee.set(*referee)
+                await self._refresh_runtime_instructions()
+                return
+
             rag_toggle = self._parse_rag_toggle_command(steps)
             if rag_toggle is not None:
                 self._rag_runtime_enabled = rag_toggle
@@ -1095,6 +1108,11 @@ class HumanoidAgent(Agent):
             )
             raise StopResponse()
 
+        if self._referee.active and await asyncio.to_thread(self._referee.should_stay_silent):
+            # A rally is being played: the referee does not talk over the game.
+            logger.info("REFEREE_MODE silent during rally, dropping turn: %r", query[:80])
+            raise StopResponse()
+
         cached_image: Optional[ImageContent] = None
         react_to_visuals = False
         async with self._image_lock:
@@ -1265,6 +1283,9 @@ class HumanoidAgent(Agent):
         requested: bool = False,
     ):
         """Dispatch a gesture to the external gesture API."""
+        if self._referee.active:
+            # During a match the referee gestures belong to the table tennis robot adapter.
+            return "Gestovi su isključeni dok traje meč."
         normalized_gesture = normalize_gesture(gesture, ACTIVE_GESTURE_CATALOG_ID)
         if normalized_gesture is None:
             logger.warning("Ignoring unknown tool gesture: %r", gesture)
@@ -1287,6 +1308,18 @@ class HumanoidAgent(Agent):
             force_gesture=False,
         )
         return f"Gesture '{normalized_gesture}' triggered."
+
+    @function_tool(
+        name="get_table_tennis_match",
+        description=(
+            "Read the live table tennis match you are refereeing: players, score, who serves, "
+            "who leads, winner. Call it before saying anything about the score. Read-only."
+        ),
+    )
+    async def get_table_tennis_match(self):
+        """Current match facts from the table tennis backend (never invent a score)."""
+        snap = await asyncio.to_thread(self._referee.current_match, 0.0)
+        return describe_match(snap)
 
     @function_tool(
         name="get_current_time",
@@ -1547,6 +1580,11 @@ class HumanoidAgent(Agent):
         sections = [self._base_instructions, "\n".join(flow_rules)]
         if self._identity_instructions:
             sections.append(self._identity_instructions)
+        referee = getattr(self, "_referee", None)
+        if referee is not None and referee.active:
+            sections.append(referee.instructions(
+                str(get_prompt_builder().default_variables.get("robot_name") or "Titan")
+            ))
 
         return "\n\n".join(sections) + "\n"
 

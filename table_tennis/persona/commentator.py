@@ -19,6 +19,7 @@ from typing import Any, Optional
 from table_tennis.contracts import MatchSnapshot
 from table_tennis.core.rules import next_server
 
+from .joke_bank import JokeBank
 from .roles import ROLES, role_key
 from .templates import (
     CORPORATE_LOSE_BY_ROLE,
@@ -77,6 +78,10 @@ def _game_point_leader(a: int, b: int, target: int) -> Optional[str]:
 
 
 class Commentator:
+    def __init__(self, jokes: Optional[JokeBank] = None):
+        # Personalised LLM lines for the corporate persona (off unless TT_LLM_JOKES=1).
+        self.jokes = jokes if jokes is not None else JokeBank.from_env(favorite_of=favorite_player, rank_of=_rank)
+
     def line_for(self, event: Any, snapshot: MatchSnapshot, persona: Optional[str] = None) -> Optional[str]:
         persona = persona or snapshot.persona
         if persona not in TEMPLATES:
@@ -84,6 +89,9 @@ class Commentator:
         t = TEMPLATES[persona]
         et = event.type
         p = event.payload
+
+        if persona == "corporate" and et in ("match.started", "persona.changed"):
+            self.jokes.ensure(snapshot)  # background; points never wait for it
 
         # Points rotate through variants in order (no line twice in a row); other events hash.
         seq = None
@@ -203,13 +211,16 @@ class Commentator:
         prev, new = p.previous_score, p.new_score
         winner, loser = _name(snapshot, winner_id), _name(snapshot, loser_id)
 
+        def bank(slot: str) -> Optional[list[str]]:
+            return self.jokes.lines(event.match_id, slot)
+
         # Key moments always get one line, in priority order.
         if first_deuce:
             return None  # the deuce line is already the joke
         if saved:
-            return pick("game_point_saved")
+            return pick("game_point_saved", bank("game_point_saved"))
         if new.p1 + new.p2 == 1:
-            return pick("first_point")
+            return pick("first_point", bank("first_point"))
         w_rank, l_rank = _rank(snapshot, winner_id), _rank(snapshot, loser_id)
         w_now, l_now = new.get(winner_id), new.get(loser_id)
         if (
@@ -217,29 +228,32 @@ class Commentator:
             and w_now > l_now and prev.get(winner_id) <= prev.get(loser_id)
         ):
             # The more junior player just took the lead.
-            return pick("upset")
+            return pick("upset", bank("upset"))
         if tie:
-            return pick("tie")
+            return pick("tie", bank("tie"))
         lead_now = abs(new.p1 - new.p2)
         lead_before = abs(prev.p1 - prev.p2)
         if lead_now == BIG_LEAD and lead_before < BIG_LEAD:
-            return pick("big_lead", leader=winner)
+            return pick("big_lead", bank(f"big_lead_{winner_id}"), leader=winner)
 
         # Ordinary point: joke only now and then, so the game keeps its rhythm.
         if _stable(event.match_id, event.event_id, "joke") % CORPORATE_JOKE_EVERY != 0:
             return None
         # Pools: flattery of the random favourite, and teasing by company role.
+        # Personalised LLM lines (if ready) replace the handwritten ones.
         pools: list[tuple[str, list[str]]] = []
         if winner_id == favorite_player(event.match_id):
-            pools.append(("favorite_win", CORPORATE["favorite_win"]))
+            pools.append(("favorite_win", bank("favorite_win") or CORPORATE["favorite_win"]))
         else:
-            pools.append(("favorite_lose", CORPORATE["favorite_lose"]))
+            pools.append(("favorite_lose", bank("favorite_lose") or CORPORATE["favorite_lose"]))
         w_key = role_key(snapshot.player(winner_id).role_label)
-        if w_key in CORPORATE_WIN_BY_ROLE:
-            pools.append(("win_by_role", CORPORATE_WIN_BY_ROLE[w_key]))
+        win_lines = bank(f"win_{winner_id}") or CORPORATE_WIN_BY_ROLE.get(w_key or "")
+        if win_lines:
+            pools.append(("win_by_role", win_lines))
         l_key = role_key(snapshot.player(loser_id).role_label)
-        if l_key in CORPORATE_LOSE_BY_ROLE:
-            pools.append(("lose_by_role", CORPORATE_LOSE_BY_ROLE[l_key]))
+        lose_lines = bank(f"lose_{loser_id}") or CORPORATE_LOSE_BY_ROLE.get(l_key or "")
+        if lose_lines:
+            pools.append(("lose_by_role", lose_lines))
         if len(pools) == 1:
             pools.append(("generic_win", CORPORATE["generic_win"]))
         slot, variants = pools[_stable(event.match_id, event.event_id, "pool") % len(pools)]

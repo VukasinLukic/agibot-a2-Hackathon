@@ -102,5 +102,33 @@ Integrator pokreće mock backend i oba simulator scenarija, pregleda diff (bez `
 - **Testovi:** `tests/table_tennis/persona/test_commentator.py` (tačan rezultat u svakoj najavi, iste brojke u obe
   persone, nema korporativnih šala u regularnoj, imena kao podaci, nepoznata pozicija, najave robota). Frontend:
   `tsc -b` i eslint čisti; tok proveren u headless pregledaču na veličini telefona.
-- **Preostalo:** pravi govor (`persona/speech.py`, `LiveKitSpeechOutput`) preko Soniox TTS-a i merenje latencije;
-  redosled pozdrav/gest/govor sa osobom 3; opcioni LLM komentar sa template fallback-om. Ništa nije testirano na A2.
+- **Pravi glas** (`persona/speech.py`, `LiveKitSpeechOutput`): rečenicu šalje na Supervisor
+  `POST /api/conversation/command`, agent je izgovara doslovno (`session.say`, Soniox TTS, bez LLM-a).
+  Na početku meča/promeni persone šalje `__REFEREE_ON__:<persona>`, na kraju `__REFEREE_OFF__`.
+- **Lične šale (LLM, opciono)** (`persona/joke_bank.py`): na početku meča jedan poziv Azure OpenAI napiše
+  šale za ove igrače (imena, pozicije, tajni miljenik); tokom igre se samo biraju, pa poen ne čeka LLM.
+  Filtrira brojeve i rezultat; ako LLM kasni ili padne, ostaju ručno pisane. Keš: `table_tennis/var/jokes/`.
+- **Razgovor sa Titanom tokom meča** (`livekit-client/referee_mode.py` + 38 dodatih linija u `agent_main.py`):
+  persone `titan_sudija` i `titan_korporativni_sudija` u `livekit_config/prompts/personas.yaml` (vide se i u
+  Supervisor prompt manageru); alat `get_table_tennis_match` čita rezultat (samo čitanje); agent ćuti dok je
+  poen u toku i ne pokreće gestove sam. Van meča agent radi kao pre.
+- **Testovi:** `tests/table_tennis/persona/` (replike, pravi transport sa lažnim Supervisorom, banka šala sa
+  lažnim LLM-om, referee režim).
+
+### Pokretanje glasa na robotu (PC2, uz mentora)
+
+Preduslov: Supervisor, voice-agent i audio-bridge rade (Titan govori na „manual speech” iz Supervisora).
+Agent treba restart da učita `referee_mode.py`.
+
+```bash
+TT_ADAPTER_SPEECH=livekit TT_SPEECH_LIVE=1 TT_SUPERVISOR_URL=http://127.0.0.1:8070 TT_LLM_JOKES=1 python -m table_tennis.run_demo --mode mock
+```
+
+- `TT_SPEECH_LIVE=1` pušta samo glas uživo dok su ekran/gest/navigacija još simulirani (`mode=real` traži sve
+  prave adaptere). `/health` i dalje piše `dry-run` za govor; stvarno slanje se vidi u logu (`SPEECH sent`).
+- `TT_LLM_JOKES=1` koristi `AZURE_OPENAI_*` iz `.env`; bez toga idu samo ručno pisane šale.
+- Agent čita backend na `TT_API_URL` (podrazumevano `http://127.0.0.1:8099`).
+- Izmeriti: vreme od dodira „+ poen” do glasa (Supervisor otvara LiveKit sobu po rečenici).
+
+- **Preostalo:** redosled pozdrav/gest/govor sa osobom 3; gašenje automatskog razgovora na detekciju osobe
+  tokom meča (Vision Controller, Supervisor); provera na A2.
