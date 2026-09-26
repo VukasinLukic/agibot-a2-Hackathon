@@ -6,7 +6,7 @@
 - Šalješ samo `point.propose` i `camera.ready.set` (actor `vision`, u simulaciji `sim`).
   Nikad ne računaš rezultat ni servera.
 - Rally, `calibration_id` i `assignment_version` uzimaš iz aktuelnog snapshot-a.
-  Posle 409 preuzmi novo stanje; ako se rally/strane/kalibracija promenili, odbaci predlog.
+  Posle 409 predlog se baca. Ako je zvuk čut, predlog ide samo kad se pobednik i `missed_return` slože sa slikom.
 - `confidence` je model score, ne kalibrisana verovatnoća. Nestanak loptice nije dokaz poena.
 - OpenCV/numpy samo iz `requirements-vision.txt`, u zasebnom venv-u; ne uvoziti iz `core/`.
 - BlurBall je naučeni detektor (`blurball.py`). Težine su van gita. Torch se ne uvozi na importu paketa.

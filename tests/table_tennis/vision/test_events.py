@@ -16,6 +16,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from table_tennis.contracts import MatchSnapshot
 from table_tennis.core.ports import SequentialIdGenerator
+from table_tennis.vision.benchmark import AUTOMATIC_ENABLED
 from table_tennis.vision.calibration import CalibrationGate
 from table_tennis.vision.events import MatchVisionProducer, RallyJudge
 from table_tennis.vision.frame import ORIGIN_A2_FISHEYE, Frame
@@ -211,6 +212,53 @@ class EventTests(unittest.TestCase):
         )
         self.assertEqual([item["payload"]["ready"] for item in sent], [True, False])
         self.assertEqual(sent[1]["payload"]["reason"], "camera_missing")
+
+    def test_sound_must_agree_and_a_conflict_drops_the_proposal(self) -> None:
+        self.assertFalse(AUTOMATIC_ENABLED)
+        cal = self.calibration.calibration_id or ""
+        self._feed_crossing()
+        self.judge.add(_sample(5, "missing", None, None, cal))
+        self.judge.hear({"winner_id": "p2", "reason": "missed_return"})
+        self.assertIsNone(self.judge.proposal_command(_snapshot(cal)))
+        self.assertIsNone(self.judge.proposal_command(_snapshot(cal)))
+
+        agreed = RallyJudge(self.calibration, new_id=_Ids())
+        agreed.add(_sample(2, "observed", 50, 24, cal))
+        agreed.add(_sample(4, "observed", 50, 56, cal))
+        agreed.add(_sample(5, "missing", None, None, cal))
+        agreed.hear(None)
+        self.assertIsNone(agreed.proposal_command(_snapshot(cal)))
+
+        sent: list[dict] = []
+
+        def sink(command: dict) -> dict:
+            sent.append(command)
+            return {"status": 409}
+
+        producer = MatchVisionProducer(
+            [object(), object(), object()],
+            _ScriptedTracker(
+                [
+                    _sample(2, "observed", 50, 24, cal),
+                    _sample(4, "observed", 50, 56, cal),
+                    _sample(5, "missing", None, None, cal),
+                ]
+            ),
+            RallyJudge(self.calibration, new_id=_Ids()),
+            sound=lambda: {"winner_id": "p1", "reason": "missed_return"},
+            new_id=_Ids(),
+        )
+        producer.run(sink, lambda: _snapshot(cal))
+        proposals = [item for item in sent if item["type"] == "point.propose"]
+        self.assertEqual(len(proposals), 1)
+        self.assertEqual(proposals[0]["payload"]["winner_id"], "p1")
+        self.assertIsNone(producer._judge.transport_retry())
+        dark = _snapshot(cal).model_copy(update={"ready": {"calibration_ready": True, "camera_ready": False}})
+        quiet = RallyJudge(self.calibration, new_id=_Ids())
+        quiet.add(_sample(2, "observed", 50, 24, cal))
+        quiet.add(_sample(4, "observed", 50, 56, cal))
+        quiet.add(_sample(5, "missing", None, None, cal))
+        self.assertIsNone(quiet.proposal_command(dark))
 
     def test_valid_fixture_uses_the_contract_fields(self) -> None:
         payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
