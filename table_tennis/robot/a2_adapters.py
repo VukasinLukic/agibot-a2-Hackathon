@@ -20,12 +20,13 @@ import logging
 from typing import Any, Callable, Optional
 
 from table_tennis.contracts import MatchSnapshot, RobotCall, RobotCallRequest, RobotStatus
-from table_tennis.contracts.primitives import ROBOT_CALL_TERMINAL_STATES
+from table_tennis.contracts.primitives import ROBOT_CALL_TERMINAL_STATES, NavigationState, RobotCallState
 from table_tennis.core.ports import Clock, SystemClock
 
 from .gesture_output import GESTURE_HINTS, UNPLAYED, GestureJob, GestureNotPlayed, GestureSession, MotionCoordinator
-from .mission import MissionSession
-from .readiness import NavFacts, assess
+from .mission import MissionObservation, MissionSession
+from .arrival import ArrivalFacts, assess_arrival
+from .readiness import NavFacts, assess, facts_from_reply
 from .fake import FakeRobotNavigator
 from .score_display import ScoreboardSession
 
@@ -48,6 +49,41 @@ def _native_task_id(reply: Any) -> Optional[str]:
     if not text or text == "0":
         return None
     return text
+
+
+# Real mode must not inherit the walk-ready defaults used by the mock.
+_CLOSED_FACTS = NavFacts(
+    work_enabled=False,
+    mc_action="",
+    localization_running=False,
+    map_id=None,
+    pose_age_ms=None,
+)
+
+_CANCELLED_TASK_STATES = frozenset({"CANCELED", "CANCELLED", "SUCCESS", "FAILED", "FAILURE", "IDLE"})
+
+
+def _target_id(raw: Any) -> Optional[str]:
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    if not text or text == "0":
+        return None
+    return text
+
+
+def _match_target(points: list, name: str) -> Optional[str]:
+    for point in points:
+        if not isinstance(point, dict):
+            continue
+        if str(point.get("name") or "") != name:
+            continue
+        return _target_id(point.get("point_id"))
+    return None
+
+
+def _wire_target(text: str) -> str | int:
+    return int(text) if text.isdigit() else text
 
 
 def _dry_run_transport(action: str, args: dict) -> dict:
@@ -149,15 +185,20 @@ class A2RobotNavigator(_A2Base):
         self,
         clock: Optional[Clock] = None,
         facts: Optional[NavFacts] = None,
+        points: Optional[list[dict]] = None,
         coordinator: Optional[MotionCoordinator] = None,
         mission: Optional[MissionSession] = None,
         **kw: Any,
     ):
         super().__init__(**kw)
         self.clock = clock or SystemClock()
-        self.facts = facts or NavFacts()
         self.coordinator = coordinator
-        # Real mode waits for the operator. Dry-run keeps the simulated lifecycle.
+        # Real mode waits for the operator and reads facts from the transport.
+        # Dry-run keeps the simulated lifecycle and the walk-ready defaults.
+        self._facts_supplied = facts is not None or self.dry_run
+        self.facts = facts if facts is not None else (NavFacts() if self.dry_run else _CLOSED_FACTS)
+        self._points_supplied = points is not None
+        self._known_points: Optional[list] = list(points) if points is not None else None
         self.mission = mission if mission is not None or self.dry_run else MissionSession()
         self.calls: dict[str, RobotCall] = {}
         self._requests: dict[str, RobotCallRequest] = {}
@@ -167,6 +208,46 @@ class A2RobotNavigator(_A2Base):
         if self._simulator is not None:
             self.calls = self._simulator.calls
 
+    def _read_facts(self) -> NavFacts:
+        if self._facts_supplied:
+            return self.facts
+        reply = self._send("nav.facts", {})
+        data = reply if isinstance(reply, dict) else {}
+        self.facts = facts_from_reply(data)
+        if "points" in data and not self._points_supplied:
+            raw = data.get("points")
+            self._known_points = list(raw) if isinstance(raw, list) else []
+        return self.facts
+
+    def _points_for(self, name: str) -> Optional[str]:
+        if self._known_points is None:
+            reply = self._send("nav.points", {"map_id": self.facts.map_id})
+            raw = reply.get("points") if isinstance(reply, dict) else None
+            self._known_points = list(raw) if isinstance(raw, list) else []
+        return _match_target(self._known_points, name)
+
+    def _store(self, call: RobotCall) -> RobotCall:
+        self.calls[call.call_id] = call
+        if self.coordinator is not None:
+            self.coordinator.note_call_state(call.state, call.match_id)
+        return call
+
+    def _refused(
+        self, request: RobotCallRequest, call_id: str, state: RobotCallState, reason: Optional[str]
+    ) -> RobotCall:
+        return self._store(
+            RobotCall(
+                call_id=call_id,
+                table_id=request.table_id,
+                named_waypoint_id=request.named_waypoint_id,
+                state=state,
+                updated_at=self.clock.now(),
+                reason=reason,
+                match_id=request.match_id,
+                simulated=self.dry_run,
+            )
+        )
+
     def request_call(self, request: RobotCallRequest, call_id: str) -> RobotCall:
         if self._simulator is not None:
             # Dry-run is a real lifecycle simulation: preflight can still
@@ -175,36 +256,14 @@ class A2RobotNavigator(_A2Base):
             if call.state == "requested":
                 self._send("nav.request", {"table_id": request.table_id, "waypoint": request.named_waypoint_id})
             return call
-        # Facts stand in for a2_nav.preflight. A later real-mode reader fills them
-        # from that client. Nothing is sent until the verdict is ready.
-        verdict = assess(self.facts)
+        verdict = assess(self._read_facts())
         if verdict.state != "ready":
-            call = RobotCall(
-                call_id=call_id,
-                table_id=request.table_id,
-                named_waypoint_id=request.named_waypoint_id,
-                state="failed" if verdict.state == "failed" else "busy",
-                updated_at=self.clock.now(),
-                reason=verdict.reason,
-                match_id=request.match_id,
-                simulated=self.dry_run,
+            return self._refused(
+                request, call_id, "failed" if verdict.state == "failed" else "busy", verdict.reason
             )
-            self.calls[call_id] = call
-            return call
         if self.mission is not None and not self.mission.route_clear:
-            call = RobotCall(
-                call_id=call_id,
-                table_id=request.table_id,
-                named_waypoint_id=request.named_waypoint_id,
-                state="requested",
-                updated_at=self.clock.now(),
-                reason="route_not_confirmed",
-                match_id=request.match_id,
-                simulated=self.dry_run,
-            )
             self._requests[call_id] = request
-            self.calls[call_id] = call
-            return call
+            return self._refused(request, call_id, "requested", "route_not_confirmed")
         return self._start(request, call_id)
 
     def confirm_route(self, call_id: str, actor: str) -> RobotCall:
@@ -218,38 +277,44 @@ class A2RobotNavigator(_A2Base):
         return self._start(request, call_id)
 
     def _start(self, request: RobotCallRequest, call_id: str) -> RobotCall:
+        facts = self._read_facts()
         if self.mission is not None:
-            started = self.mission.begin(self.facts)
+            started = self.mission.begin(facts)
             if started != "started":
-                call = RobotCall(
-                    call_id=call_id,
-                    table_id=request.table_id,
-                    named_waypoint_id=request.named_waypoint_id,
-                    state="busy" if started == "robot_busy" else "failed",
-                    updated_at=self.clock.now(),
-                    reason=started,
-                    match_id=request.match_id,
-                    simulated=self.dry_run,
-                )
-                self.calls[call_id] = call
-                return call
+                state: RobotCallState = "busy" if started == "robot_busy" else "failed"
+                return self._refused(request, call_id, state, started)
+        target = self._points_for(request.named_waypoint_id)
+        if target is None:
+            if self.mission is not None and self.mission.active:
+                self.mission.finish(cancel_task=False, estop=False)
+            return self._refused(request, call_id, "failed", "waypoint_not_on_map")
         # One existing mission, after the route is confirmed. Acceptance is not arrival.
-        reply = self._send("nav.request", {"table_id": request.table_id, "waypoint": request.named_waypoint_id})
+        reply = self._send(
+            "nav.request",
+            {
+                "table_id": request.table_id,
+                "waypoint": request.named_waypoint_id,
+                "map_id": facts.map_id,
+                "target_id": _wire_target(target),
+            },
+        )
         # An accepted RPC is not arrival. task_id 0 does not identify a mission.
         task_id = _native_task_id(reply)
-        call = RobotCall(
-            call_id=call_id,
-            table_id=request.table_id,
-            named_waypoint_id=request.named_waypoint_id,
-            state="failed" if self.dry_run else "requested",
-            updated_at=self.clock.now(),
-            reason="dry-run: A2 navigation not wired yet" if self.dry_run else "goal accepted; arrival not confirmed",
-            match_id=request.match_id,
-            native_task_id=task_id,
-            simulated=self.dry_run,
+        if self.mission is not None:
+            self.mission.note_task(task_id)
+        return self._store(
+            RobotCall(
+                call_id=call_id,
+                table_id=request.table_id,
+                named_waypoint_id=request.named_waypoint_id,
+                state="requested",
+                updated_at=self.clock.now(),
+                reason="goal accepted; arrival not confirmed",
+                match_id=request.match_id,
+                native_task_id=task_id,
+                simulated=self.dry_run,
+            )
         )
-        self.calls[call_id] = call
-        return call
 
     def get_call(self, call_id: str) -> Optional[RobotCall]:
         if self._simulator is not None:
@@ -259,12 +324,34 @@ class A2RobotNavigator(_A2Base):
     def get_status(self) -> RobotStatus:
         if self._simulator is not None:
             return self._simulator.get_status()
+        facts = self._read_facts()
+        verdict = assess(facts)
+        active = next((c for c in self.calls.values() if c.state not in ROBOT_CALL_TERMINAL_STATES), None)
+        if active is not None:
+            nav: NavigationState = {
+                "requested": "validating",
+                "validating": "validating",
+                "moving": "moving",
+                "arrived": "arrived",
+                "cancel_requested": "cancelling",
+            }.get(active.state, "idle")
+            return RobotStatus(
+                call_id=active.call_id,
+                availability="busy",
+                navigation_state=nav,
+                pose_age_ms=facts.pose_age_ms,
+                ready=False,
+                reason=active.reason,
+                simulated=False,
+            )
+        ready = verdict.state == "ready"
         return RobotStatus(
-            availability="offline",
-            navigation_state="idle",
-            ready=False,
-            reason="A2 navigator scaffold is not connected",
-            simulated=self.dry_run,
+            availability="available" if ready else "offline",
+            navigation_state="idle" if ready else "failed",
+            pose_age_ms=facts.pose_age_ms,
+            ready=ready,
+            reason=None if ready else verdict.reason,
+            simulated=False,
         )
 
     def cancel(self, call_id: str) -> RobotCall:
@@ -294,5 +381,91 @@ class A2RobotNavigator(_A2Base):
     def tick(self) -> list[RobotCall]:
         if self._simulator is not None:
             return self._simulator.tick()
-        # REAL: poll task status with deadline + stale-pose watchdog.
-        return []
+        changed: list[RobotCall] = []
+        for call in list(self.calls.values()):
+            if call.state in ROBOT_CALL_TERMINAL_STATES or call.reason == "route_not_confirmed":
+                continue
+            updated = self._advance(call)
+            if (
+                updated.state == call.state
+                and updated.reason == call.reason
+                and updated.native_task_id == call.native_task_id
+            ):
+                continue
+            changed.append(self._store(updated))
+        return changed
+
+    def _advance(self, call: RobotCall) -> RobotCall:
+        if call.state == "cancel_requested":
+            return self._advance_cancel(call)
+        reply = self._status(call)
+        if bool(reply.get("emergency_stop")) and self.mission is not None and self.mission.active:
+            self.mission.poll(
+                self._observation(reply),
+            )
+            return self._copy(call, "failed", "emergency_stop")
+        if call.state == "arrived" or (self.mission is not None and not self.mission.active and call.state != "requested"):
+            return self._advance_arrival(call, reply)
+        if self.mission is None:
+            return call
+        verdict = self.mission.poll(self._observation(reply))
+        if verdict.state == "failed":
+            self._cancel_native(call)
+            return self._copy(call, "failed", verdict.reason)
+        if verdict.state == "arrived":
+            self.mission.finish(cancel_task=False, estop=False)
+            return self._advance_arrival(call, reply)
+        return self._copy(call, "moving", verdict.reason)
+
+    def _advance_cancel(self, call: RobotCall) -> RobotCall:
+        task_id = call.native_task_id
+        if task_id:
+            reply = self._status(call)
+            if bool(reply.get("emergency_stop")):
+                if self.mission is not None and self.mission.active:
+                    self.mission.finish(cancel_task=True, estop=True)
+                return self._copy(call, "failed", "emergency_stop")
+            state = str(reply.get("task_state") or "")
+            if state not in _CANCELLED_TASK_STATES:
+                return call
+        if self.mission is not None and self.mission.active:
+            self.mission.finish(cancel_task=False, estop=False)
+        return self._copy(call, "cancelled", "cancel confirmed")
+
+    def _advance_arrival(self, call: RobotCall, reply: dict) -> RobotCall:
+        if not call.native_task_id:
+            return self._copy(call, "arrived", "need_operator_confirmation")
+        observed = _native_task_id(reply)
+        verdict = assess_arrival(
+            ArrivalFacts(
+                expected_task_id=call.native_task_id,
+                observed_task_id=observed,
+                pose_age_ms=reply.get("pose_age_ms") if "pose_age_ms" in reply else None,
+                within_tolerance=reply.get("within_tolerance") if "within_tolerance" in reply else None,
+                settled=reply.get("settled") if "settled" in reply else None,
+            )
+        )
+        return self._copy(call, verdict.state, verdict.reason)
+
+    def _status(self, call: RobotCall) -> dict:
+        reply = self._send("nav.status", {"call_id": call.call_id, "native_task_id": call.native_task_id})
+        return reply if isinstance(reply, dict) else {}
+
+    def _observation(self, reply: dict) -> MissionObservation:
+        return MissionObservation(
+            now_s=self.clock.monotonic(),
+            pose_age_ms=reply.get("pose_age_ms") if "pose_age_ms" in reply else None,
+            task_id=_native_task_id(reply),
+            task_state=reply.get("task_state") if "task_state" in reply else None,
+            global_running=bool(reply.get("global_running")),
+            progress_mark=None if "progress_mark" not in reply else reply.get("progress_mark"),
+            emergency_stop=bool(reply.get("emergency_stop")),
+        )
+
+    def _cancel_native(self, call: RobotCall) -> None:
+        task_id = call.native_task_id
+        if task_id and task_id != "0":
+            self._send("nav.cancel", {"call_id": call.call_id, "native_task_id": task_id})
+
+    def _copy(self, call: RobotCall, state: RobotCallState, reason: str) -> RobotCall:
+        return call.model_copy(update={"state": state, "updated_at": self.clock.now(), "reason": reason})

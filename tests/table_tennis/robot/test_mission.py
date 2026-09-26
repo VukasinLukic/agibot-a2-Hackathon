@@ -63,6 +63,7 @@ def test_global_running_is_not_progress_and_timeouts_close_without_motors() -> N
     assert "nav.cancel:44" in session.actions
     assert "pose_lease_close" in session.actions
     assert "walk.restore" not in session.actions
+    assert session.route_clear is False
 
 
 def test_navigation_timeout_and_estop_do_not_restore_walking() -> None:
@@ -96,11 +97,24 @@ def test_no_progress_fails_the_mission() -> None:
     assert stuck.reason == "no_progress"
 
 
+def test_success_without_a_task_id_is_not_arrival() -> None:
+    session = MissionSession()
+    session.confirm_route("operator")
+    session.begin(NavFacts())
+    verdict = session.poll(MissionObservation(now_s=1, task_state="SUCCESS", global_running=True))
+    assert verdict.state == "moving"
+    assert verdict.reason == "global_running_ignored"
+    quiet = session.poll(MissionObservation(now_s=2, task_state="SUCCESS", pose_age_ms=0))
+    assert quiet.state == "moving"
+    assert quiet.reason == "in_progress"
+
+
 def test_unconfirmed_route_does_not_send_navigation() -> None:
     seen: list[str] = []
     nav = A2RobotNavigator(
         dry_run=False,
         transport=lambda action, args: seen.append(action) or {"ok": True, "task_id": 5},
+        facts=NavFacts(),
         mission=MissionSession(),
     )
     call = nav.request_call(_request(), "22222222-2222-4222-8222-222222222222")

@@ -107,12 +107,17 @@ class MissionSession:
         if obs.now_s - self.started_at > self.mission_timeout_s:
             self.finish(cancel_task=True, estop=False)
             return MissionVerdict("failed", "navigation_timeout")
+        if self.task_id and obs.task_id and obs.task_id != self.task_id:
+            return MissionVerdict("moving", "native_task_mismatch")
+        # Planner SUCCESS for this task is arrival telemetry, not a cancelled walk.
+        if obs.task_state == "SUCCESS" and self.task_id and obs.task_id == self.task_id:
+            return MissionVerdict("arrived", "goal_reached")
         if obs.pose_age_ms is None or obs.pose_age_ms > self.stale_pose_ms:
             self.finish(cancel_task=True, estop=False)
             return MissionVerdict("failed", "stale_pose")
-        if self.task_id and obs.task_id and obs.task_id != self.task_id:
-            return MissionVerdict("moving", "native_task_mismatch")
-        if obs.global_running and obs.task_id != self.task_id:
+        # A planner that is running with no id, or with someone else's id, is not this walk.
+        # None == None must not count as our task.
+        if obs.global_running and (not self.task_id or obs.task_id != self.task_id):
             return MissionVerdict("moving", "global_running_ignored")
         if obs.progress_mark != self.last_progress_mark:
             self.last_progress_mark = obs.progress_mark
@@ -120,8 +125,6 @@ class MissionSession:
         elif self.last_progress_at is not None and obs.now_s - self.last_progress_at > self.progress_timeout_s:
             self.finish(cancel_task=True, estop=False)
             return MissionVerdict("failed", "no_progress")
-        if obs.task_state == "SUCCESS" and obs.task_id == self.task_id:
-            return MissionVerdict("arrived", "goal_reached")
         return MissionVerdict("moving", "in_progress")
 
     def finish(self, *, cancel_task: bool, estop: bool) -> list[str]:
@@ -133,6 +136,8 @@ class MissionSession:
             self.pose_open = False
             done.append("pose_lease_close")
         self.active = False
+        # The next walk needs a new operator confirmation.
+        self.route_clear = False
         done.append("estop_hold" if estop else "walk_hold_kept")
         self.actions.extend(done)
         return done
