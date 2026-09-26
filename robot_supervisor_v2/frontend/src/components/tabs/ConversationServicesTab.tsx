@@ -55,6 +55,7 @@ interface ConversationServicesTabProps {
   voiceAgentServices: Service[];
   cameraBridgeServices: Service[];
   visionControllerService?: Service;
+  igraService?: Service;
   conversation: ConversationStatus;
   vision?: VisionStatus | null;
   loading: string | null;
@@ -95,6 +96,7 @@ export function ConversationServicesTab({
   voiceAgentServices,
   cameraBridgeServices,
   visionControllerService,
+  igraService,
   conversation,
   vision,
   loading,
@@ -134,6 +136,7 @@ export function ConversationServicesTab({
     ...voiceAgentServices,
     ...cameraBridgeServices,
     ...(visionControllerService ? [visionControllerService] : []),
+    ...(igraService ? [igraService] : []),
   ];
   const voiceServicesActive = voiceAgentServices.some((s) => ['starting', 'running', 'stopping'].includes(s.state));
   const voiceServicesLoading = loading === 'voice-services-start' || loading === 'voice-services-stop';

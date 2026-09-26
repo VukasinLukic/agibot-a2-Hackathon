@@ -14,6 +14,7 @@ import { ConversationServicesTab } from '@/components/tabs/ConversationServicesT
 import { SpeechTab } from '@/components/tabs/SpeechTab';
 import { TeleoperationTab } from '@/components/tabs/TeleoperationTab';
 import { PeopleFacesTab } from '@/components/tabs/PeopleFacesTab';
+import { LeaderboardTab } from '@/components/tabs/LeaderboardTab';
 import { LidarCostmapTab } from '@/components/tabs/LidarCostmapTab';
 import { NavigationMissionsTab } from '@/components/tabs/NavigationMissionsTab';
 import type {
@@ -32,12 +33,13 @@ const CAMERA_BRIDGE_SERVICE_PREFIX = 'camera-bridge';
 const VISION_CONTROLLER_SERVICE_NAME = 'vision-controller';
 const RECORDING_SERVICE_NAMES = ['video-recording-service'] as const;
 
-type AppTab = 'conversation-services' | 'speech' | 'rag' | 'quiz-survey' | 'teleoperation' | 'people' | 'lidar' | 'navigation' | 'commands' | 'services';
+type AppTab = 'conversation-services' | 'speech' | 'rag' | 'quiz-survey' | 'teleoperation' | 'people' | 'leaderboard' | 'lidar' | 'navigation' | 'commands' | 'services';
 
 function getServiceDisplayName(service: Service) {
   if (service.name === 'teleimager-server') return 'camera stream to VR';
   if (service.name === 'inspire-hands') return 'hand and finger tracking';
   if (service.name === 'xr-teleop') return 'teleoperation';
+  if (service.name === 'igra') return 'IGRA (hand gestures / RPS)';
   return service.display_name;
 }
 
@@ -508,6 +510,7 @@ function AppContent() {
   const cameraBridgeService = cameraBridgeServices.find((service) => service.name === 'camera-bridge');
   const visionControllerService = services.find((service) => service.name === VISION_CONTROLLER_SERVICE_NAME);
   const temperatureMonitorService = services.find((service) => service.name === 'robot-temperature-monitor');
+  const igraService = services.find((service) => service.name === 'igra');
   const voiceAgentServices = VOICE_AGENT_SERVICE_NAMES
     .map((name) => services.find((service) => service.name === name))
     .filter((service): service is Service => Boolean(service));
@@ -750,6 +753,16 @@ function AppContent() {
               </button>
               <button
                 type="button"
+                onClick={() => handleTabChange('leaderboard')}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  activeTab === 'leaderboard' ? 'bg-rose-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+                aria-pressed={activeTab === 'leaderboard'}
+              >
+                Leaderboard
+              </button>
+              <button
+                type="button"
                 onClick={() => handleTabChange('lidar')}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
                   activeTab === 'lidar' ? 'bg-rose-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
@@ -848,6 +861,7 @@ function AppContent() {
             voiceAgentServices={voiceAgentServices}
             cameraBridgeServices={cameraBridgeServices}
             visionControllerService={visionControllerService}
+            igraService={igraService}
             conversation={conversation}
             vision={vision}
             loading={loading}
@@ -934,6 +948,8 @@ function AppContent() {
           />
         ) : activeTab === 'people' ? (
           <PeopleFacesTab />
+        ) : activeTab === 'leaderboard' ? (
+          <LeaderboardTab />
         ) : activeTab === 'lidar' ? (
           <LidarCostmapTab />
         ) : activeTab === 'navigation' ? (

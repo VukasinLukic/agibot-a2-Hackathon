@@ -485,6 +485,34 @@ async def lifespan(app: FastAPI):
         )
         logger.info("Registered default Video Recording Service")
 
+    # Always expose IGRA in the service list (hackathon game / hand gestures).
+    if not service_manager.get("igra"):
+        eldorado_python = _repo_root / "eldorado" / ".venv" / "bin" / "python"
+        igra_config = {
+            "display_name": "IGRA",
+            "script": "eldorado/igra_api.py",
+            "working_dir": str(_repo_root),
+            "port": 8105,
+            "camera": "CHEST_RIGHT_FISHEYE",
+            "gesture_db": str(_repo_root / "eldorado" / "gestures.json"),
+            "leaderboard_db": str(_repo_root / "eldorado" / "data" / "igra_leaderboard.db"),
+            "show_window": False,
+            "announce_text": "RADI",
+            "announce_mode": "both",
+            "startup_timeout": 25,
+            "optional": True,
+        }
+        if eldorado_python.exists():
+            igra_config["python_path"] = str(eldorado_python)
+        service_manager.register(
+            ServiceRegistry.create_service(
+                service_type="igra",
+                name="igra",
+                config=igra_config,
+            )
+        )
+        logger.info("Registered default IGRA service")
+
     logger.info("Registered %s services", len(service_manager.list_all()))
 
     try:
@@ -615,6 +643,74 @@ app.include_router(surveys_router)
 app.include_router(lidar_costmap_router)
 app.include_router(nav_missions_router)
 app.include_router(system_clock_router)
+
+
+@app.get("/api/igra/status")
+async def igra_status():
+    """Proxy IGRA detection status; empty payload if service is down."""
+    if not service_manager:
+        return {
+            "available": False,
+            "service_state": "missing",
+            "detail": "Service manager not initialized",
+            "status": None,
+        }
+
+    service = service_manager.get("igra")
+    if service is None:
+        return {
+            "available": False,
+            "service_state": "missing",
+            "detail": "IGRA service is not configured",
+            "status": None,
+        }
+
+    state = getattr(service, "_state", None)
+    state_value = state.value if state is not None else "unknown"
+    payload = None
+    if hasattr(service, "fetch_json"):
+        payload = await service.fetch_json("/status")
+    return {
+        "available": payload is not None,
+        "service_state": state_value,
+        "status": payload,
+        "last_error": getattr(service, "_last_error", None),
+    }
+
+
+@app.get("/api/igra/leaderboard")
+async def igra_leaderboard():
+    """Leaderboard for IGRA tab. Empty players list when none yet."""
+    service = service_manager.get("igra") if service_manager else None
+    if service is not None and hasattr(service, "fetch_json"):
+        payload = await service.fetch_json("/leaderboard")
+        if payload is not None:
+            return {
+                "available": True,
+                "service_state": service._state.value,
+                **payload,
+            }
+
+    # Fallback: read SQLite directly so the tab works even if IGRA is stopped.
+    try:
+        from eldorado.leaderboard import LeaderboardStore
+
+        snap = LeaderboardStore("eldorado/data/igra_leaderboard.db").snapshot()
+        return {
+            "available": False,
+            "service_state": getattr(getattr(service, "_state", None), "value", "stopped"),
+            **snap,
+        }
+    except Exception as exc:
+        return {
+            "available": False,
+            "service_state": "unavailable",
+            "players": [],
+            "matches": [],
+            "player_count": 0,
+            "detail": str(exc),
+        }
+
 
 def _get_robot_temperature_state() -> Optional[Dict[str, Any]]:
     if not service_manager:

@@ -95,6 +95,8 @@ import type {
   SpeechVoiceOptionsResponse,
   PeopleFaceIdentity,
   PeopleFacesResponse,
+  IgraLeaderboardResponse,
+  IgraStatusResponse,
 } from './types';
 import { API_BASE } from './base';
 
@@ -338,6 +340,14 @@ class APIClient {
 
   async getPeopleFaces() {
     return this.request<PeopleFacesResponse>('/api/people/faces');
+  }
+
+  async getIgraLeaderboard() {
+    return this.request<IgraLeaderboardResponse>('/api/igra/leaderboard');
+  }
+
+  async getIgraStatus() {
+    return this.request<IgraStatusResponse>('/api/igra/status');
   }
 
   async updatePeopleFace(faceId: string, payload: {

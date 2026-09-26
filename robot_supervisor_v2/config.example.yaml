@@ -251,6 +251,26 @@ services:
       working_dir: .
       optional: true  # RAG is optional unless your agent depends on it
 
+  # IGRA (eldorado) — hackathon RPS / hand-gesture game service (keep last in list)
+  - name: igra
+    type: igra
+    config:
+      display_name: "IGRA"
+      # Use eldorado venv if system Python lacks mediapipe/fastapi
+      python_path: eldorado/.venv/bin/python
+      script: eldorado/igra_api.py
+      working_dir: .
+      port: 8105
+      # A2 chest-right fisheye (ROS2). Also accepts: "Chest Right Fisheye"
+      camera: "CHEST_RIGHT_FISHEYE"
+      gesture_db: eldorado/gestures.json
+      leaderboard_db: eldorado/data/igra_leaderboard.db
+      show_window: false
+      announce_text: "RADI"
+      announce_mode: both
+      startup_timeout: 25
+      optional: true
+
 # Health monitoring settings
 health_monitoring:
   enabled: true
