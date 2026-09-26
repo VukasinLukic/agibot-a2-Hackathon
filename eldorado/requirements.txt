@@ -1,6 +1,0 @@
-opencv-python>=4.9.0
-mediapipe==0.10.21
-numpy<2
-fastapi>=0.115
-uvicorn>=0.34
-pydantic>=2
