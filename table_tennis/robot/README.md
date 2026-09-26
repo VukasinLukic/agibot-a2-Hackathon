@@ -82,6 +82,19 @@ Kraj meča je `nod thanks`. `handshake` se ne šalje.
 Imena u kodu nisu id-jevi firmware-a. Da li se `wave`, `point left`,
 `point right` i `nod thanks` i dalje razrešavaju na robotu, ostaje za termin.
 
+## Faza 4 u kodu
+
+Poziv i dalje ide kroz postojeći `call_service.py`: lista waypointa, isti
+`command_id`, jedan aktivan poziv, petlja na serveru. Prihvaćen `nav.request`
+nije dolazak. `ready` dolazi tek kad se poklope id zadatka, sveža poza,
+tolerancija i zaustavljanje (`arrival.py`). `task_id=0` se ne pamti i ne šalje
+kao otkaz. Ako telemetrije nema, poziv ostaje `arrived` sa razlogom
+`need_operator_confirmation`. Operater tada ručno označi dolazak. Lažni
+navigator i dalje sam potvrdi dolazak, da mock demo stigne do `ready`.
+
+Pravi `PlanningNaviToGoal` se i dalje ne zove. Tolerancija u metrima čeka
+mentorov prostor.
+
 ## Čeka termin sa mentorom
 
 Ne raditi ove stavke dok nema robota. Ne upisivati privremena imena kao prava.
