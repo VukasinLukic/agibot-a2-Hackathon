@@ -108,7 +108,8 @@ class RobotCallService:
                 )
             call = self.navigator.request_call(req, self.ids.new_id())
             self._persist(call, req.command_id, payload_hash)
-            return call, False
+        self._report_terminal(call)
+        return call, False
 
     def _active_call(self) -> Optional[RobotCall]:
         for row in self.store.robot_calls_active():
@@ -142,7 +143,8 @@ class RobotCallService:
                 return self.get(call_id)
             call = confirm(call_id, actor)
             self._persist(call, row["command_id"], row["payload_hash"])
-            return call
+        self._report_terminal(call)
+        return call
 
     def confirm_arrival(self, call_id: str, actor: str) -> RobotCall:
         """Operator saw the robot stop at the spot, when the robot could not prove it."""
@@ -189,9 +191,12 @@ class RobotCallService:
                 if row is not None:
                     self._persist(call, row["command_id"], row["payload_hash"])
         for call in changed:
-            if call.match_id and call.state in ("ready", "failed", "cancelled"):
-                self._report_to_match(call)
+            self._report_terminal(call)
         return changed
+
+    def _report_terminal(self, call: RobotCall) -> None:
+        if call.match_id and call.state in ("ready", "failed", "cancelled"):
+            self._report_to_match(call)
 
     def _report_to_match(self, call: RobotCall) -> None:
         """Tell the match about the call outcome (backend emits readiness.changed).
