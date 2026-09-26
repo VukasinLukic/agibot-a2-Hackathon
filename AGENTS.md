@@ -39,3 +39,8 @@ LiveKit is a fast-evolving project. Always refer to the latest documentation. Li
 ## Low Latency
 
 Low latency is critical for this project. Treat end-to-end responsiveness as a primary requirement across the whole solution, including LiveKit agent processing, audio/video capture, streaming, transcription, model calls, tool execution, robot control, and service-to-service communication. Prefer implementation choices that reduce avoidable buffering, blocking work, extra network round trips, cold starts, and unnecessary serialization. When changing latency-sensitive paths, consider the full pipeline impact, measure or log timings where practical, and avoid adding work that can delay real-time interaction unless it is clearly necessary.
+
+Also very important always respect Safety Guide C:\Users\Tea\OneDrive\Dokumenti\a2-hackathon\docs\Agibot Safety Guide.docx
+
+
+##

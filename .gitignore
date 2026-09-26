@@ -35,3 +35,9 @@ yolo26n.pt
 .gitignore
 SURVEY_GATHERING_IMPROVEMENT_PLAN.md
 .claude/settings.json
+
+# table tennis referee runtime (db, fake output logs, local config)
+table_tennis/var/
+table_tennis/config.local.yaml
+
+docs/*.docx

@@ -1,0 +1,4310 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "table_tennis/contract/v1",
+  "title": "A2 table tennis referee contract",
+  "schema_version": "1.0",
+  "top_level": {
+    "CommandEnvelope": {
+      "discriminator": {
+        "mapping": {
+          "calibration.set": "#/$defs/CalibrationSetCommand",
+          "camera.ready.set": "#/$defs/CameraReadySetCommand",
+          "match.end": "#/$defs/MatchEndCommand",
+          "match.pause": "#/$defs/MatchPauseCommand",
+          "match.resume": "#/$defs/MatchResumeCommand",
+          "match.start": "#/$defs/MatchStartCommand",
+          "operator.ready.set": "#/$defs/OperatorReadySetCommand",
+          "persona.set": "#/$defs/PersonaSetCommand",
+          "point.award": "#/$defs/PointAwardCommand",
+          "point.confirm": "#/$defs/PointConfirmCommand",
+          "point.propose": "#/$defs/PointProposeCommand",
+          "point.undo": "#/$defs/PointUndoCommand",
+          "rally.arm": "#/$defs/RallyArmCommand",
+          "rally.let": "#/$defs/RallyLetCommand",
+          "robot.ready.set": "#/$defs/RobotReadySetCommand",
+          "sides.set": "#/$defs/SidesSetCommand"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/MatchStartCommand"
+        },
+        {
+          "$ref": "#/$defs/RallyArmCommand"
+        },
+        {
+          "$ref": "#/$defs/PointProposeCommand"
+        },
+        {
+          "$ref": "#/$defs/PointConfirmCommand"
+        },
+        {
+          "$ref": "#/$defs/PointAwardCommand"
+        },
+        {
+          "$ref": "#/$defs/RallyLetCommand"
+        },
+        {
+          "$ref": "#/$defs/PointUndoCommand"
+        },
+        {
+          "$ref": "#/$defs/MatchPauseCommand"
+        },
+        {
+          "$ref": "#/$defs/MatchResumeCommand"
+        },
+        {
+          "$ref": "#/$defs/MatchEndCommand"
+        },
+        {
+          "$ref": "#/$defs/PersonaSetCommand"
+        },
+        {
+          "$ref": "#/$defs/SidesSetCommand"
+        },
+        {
+          "$ref": "#/$defs/CalibrationSetCommand"
+        },
+        {
+          "$ref": "#/$defs/RobotReadySetCommand"
+        },
+        {
+          "$ref": "#/$defs/CameraReadySetCommand"
+        },
+        {
+          "$ref": "#/$defs/OperatorReadySetCommand"
+        }
+      ]
+    },
+    "EventEnvelope": {
+      "discriminator": {
+        "mapping": {
+          "calibration.changed": "#/$defs/CalibrationChangedEvent",
+          "match.created": "#/$defs/MatchCreatedEvent",
+          "match.finished": "#/$defs/MatchFinishedEvent",
+          "match.paused": "#/$defs/MatchPausedEvent",
+          "match.resumed": "#/$defs/MatchResumedEvent",
+          "match.started": "#/$defs/MatchStartedEvent",
+          "persona.changed": "#/$defs/PersonaChangedEvent",
+          "point.confirmed": "#/$defs/PointConfirmedEvent",
+          "point.proposed": "#/$defs/PointProposedEvent",
+          "rally.armed": "#/$defs/RallyArmedEvent",
+          "rally.let": "#/$defs/RallyLetEvent",
+          "readiness.changed": "#/$defs/ReadinessChangedEvent",
+          "robot.call.updated": "#/$defs/RobotCallUpdatedEvent",
+          "score.corrected": "#/$defs/ScoreCorrectedEvent",
+          "sides.changed": "#/$defs/SidesChangedEvent"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/MatchCreatedEvent"
+        },
+        {
+          "$ref": "#/$defs/MatchStartedEvent"
+        },
+        {
+          "$ref": "#/$defs/RallyArmedEvent"
+        },
+        {
+          "$ref": "#/$defs/PointProposedEvent"
+        },
+        {
+          "$ref": "#/$defs/PointConfirmedEvent"
+        },
+        {
+          "$ref": "#/$defs/RallyLetEvent"
+        },
+        {
+          "$ref": "#/$defs/ScoreCorrectedEvent"
+        },
+        {
+          "$ref": "#/$defs/MatchPausedEvent"
+        },
+        {
+          "$ref": "#/$defs/MatchResumedEvent"
+        },
+        {
+          "$ref": "#/$defs/MatchFinishedEvent"
+        },
+        {
+          "$ref": "#/$defs/PersonaChangedEvent"
+        },
+        {
+          "$ref": "#/$defs/SidesChangedEvent"
+        },
+        {
+          "$ref": "#/$defs/CalibrationChangedEvent"
+        },
+        {
+          "$ref": "#/$defs/ReadinessChangedEvent"
+        },
+        {
+          "$ref": "#/$defs/RobotCallUpdatedEvent"
+        }
+      ]
+    },
+    "MatchSnapshot": {
+      "$ref": "#/$defs/MatchSnapshot"
+    },
+    "CreateMatchRequest": {
+      "$ref": "#/$defs/CreateMatchRequest"
+    },
+    "CommandResult": {
+      "$ref": "#/$defs/CommandResult"
+    },
+    "ErrorResponse": {
+      "$ref": "#/$defs/ErrorResponse"
+    },
+    "RobotCall": {
+      "$ref": "#/$defs/RobotCall"
+    },
+    "RobotCallRequest": {
+      "$ref": "#/$defs/RobotCallRequest"
+    },
+    "RobotCancelRequest": {
+      "$ref": "#/$defs/RobotCancelRequest"
+    },
+    "RobotStatus": {
+      "$ref": "#/$defs/RobotStatus"
+    },
+    "VisionObservation": {
+      "$ref": "#/$defs/VisionObservation"
+    },
+    "HealthResponse": {
+      "$ref": "#/$defs/HealthResponse"
+    },
+    "DebugOutputs": {
+      "$ref": "#/$defs/DebugOutputs"
+    },
+    "StreamSnapshotMessage": {
+      "$ref": "#/$defs/StreamSnapshotMessage"
+    },
+    "StreamEventMessage": {
+      "$ref": "#/$defs/StreamEventMessage"
+    }
+  },
+  "$defs": {
+    "CalibrationChangedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "calibration.changed",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/CalibrationChangedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "CalibrationChangedEvent",
+      "type": "object"
+    },
+    "CalibrationChangedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "previous": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Previous"
+        },
+        "calibration_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Calibration Id",
+          "type": "string"
+        },
+        "invalidated_proposal_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Invalidated Proposal Id"
+        },
+        "invalidated_rally_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Invalidated Rally Id"
+        }
+      },
+      "required": [
+        "previous",
+        "calibration_id"
+      ],
+      "title": "CalibrationChangedPayload",
+      "type": "object"
+    },
+    "CalibrationSetCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "calibration.set",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/CalibrationSetPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type",
+        "payload"
+      ],
+      "title": "CalibrationSetCommand",
+      "type": "object"
+    },
+    "CalibrationSetPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "calibration_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Calibration Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "calibration_id"
+      ],
+      "title": "CalibrationSetPayload",
+      "type": "object"
+    },
+    "CameraReadySetCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "camera.ready.set",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/ReadySetPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type",
+        "payload"
+      ],
+      "title": "CameraReadySetCommand",
+      "type": "object"
+    },
+    "CapabilityStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "available": {
+          "title": "Available",
+          "type": "boolean"
+        },
+        "simulated": {
+          "title": "Simulated",
+          "type": "boolean"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
+        }
+      },
+      "required": [
+        "available",
+        "simulated"
+      ],
+      "title": "CapabilityStatus",
+      "type": "object"
+    },
+    "CommandResult": {
+      "additionalProperties": false,
+      "properties": {
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "duplicate": {
+          "title": "Duplicate",
+          "type": "boolean"
+        },
+        "event_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": "Event Ids",
+          "type": "array"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/MatchSnapshot"
+        }
+      },
+      "required": [
+        "command_id",
+        "duplicate",
+        "snapshot"
+      ],
+      "title": "CommandResult",
+      "type": "object"
+    },
+    "CourtEndByPlayer": {
+      "additionalProperties": false,
+      "properties": {
+        "p1": {
+          "enum": [
+            "end_a",
+            "end_b"
+          ],
+          "title": "P1",
+          "type": "string"
+        },
+        "p2": {
+          "enum": [
+            "end_a",
+            "end_b"
+          ],
+          "title": "P2",
+          "type": "string"
+        }
+      },
+      "required": [
+        "p1",
+        "p2"
+      ],
+      "title": "CourtEndByPlayer",
+      "type": "object"
+    },
+    "CreateMatchRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/Player"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Players",
+          "type": "array"
+        },
+        "config": {
+          "$ref": "#/$defs/MatchConfig"
+        },
+        "court_end_by_player": {
+          "$ref": "#/$defs/CourtEndByPlayer"
+        },
+        "robot_side_by_player": {
+          "$ref": "#/$defs/RobotSideByPlayer"
+        },
+        "calibration_id": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calibration Id"
+        },
+        "table_id": {
+          "default": "table-1",
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Table Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command_id",
+        "players"
+      ],
+      "title": "CreateMatchRequest",
+      "type": "object"
+    },
+    "DebugOutputs": {
+      "additionalProperties": false,
+      "description": "Mock-only view of what fake screen/speech/gesture adapters would have done.",
+      "properties": {
+        "simulated": {
+          "default": true,
+          "title": "Simulated",
+          "type": "boolean"
+        },
+        "display": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FakeOutputRecord"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "speech": {
+          "items": {
+            "$ref": "#/$defs/FakeOutputRecord"
+          },
+          "title": "Speech",
+          "type": "array"
+        },
+        "gestures": {
+          "items": {
+            "$ref": "#/$defs/FakeOutputRecord"
+          },
+          "title": "Gestures",
+          "type": "array"
+        }
+      },
+      "title": "DebugOutputs",
+      "type": "object"
+    },
+    "EmptyPayload": {
+      "additionalProperties": false,
+      "properties": {},
+      "title": "EmptyPayload",
+      "type": "object"
+    },
+    "ErrorResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "current_revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Current Revision"
+        },
+        "details": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Details"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "ErrorResponse",
+      "type": "object"
+    },
+    "FakeOutputRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Match Id"
+        },
+        "event_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Event Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "text",
+        "at"
+      ],
+      "title": "FakeOutputRecord",
+      "type": "object"
+    },
+    "GameRules": {
+      "additionalProperties": false,
+      "description": "Scoring rules. v1 supports exactly one game to 11, win by 2.",
+      "properties": {
+        "target_points": {
+          "default": 11,
+          "maximum": 99,
+          "minimum": 1,
+          "title": "Target Points",
+          "type": "integer"
+        },
+        "win_by": {
+          "default": 2,
+          "maximum": 10,
+          "minimum": 1,
+          "title": "Win By",
+          "type": "integer"
+        },
+        "best_of": {
+          "default": 1,
+          "maximum": 9,
+          "minimum": 1,
+          "title": "Best Of",
+          "type": "integer"
+        }
+      },
+      "title": "GameRules",
+      "type": "object"
+    },
+    "HealthResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "default": "ok",
+          "title": "Status",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "mock",
+            "real"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "simulated": {
+          "title": "Simulated",
+          "type": "boolean"
+        },
+        "automatic_scoring_enabled": {
+          "title": "Automatic Scoring Enabled",
+          "type": "boolean"
+        },
+        "auth_mode": {
+          "title": "Auth Mode",
+          "type": "string"
+        },
+        "capabilities": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CapabilityStatus"
+          },
+          "title": "Capabilities",
+          "type": "object"
+        }
+      },
+      "required": [
+        "mode",
+        "simulated",
+        "automatic_scoring_enabled",
+        "auth_mode",
+        "capabilities"
+      ],
+      "title": "HealthResponse",
+      "type": "object"
+    },
+    "MatchConfig": {
+      "additionalProperties": false,
+      "description": "Create-time configuration. scoring_mode is fixed for the whole match in v1.",
+      "properties": {
+        "target_points": {
+          "default": 11,
+          "maximum": 99,
+          "minimum": 1,
+          "title": "Target Points",
+          "type": "integer"
+        },
+        "win_by": {
+          "default": 2,
+          "maximum": 10,
+          "minimum": 1,
+          "title": "Win By",
+          "type": "integer"
+        },
+        "best_of": {
+          "default": 1,
+          "maximum": 9,
+          "minimum": 1,
+          "title": "Best Of",
+          "type": "integer"
+        },
+        "first_server_id": {
+          "default": "p1",
+          "enum": [
+            "p1",
+            "p2"
+          ],
+          "title": "First Server Id",
+          "type": "string"
+        },
+        "scoring_mode": {
+          "default": "assisted",
+          "enum": [
+            "manual",
+            "assisted",
+            "automatic"
+          ],
+          "title": "Scoring Mode",
+          "type": "string"
+        },
+        "persona": {
+          "default": "regular",
+          "enum": [
+            "regular",
+            "corporate"
+          ],
+          "title": "Persona",
+          "type": "string"
+        }
+      },
+      "title": "MatchConfig",
+      "type": "object"
+    },
+    "MatchCreatedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "match.created",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/MatchCreatedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "MatchCreatedEvent",
+      "type": "object"
+    },
+    "MatchCreatedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "players": {
+          "items": {
+            "$ref": "#/$defs/Player"
+          },
+          "title": "Players",
+          "type": "array"
+        },
+        "config": {
+          "$ref": "#/$defs/GameRules"
+        },
+        "first_server_id": {
+          "enum": [
+            "p1",
+            "p2"
+          ],
+          "title": "First Server Id",
+          "type": "string"
+        },
+        "scoring_mode": {
+          "enum": [
+            "manual",
+            "assisted",
+            "automatic"
+          ],
+          "title": "Scoring Mode",
+          "type": "string"
+        },
+        "persona": {
+          "enum": [
+            "regular",
+            "corporate"
+          ],
+          "title": "Persona",
+          "type": "string"
+        },
+        "court_end_by_player": {
+          "$ref": "#/$defs/CourtEndByPlayer"
+        },
+        "robot_side_by_player": {
+          "$ref": "#/$defs/RobotSideByPlayer"
+        },
+        "calibration_id": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calibration Id"
+        },
+        "table_id": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table Id"
+        }
+      },
+      "required": [
+        "players",
+        "config",
+        "first_server_id",
+        "scoring_mode",
+        "persona",
+        "court_end_by_player",
+        "robot_side_by_player"
+      ],
+      "title": "MatchCreatedPayload",
+      "type": "object"
+    },
+    "MatchEndCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "match.end",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/ReasonPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type"
+      ],
+      "title": "MatchEndCommand",
+      "type": "object"
+    },
+    "MatchFinishedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "match.finished",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/MatchFinishedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "MatchFinishedEvent",
+      "type": "object"
+    },
+    "MatchFinishedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "winner_id": {
+          "anyOf": [
+            {
+              "enum": [
+                "p1",
+                "p2"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Winner Id"
+        },
+        "final_score": {
+          "$ref": "#/$defs/ScoreByPlayer"
+        },
+        "ended_by_operator": {
+          "default": false,
+          "title": "Ended By Operator",
+          "type": "boolean"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "winner_id",
+        "final_score"
+      ],
+      "title": "MatchFinishedPayload",
+      "type": "object"
+    },
+    "MatchPauseCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "match.pause",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/ReasonPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type"
+      ],
+      "title": "MatchPauseCommand",
+      "type": "object"
+    },
+    "MatchPausedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "match.paused",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/MatchPausedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "MatchPausedEvent",
+      "type": "object"
+    },
+    "MatchPausedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "previous_status": {
+          "enum": [
+            "setup",
+            "between_rallies",
+            "rally",
+            "pending_decision",
+            "paused",
+            "finished"
+          ],
+          "title": "Previous Status",
+          "type": "string"
+        },
+        "resume_to": {
+          "enum": [
+            "setup",
+            "between_rallies",
+            "rally",
+            "pending_decision",
+            "paused",
+            "finished"
+          ],
+          "title": "Resume To",
+          "type": "string"
+        },
+        "cancelled_rally_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cancelled Rally Id"
+        }
+      },
+      "required": [
+        "previous_status",
+        "resume_to"
+      ],
+      "title": "MatchPausedPayload",
+      "type": "object"
+    },
+    "MatchResumeCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "match.resume",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/ReasonPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type"
+      ],
+      "title": "MatchResumeCommand",
+      "type": "object"
+    },
+    "MatchResumedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "match.resumed",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/MatchResumedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "MatchResumedEvent",
+      "type": "object"
+    },
+    "MatchResumedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "status": {
+          "enum": [
+            "setup",
+            "between_rallies",
+            "rally",
+            "pending_decision",
+            "paused",
+            "finished"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "MatchResumedPayload",
+      "type": "object"
+    },
+    "MatchSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "match_id": {
+          "format": "uuid",
+          "title": "Match Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "setup",
+            "between_rallies",
+            "rally",
+            "pending_decision",
+            "paused",
+            "finished"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "players": {
+          "items": {
+            "$ref": "#/$defs/Player"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Players",
+          "type": "array"
+        },
+        "config": {
+          "$ref": "#/$defs/GameRules"
+        },
+        "score_by_player": {
+          "$ref": "#/$defs/ScoreByPlayer"
+        },
+        "first_server_id": {
+          "enum": [
+            "p1",
+            "p2"
+          ],
+          "title": "First Server Id",
+          "type": "string"
+        },
+        "server_id": {
+          "anyOf": [
+            {
+              "enum": [
+                "p1",
+                "p2"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Server Id"
+        },
+        "winner_id": {
+          "anyOf": [
+            {
+              "enum": [
+                "p1",
+                "p2"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Winner Id"
+        },
+        "assignment_version": {
+          "minimum": 1,
+          "title": "Assignment Version",
+          "type": "integer"
+        },
+        "court_end_by_player": {
+          "$ref": "#/$defs/CourtEndByPlayer"
+        },
+        "robot_side_by_player": {
+          "$ref": "#/$defs/RobotSideByPlayer"
+        },
+        "calibration_id": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Calibration Id"
+        },
+        "active_rally_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Active Rally Id"
+        },
+        "active_proposal_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Active Proposal Id"
+        },
+        "persona": {
+          "enum": [
+            "regular",
+            "corporate"
+          ],
+          "title": "Persona",
+          "type": "string"
+        },
+        "scoring_mode": {
+          "enum": [
+            "manual",
+            "assisted",
+            "automatic"
+          ],
+          "title": "Scoring Mode",
+          "type": "string"
+        },
+        "ready": {
+          "$ref": "#/$defs/Readiness"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "active_proposal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PointProposal"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "paused_from": {
+          "anyOf": [
+            {
+              "enum": [
+                "setup",
+                "between_rallies",
+                "rally",
+                "pending_decision",
+                "paused",
+                "finished"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Paused From"
+        },
+        "last_point_event_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Point Event Id"
+        },
+        "table_id": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table Id"
+        }
+      },
+      "required": [
+        "match_id",
+        "revision",
+        "status",
+        "players",
+        "config",
+        "score_by_player",
+        "first_server_id",
+        "server_id",
+        "winner_id",
+        "assignment_version",
+        "court_end_by_player",
+        "robot_side_by_player",
+        "calibration_id",
+        "active_rally_id",
+        "active_proposal_id",
+        "persona",
+        "scoring_mode",
+        "ready",
+        "updated_at"
+      ],
+      "title": "MatchSnapshot",
+      "type": "object"
+    },
+    "MatchStartCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "match.start",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/EmptyPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type"
+      ],
+      "title": "MatchStartCommand",
+      "type": "object"
+    },
+    "MatchStartedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "match.started",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/MatchStartedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "MatchStartedEvent",
+      "type": "object"
+    },
+    "MatchStartedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "server_id": {
+          "enum": [
+            "p1",
+            "p2"
+          ],
+          "title": "Server Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "server_id"
+      ],
+      "title": "MatchStartedPayload",
+      "type": "object"
+    },
+    "OperatorReadyPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "ready": {
+          "title": "Ready",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ready"
+      ],
+      "title": "OperatorReadyPayload",
+      "type": "object"
+    },
+    "OperatorReadySetCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "operator.ready.set",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/OperatorReadyPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type",
+        "payload"
+      ],
+      "title": "OperatorReadySetCommand",
+      "type": "object"
+    },
+    "PersonaChangedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "persona.changed",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/PersonaChangedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "PersonaChangedEvent",
+      "type": "object"
+    },
+    "PersonaChangedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "previous": {
+          "enum": [
+            "regular",
+            "corporate"
+          ],
+          "title": "Previous",
+          "type": "string"
+        },
+        "persona": {
+          "enum": [
+            "regular",
+            "corporate"
+          ],
+          "title": "Persona",
+          "type": "string"
+        }
+      },
+      "required": [
+        "previous",
+        "persona"
+      ],
+      "title": "PersonaChangedPayload",
+      "type": "object"
+    },
+    "PersonaSetCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "persona.set",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/PersonaSetPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type",
+        "payload"
+      ],
+      "title": "PersonaSetCommand",
+      "type": "object"
+    },
+    "PersonaSetPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "persona": {
+          "enum": [
+            "regular",
+            "corporate"
+          ],
+          "title": "Persona",
+          "type": "string"
+        }
+      },
+      "required": [
+        "persona"
+      ],
+      "title": "PersonaSetPayload",
+      "type": "object"
+    },
+    "Player": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "enum": [
+            "p1",
+            "p2"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "display_name": {
+          "maxLength": 40,
+          "minLength": 1,
+          "title": "Display Name",
+          "type": "string"
+        },
+        "role_label": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role Label"
+        },
+        "role_rank": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role Rank"
+        }
+      },
+      "required": [
+        "id",
+        "display_name"
+      ],
+      "title": "Player",
+      "type": "object"
+    },
+    "PointAwardCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "point.award",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/PointAwardPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type",
+        "payload"
+      ],
+      "title": "PointAwardCommand",
+      "type": "object"
+    },
+    "PointAwardPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "rally_id": {
+          "format": "uuid",
+          "title": "Rally Id",
+          "type": "string"
+        },
+        "winner_id": {
+          "enum": [
+            "p1",
+            "p2"
+          ],
+          "title": "Winner Id",
+          "type": "string"
+        },
+        "reason": {
+          "default": "unknown",
+          "enum": [
+            "missed_return",
+            "double_bounce",
+            "out_after_hit",
+            "service_fault",
+            "unknown"
+          ],
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rally_id",
+        "winner_id"
+      ],
+      "title": "PointAwardPayload",
+      "type": "object"
+    },
+    "PointConfirmCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "point.confirm",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/PointConfirmPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type",
+        "payload"
+      ],
+      "title": "PointConfirmCommand",
+      "type": "object"
+    },
+    "PointConfirmPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "proposal_id": {
+          "format": "uuid",
+          "title": "Proposal Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "proposal_id"
+      ],
+      "title": "PointConfirmPayload",
+      "type": "object"
+    },
+    "PointConfirmedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "point.confirmed",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/PointConfirmedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "PointConfirmedEvent",
+      "type": "object"
+    },
+    "PointConfirmedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "rally_id": {
+          "format": "uuid",
+          "title": "Rally Id",
+          "type": "string"
+        },
+        "winner_id": {
+          "enum": [
+            "p1",
+            "p2"
+          ],
+          "title": "Winner Id",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "missed_return",
+            "double_bounce",
+            "out_after_hit",
+            "service_fault",
+            "unknown"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "operator_award",
+            "confirmed_proposal"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "proposal_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proposal Id"
+        },
+        "previous_score": {
+          "$ref": "#/$defs/ScoreByPlayer"
+        },
+        "new_score": {
+          "$ref": "#/$defs/ScoreByPlayer"
+        },
+        "snapshot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MatchSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "rally_id",
+        "winner_id",
+        "reason",
+        "source",
+        "previous_score",
+        "new_score"
+      ],
+      "title": "PointConfirmedPayload",
+      "type": "object"
+    },
+    "PointProposal": {
+      "additionalProperties": false,
+      "properties": {
+        "proposal_id": {
+          "format": "uuid",
+          "title": "Proposal Id",
+          "type": "string"
+        },
+        "rally_id": {
+          "format": "uuid",
+          "title": "Rally Id",
+          "type": "string"
+        },
+        "winner_id": {
+          "enum": [
+            "p1",
+            "p2"
+          ],
+          "title": "Winner Id",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "reason": {
+          "enum": [
+            "missed_return",
+            "double_bounce",
+            "out_after_hit",
+            "service_fault",
+            "unknown"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "calibration_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Calibration Id",
+          "type": "string"
+        },
+        "assignment_version": {
+          "minimum": 1,
+          "title": "Assignment Version",
+          "type": "integer"
+        },
+        "capture_start_seq": {
+          "minimum": 0,
+          "title": "Capture Start Seq",
+          "type": "integer"
+        },
+        "capture_end_seq": {
+          "minimum": 0,
+          "title": "Capture End Seq",
+          "type": "integer"
+        },
+        "evidence_ref": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Ref"
+        }
+      },
+      "required": [
+        "proposal_id",
+        "rally_id",
+        "winner_id",
+        "confidence",
+        "reason",
+        "calibration_id",
+        "assignment_version",
+        "capture_start_seq",
+        "capture_end_seq"
+      ],
+      "title": "PointProposal",
+      "type": "object"
+    },
+    "PointProposeCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "point.propose",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/PointProposal"
+        }
+      },
+      "required": [
+        "command_id",
+        "type",
+        "payload"
+      ],
+      "title": "PointProposeCommand",
+      "type": "object"
+    },
+    "PointProposedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "point.proposed",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/PointProposedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "PointProposedEvent",
+      "type": "object"
+    },
+    "PointProposedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "proposal": {
+          "$ref": "#/$defs/PointProposal"
+        }
+      },
+      "required": [
+        "proposal"
+      ],
+      "title": "PointProposedPayload",
+      "type": "object"
+    },
+    "PointUndoCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "point.undo",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/PointUndoPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type",
+        "payload"
+      ],
+      "title": "PointUndoCommand",
+      "type": "object"
+    },
+    "PointUndoPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "target_event_id": {
+          "format": "uuid",
+          "title": "Target Event Id",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "target_event_id"
+      ],
+      "title": "PointUndoPayload",
+      "type": "object"
+    },
+    "RallyArmCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "rally.arm",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/EmptyPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type"
+      ],
+      "title": "RallyArmCommand",
+      "type": "object"
+    },
+    "RallyArmedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "rally.armed",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/RallyArmedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "RallyArmedEvent",
+      "type": "object"
+    },
+    "RallyArmedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "rally_id": {
+          "format": "uuid",
+          "title": "Rally Id",
+          "type": "string"
+        },
+        "server_id": {
+          "enum": [
+            "p1",
+            "p2"
+          ],
+          "title": "Server Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rally_id",
+        "server_id"
+      ],
+      "title": "RallyArmedPayload",
+      "type": "object"
+    },
+    "RallyLetCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "rally.let",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/RallyLetPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type",
+        "payload"
+      ],
+      "title": "RallyLetCommand",
+      "type": "object"
+    },
+    "RallyLetEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "rally.let",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/RallyLetEventPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "RallyLetEvent",
+      "type": "object"
+    },
+    "RallyLetEventPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "rally_id": {
+          "format": "uuid",
+          "title": "Rally Id",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "rally_id"
+      ],
+      "title": "RallyLetEventPayload",
+      "type": "object"
+    },
+    "RallyLetPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "rally_id": {
+          "format": "uuid",
+          "title": "Rally Id",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "rally_id"
+      ],
+      "title": "RallyLetPayload",
+      "type": "object"
+    },
+    "Readiness": {
+      "additionalProperties": false,
+      "properties": {
+        "robot_ready": {
+          "default": false,
+          "title": "Robot Ready",
+          "type": "boolean"
+        },
+        "camera_ready": {
+          "default": false,
+          "title": "Camera Ready",
+          "type": "boolean"
+        },
+        "calibration_ready": {
+          "default": false,
+          "title": "Calibration Ready",
+          "type": "boolean"
+        },
+        "operator_ready": {
+          "default": false,
+          "title": "Operator Ready",
+          "type": "boolean"
+        }
+      },
+      "title": "Readiness",
+      "type": "object"
+    },
+    "ReadinessChangedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "readiness.changed",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/ReadinessChangedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "ReadinessChangedEvent",
+      "type": "object"
+    },
+    "ReadinessChangedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "component": {
+          "enum": [
+            "robot_ready",
+            "camera_ready",
+            "calibration_ready",
+            "operator_ready"
+          ],
+          "title": "Component",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "boolean"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "ready": {
+          "$ref": "#/$defs/Readiness"
+        }
+      },
+      "required": [
+        "component",
+        "value",
+        "ready"
+      ],
+      "title": "ReadinessChangedPayload",
+      "type": "object"
+    },
+    "ReadySetPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "ready": {
+          "title": "Ready",
+          "type": "boolean"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "ready"
+      ],
+      "title": "ReadySetPayload",
+      "type": "object"
+    },
+    "ReasonPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "title": "ReasonPayload",
+      "type": "object"
+    },
+    "RobotCall": {
+      "additionalProperties": false,
+      "properties": {
+        "call_id": {
+          "format": "uuid",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "table_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Table Id",
+          "type": "string"
+        },
+        "named_waypoint_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Named Waypoint Id",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "requested",
+            "validating",
+            "moving",
+            "arrived",
+            "ready",
+            "failed",
+            "busy",
+            "cancel_requested",
+            "cancelled"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Match Id"
+        },
+        "native_task_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Native Task Id"
+        },
+        "simulated": {
+          "default": true,
+          "title": "Simulated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "call_id",
+        "table_id",
+        "named_waypoint_id",
+        "state",
+        "updated_at"
+      ],
+      "title": "RobotCall",
+      "type": "object"
+    },
+    "RobotCallRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "table_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Table Id",
+          "type": "string"
+        },
+        "named_waypoint_id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Named Waypoint Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Match Id"
+        }
+      },
+      "required": [
+        "command_id",
+        "table_id",
+        "named_waypoint_id"
+      ],
+      "title": "RobotCallRequest",
+      "type": "object"
+    },
+    "RobotCallUpdatedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "robot.call.updated",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/RobotCall"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "RobotCallUpdatedEvent",
+      "type": "object"
+    },
+    "RobotCancelRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command_id"
+      ],
+      "title": "RobotCancelRequest",
+      "type": "object"
+    },
+    "RobotReadySetCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "robot.ready.set",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/ReadySetPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type",
+        "payload"
+      ],
+      "title": "RobotReadySetCommand",
+      "type": "object"
+    },
+    "RobotSideByPlayer": {
+      "additionalProperties": false,
+      "properties": {
+        "p1": {
+          "enum": [
+            "left",
+            "right"
+          ],
+          "title": "P1",
+          "type": "string"
+        },
+        "p2": {
+          "enum": [
+            "left",
+            "right"
+          ],
+          "title": "P2",
+          "type": "string"
+        }
+      },
+      "required": [
+        "p1",
+        "p2"
+      ],
+      "title": "RobotSideByPlayer",
+      "type": "object"
+    },
+    "RobotStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "call_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Call Id"
+        },
+        "availability": {
+          "enum": [
+            "available",
+            "busy",
+            "offline",
+            "simulated"
+          ],
+          "title": "Availability",
+          "type": "string"
+        },
+        "navigation_state": {
+          "enum": [
+            "idle",
+            "validating",
+            "moving",
+            "arrived",
+            "failed",
+            "cancelling"
+          ],
+          "title": "Navigation State",
+          "type": "string"
+        },
+        "pose_age_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pose Age Ms"
+        },
+        "ready": {
+          "title": "Ready",
+          "type": "boolean"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "simulated": {
+          "default": true,
+          "title": "Simulated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "availability",
+        "navigation_state",
+        "ready"
+      ],
+      "title": "RobotStatus",
+      "type": "object"
+    },
+    "ScoreByPlayer": {
+      "additionalProperties": false,
+      "properties": {
+        "p1": {
+          "minimum": 0,
+          "title": "P1",
+          "type": "integer"
+        },
+        "p2": {
+          "minimum": 0,
+          "title": "P2",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "p1",
+        "p2"
+      ],
+      "title": "ScoreByPlayer",
+      "type": "object"
+    },
+    "ScoreCorrectedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "score.corrected",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/ScoreCorrectedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "ScoreCorrectedEvent",
+      "type": "object"
+    },
+    "ScoreCorrectedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "target_event_id": {
+          "format": "uuid",
+          "title": "Target Event Id",
+          "type": "string"
+        },
+        "rally_id": {
+          "format": "uuid",
+          "title": "Rally Id",
+          "type": "string"
+        },
+        "winner_id": {
+          "enum": [
+            "p1",
+            "p2"
+          ],
+          "title": "Winner Id",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "previous_score": {
+          "$ref": "#/$defs/ScoreByPlayer"
+        },
+        "new_score": {
+          "$ref": "#/$defs/ScoreByPlayer"
+        },
+        "invalidated_rally_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Invalidated Rally Id"
+        },
+        "snapshot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MatchSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "target_event_id",
+        "rally_id",
+        "winner_id",
+        "previous_score",
+        "new_score"
+      ],
+      "title": "ScoreCorrectedPayload",
+      "type": "object"
+    },
+    "SidesChangedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "sides.changed",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/SidesChangedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "SidesChangedEvent",
+      "type": "object"
+    },
+    "SidesChangedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "assignment_version": {
+          "title": "Assignment Version",
+          "type": "integer"
+        },
+        "court_end_by_player": {
+          "$ref": "#/$defs/CourtEndByPlayer"
+        },
+        "robot_side_by_player": {
+          "$ref": "#/$defs/RobotSideByPlayer"
+        },
+        "invalidated_proposal_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Invalidated Proposal Id"
+        },
+        "invalidated_rally_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Invalidated Rally Id"
+        }
+      },
+      "required": [
+        "assignment_version",
+        "court_end_by_player",
+        "robot_side_by_player"
+      ],
+      "title": "SidesChangedPayload",
+      "type": "object"
+    },
+    "SidesSetCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "sides.set",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/SidesSetPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type",
+        "payload"
+      ],
+      "title": "SidesSetCommand",
+      "type": "object"
+    },
+    "SidesSetPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "court_end_by_player": {
+          "$ref": "#/$defs/CourtEndByPlayer"
+        },
+        "robot_side_by_player": {
+          "$ref": "#/$defs/RobotSideByPlayer"
+        }
+      },
+      "required": [
+        "court_end_by_player",
+        "robot_side_by_player"
+      ],
+      "title": "SidesSetPayload",
+      "type": "object"
+    },
+    "StreamEventMessage": {
+      "additionalProperties": false,
+      "description": "SSE ``event: match_event`` (SSE id = event_id).",
+      "properties": {
+        "kind": {
+          "const": "event",
+          "default": "event",
+          "title": "Kind",
+          "type": "string"
+        },
+        "cursor": {
+          "minimum": 1,
+          "title": "Cursor",
+          "type": "integer"
+        },
+        "event": {
+          "discriminator": {
+            "mapping": {
+              "calibration.changed": "#/$defs/CalibrationChangedEvent",
+              "match.created": "#/$defs/MatchCreatedEvent",
+              "match.finished": "#/$defs/MatchFinishedEvent",
+              "match.paused": "#/$defs/MatchPausedEvent",
+              "match.resumed": "#/$defs/MatchResumedEvent",
+              "match.started": "#/$defs/MatchStartedEvent",
+              "persona.changed": "#/$defs/PersonaChangedEvent",
+              "point.confirmed": "#/$defs/PointConfirmedEvent",
+              "point.proposed": "#/$defs/PointProposedEvent",
+              "rally.armed": "#/$defs/RallyArmedEvent",
+              "rally.let": "#/$defs/RallyLetEvent",
+              "readiness.changed": "#/$defs/ReadinessChangedEvent",
+              "robot.call.updated": "#/$defs/RobotCallUpdatedEvent",
+              "score.corrected": "#/$defs/ScoreCorrectedEvent",
+              "sides.changed": "#/$defs/SidesChangedEvent"
+            },
+            "propertyName": "type"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/MatchCreatedEvent"
+            },
+            {
+              "$ref": "#/$defs/MatchStartedEvent"
+            },
+            {
+              "$ref": "#/$defs/RallyArmedEvent"
+            },
+            {
+              "$ref": "#/$defs/PointProposedEvent"
+            },
+            {
+              "$ref": "#/$defs/PointConfirmedEvent"
+            },
+            {
+              "$ref": "#/$defs/RallyLetEvent"
+            },
+            {
+              "$ref": "#/$defs/ScoreCorrectedEvent"
+            },
+            {
+              "$ref": "#/$defs/MatchPausedEvent"
+            },
+            {
+              "$ref": "#/$defs/MatchResumedEvent"
+            },
+            {
+              "$ref": "#/$defs/MatchFinishedEvent"
+            },
+            {
+              "$ref": "#/$defs/PersonaChangedEvent"
+            },
+            {
+              "$ref": "#/$defs/SidesChangedEvent"
+            },
+            {
+              "$ref": "#/$defs/CalibrationChangedEvent"
+            },
+            {
+              "$ref": "#/$defs/ReadinessChangedEvent"
+            },
+            {
+              "$ref": "#/$defs/RobotCallUpdatedEvent"
+            }
+          ],
+          "title": "Event"
+        }
+      },
+      "required": [
+        "cursor",
+        "event"
+      ],
+      "title": "StreamEventMessage",
+      "type": "object"
+    },
+    "StreamSnapshotMessage": {
+      "additionalProperties": false,
+      "description": "SSE ``event: snapshot``. Sent first, after resync and after each commit.",
+      "properties": {
+        "kind": {
+          "const": "snapshot",
+          "default": "snapshot",
+          "title": "Kind",
+          "type": "string"
+        },
+        "cursor": {
+          "minimum": 0,
+          "title": "Cursor",
+          "type": "integer"
+        },
+        "resync": {
+          "default": false,
+          "title": "Resync",
+          "type": "boolean"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/MatchSnapshot"
+        }
+      },
+      "required": [
+        "cursor",
+        "snapshot"
+      ],
+      "title": "StreamSnapshotMessage",
+      "type": "object"
+    },
+    "VisionObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "frame_seq": {
+          "minimum": 0,
+          "title": "Frame Seq",
+          "type": "integer"
+        },
+        "capture_monotonic_ns": {
+          "minimum": 0,
+          "title": "Capture Monotonic Ns",
+          "type": "integer"
+        },
+        "detected": {
+          "title": "Detected",
+          "type": "boolean"
+        },
+        "x_px": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "X Px"
+        },
+        "y_px": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Y Px"
+        },
+        "observation_kind": {
+          "enum": [
+            "observed",
+            "predicted",
+            "missing"
+          ],
+          "title": "Observation Kind",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "calibration_id": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calibration Id"
+        }
+      },
+      "required": [
+        "frame_seq",
+        "capture_monotonic_ns",
+        "detected",
+        "observation_kind",
+        "confidence"
+      ],
+      "title": "VisionObservation",
+      "type": "object"
+    }
+  }
+}

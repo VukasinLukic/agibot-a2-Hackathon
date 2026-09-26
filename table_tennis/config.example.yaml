@@ -1,0 +1,37 @@
+# A2 table tennis referee: example config (no secrets here).
+# Copy to table_tennis/config.local.yaml (gitignored) and pass --config.
+# Tokens come from env vars: TT_OPERATOR_TOKEN, TT_VISION_TOKEN, TT_ROBOT_TOKEN, TT_SIM_TOKEN,
+# TT_PERSONA_TOKEN (voice agent, read-only).
+
+mode: mock            # mock (default) | real (refuses to start until real adapters exist)
+
+server:
+  host: 127.0.0.1     # non-loopback host is refused unless auth.mode=token
+  port: 8099
+  sse_heartbeat_s: 15
+
+storage:
+  db_path: table_tennis/var/table_tennis_mock.sqlite   # runtime DB, never commit
+
+features:
+  automatic_scoring: false   # must stay false in the bootstrap (startup error otherwise)
+
+auth:
+  mode: local         # local: X-TT-Actor header, loopback only | token: Bearer per actor
+
+robot:
+  tables:
+    table-1: [referee-spot]  # allowlist of named waypoints the UI may request
+  sim_step_s: 0.7            # fake navigator: seconds per lifecycle step
+  fail_waypoints: [broken-spot]  # mock only: calls here end in "failed"
+
+outputs:
+  fake_log_path: table_tennis/var/fake_outputs.log
+  speech_ttl_s: 20
+
+adapters:             # which implementation backs each port
+  display: fake       # fake | a2      (a2 in mock = dry-run, logs what it would send)
+  gesture: fake       # fake | a2
+  speech: fake        # fake | livekit
+  navigator: fake     # fake | a2
+  # mode: real rejects "fake" and refuses to start until real transports exist

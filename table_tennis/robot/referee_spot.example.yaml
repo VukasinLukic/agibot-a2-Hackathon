@@ -1,0 +1,43 @@
+# Šablon sudijske tačke. Polja ostaju prazna dok mentor ne pročita mapu sa robota.
+# Popunjen zapis ide u table_tennis/config.local.yaml (nije u git-u).
+# U dugme ulazi samo referee_waypoint.name, pored table-1.
+# point_id, map_id i metri ne idu u poziv. referee-spot nije ime sa mape.
+
+model: agibot_a2_ultra
+firmware:
+
+map:
+  map_id:
+  map_name:
+  current_working: # da / ne
+  office_only: # da / ne
+
+start_outside_office_on_map: # da / ne
+
+referee_waypoint:
+  name:
+  point_id: # PlanningNaviToGoal ovo zove target_id
+  x:
+  y:
+  faces_table: # da / ne, i na koju stranu stola
+  stop_distance_m: # koliko sme da stane od ivice i od zamaha reketa
+
+localization:
+  is_running: # da / ne
+  fresh_pose: # da / ne, /tf map -> base_link mlađi od 5 s
+
+camera:
+  better_eye: # CHEST_LEFT_FISHEYE ili CHEST_RIGHT_FISHEYE
+  ball_visible_from_spot: # da / ne
+
+gestures_resolved: # tačno display_name_en, ili "nema"
+  wave:
+  point_left:
+  point_right:
+  nod_thanks:
+
+screen_slot_holder: # ko drži emoticon_ct_message
+aima_audio_holder: # ko drži AIMA agent
+mission_owner: # ko sme da pokrene i otkaže jedinu misiju
+route_confirmed_by: # ko gleda da je put slobodan pre hoda
+arrival_status: # status koji znači da je stao, a ne samo da je RPC prihvaćen

@@ -19,7 +19,6 @@ from .conversation_camera_stream import ConversationCameraStreamService
 from .robot_temperature_monitor import RobotTemperatureMonitorService
 from .vision_controller import VisionControllerService
 from .video_recording import VideoRecordingService
-from .igra_service import IgraService
 from ..supervisor_config import SERVICE_ROBOT_CONTEXT_KEY
 from humanoid_platform import AudioBridgeMode, PlatformId, get_robot_model
 
@@ -45,7 +44,6 @@ class ServiceRegistry:
         "robot-temperature-monitor": RobotTemperatureMonitorService,
         "vision-controller": VisionControllerService,
         "video-recording-service": VideoRecordingService,
-        "igra": IgraService,
     }
 
     @classmethod

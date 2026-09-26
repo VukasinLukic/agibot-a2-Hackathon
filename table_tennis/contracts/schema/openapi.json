@@ -1,0 +1,3019 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "A2 Table Tennis Referee API",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/table-tennis/health": {
+      "get": {
+        "tags": [
+          "table-tennis"
+        ],
+        "summary": "Health",
+        "operationId": "health_api_table_tennis_health_get",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/table-tennis/matches": {
+      "get": {
+        "tags": [
+          "table-tennis"
+        ],
+        "summary": "List Matches",
+        "operationId": "list_matches_api_table_tennis_matches_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "title": "Response List Matches Api Table Tennis Matches Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "table-tennis"
+        ],
+        "summary": "Create Match",
+        "operationId": "create_match_api_table_tennis_matches_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchSnapshot"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/table-tennis/matches/{match_id}": {
+      "get": {
+        "tags": [
+          "table-tennis"
+        ],
+        "summary": "Get Match",
+        "operationId": "get_match_api_table_tennis_matches__match_id__get",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchSnapshot"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/table-tennis/matches/{match_id}/commands": {
+      "post": {
+        "tags": [
+          "table-tennis"
+        ],
+        "summary": "Post Command",
+        "operationId": "post_command_api_table_tennis_matches__match_id__commands_post",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/MatchStartCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RallyArmCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PointProposeCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PointConfirmCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PointAwardCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RallyLetCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PointUndoCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/MatchPauseCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/MatchResumeCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/MatchEndCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PersonaSetCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SidesSetCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CalibrationSetCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/RobotReadySetCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CameraReadySetCommand"
+                  },
+                  {
+                    "$ref": "#/components/schemas/OperatorReadySetCommand"
+                  }
+                ],
+                "title": "Command"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/table-tennis/matches/{match_id}/events": {
+      "get": {
+        "tags": [
+          "table-tennis"
+        ],
+        "summary": "Events",
+        "operationId": "events_api_table_tennis_matches__match_id__events_get",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Match Id"
+            }
+          },
+          {
+            "name": "last_event_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last Event Id"
+            }
+          },
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE: snapshot + match_event",
+            "content": {
+              "text/event-stream": {}
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/table-tennis/robot/calls": {
+      "post": {
+        "tags": [
+          "table-tennis"
+        ],
+        "summary": "Robot Call",
+        "operationId": "robot_call_api_table_tennis_robot_calls_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RobotCallRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RobotCall"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/table-tennis/robot/calls/{call_id}": {
+      "get": {
+        "tags": [
+          "table-tennis"
+        ],
+        "summary": "Robot Call Get",
+        "operationId": "robot_call_get_api_table_tennis_robot_calls__call_id__get",
+        "parameters": [
+          {
+            "name": "call_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Call Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RobotCall"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/table-tennis/robot/calls/{call_id}/cancel": {
+      "post": {
+        "tags": [
+          "table-tennis"
+        ],
+        "summary": "Robot Call Cancel",
+        "operationId": "robot_call_cancel_api_table_tennis_robot_calls__call_id__cancel_post",
+        "parameters": [
+          {
+            "name": "call_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Call Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RobotCancelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RobotCall"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/table-tennis/robot/status": {
+      "get": {
+        "tags": [
+          "table-tennis"
+        ],
+        "summary": "Robot Status",
+        "operationId": "robot_status_api_table_tennis_robot_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RobotStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/table-tennis/debug/outputs": {
+      "get": {
+        "tags": [
+          "table-tennis"
+        ],
+        "summary": "Debug Outputs",
+        "description": "Mock only: what the fake screen / speech / gesture adapters did.",
+        "operationId": "debug_outputs_api_table_tennis_debug_outputs_get",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DebugOutputs"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CalibrationSetCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "calibration.set",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/CalibrationSetPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type",
+          "payload"
+        ],
+        "title": "CalibrationSetCommand"
+      },
+      "CalibrationSetPayload": {
+        "properties": {
+          "calibration_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Calibration Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "calibration_id"
+        ],
+        "title": "CalibrationSetPayload"
+      },
+      "CameraReadySetCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "camera.ready.set",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/ReadySetPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type",
+          "payload"
+        ],
+        "title": "CameraReadySetCommand"
+      },
+      "CapabilityStatus": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "simulated": {
+            "type": "boolean",
+            "title": "Simulated"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "available",
+          "simulated"
+        ],
+        "title": "CapabilityStatus"
+      },
+      "CommandResult": {
+        "properties": {
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "title": "Duplicate"
+          },
+          "event_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Event Ids"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/MatchSnapshot"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "duplicate",
+          "snapshot"
+        ],
+        "title": "CommandResult"
+      },
+      "CourtEndByPlayer": {
+        "properties": {
+          "p1": {
+            "type": "string",
+            "enum": [
+              "end_a",
+              "end_b"
+            ],
+            "title": "P1"
+          },
+          "p2": {
+            "type": "string",
+            "enum": [
+              "end_a",
+              "end_b"
+            ],
+            "title": "P2"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "p1",
+          "p2"
+        ],
+        "title": "CourtEndByPlayer"
+      },
+      "CreateMatchRequest": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/Player"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Players"
+          },
+          "config": {
+            "$ref": "#/components/schemas/MatchConfig"
+          },
+          "court_end_by_player": {
+            "$ref": "#/components/schemas/CourtEndByPlayer"
+          },
+          "robot_side_by_player": {
+            "$ref": "#/components/schemas/RobotSideByPlayer"
+          },
+          "calibration_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calibration Id"
+          },
+          "table_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Table Id",
+            "default": "table-1"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "players"
+        ],
+        "title": "CreateMatchRequest"
+      },
+      "DebugOutputs": {
+        "properties": {
+          "simulated": {
+            "type": "boolean",
+            "title": "Simulated",
+            "default": true
+          },
+          "display": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FakeOutputRecord"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "speech": {
+            "items": {
+              "$ref": "#/components/schemas/FakeOutputRecord"
+            },
+            "type": "array",
+            "title": "Speech"
+          },
+          "gestures": {
+            "items": {
+              "$ref": "#/components/schemas/FakeOutputRecord"
+            },
+            "type": "array",
+            "title": "Gestures"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DebugOutputs",
+        "description": "Mock-only view of what fake screen/speech/gesture adapters would have done."
+      },
+      "EmptyPayload": {
+        "properties": {},
+        "additionalProperties": false,
+        "type": "object",
+        "title": "EmptyPayload"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "current_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Revision"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorResponse"
+      },
+      "FakeOutputRecord": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "match_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Id"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "at": {
+            "type": "string",
+            "title": "At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "text",
+          "at"
+        ],
+        "title": "FakeOutputRecord"
+      },
+      "GameRules": {
+        "properties": {
+          "target_points": {
+            "type": "integer",
+            "maximum": 99.0,
+            "minimum": 1.0,
+            "title": "Target Points",
+            "default": 11
+          },
+          "win_by": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Win By",
+            "default": 2
+          },
+          "best_of": {
+            "type": "integer",
+            "maximum": 9.0,
+            "minimum": 1.0,
+            "title": "Best Of",
+            "default": 1
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "GameRules",
+        "description": "Scoring rules. v1 supports exactly one game to 11, win by 2."
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "ok"
+          },
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "mock",
+              "real"
+            ],
+            "title": "Mode"
+          },
+          "simulated": {
+            "type": "boolean",
+            "title": "Simulated"
+          },
+          "automatic_scoring_enabled": {
+            "type": "boolean",
+            "title": "Automatic Scoring Enabled"
+          },
+          "auth_mode": {
+            "type": "string",
+            "title": "Auth Mode"
+          },
+          "capabilities": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CapabilityStatus"
+            },
+            "type": "object",
+            "title": "Capabilities"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode",
+          "simulated",
+          "automatic_scoring_enabled",
+          "auth_mode",
+          "capabilities"
+        ],
+        "title": "HealthResponse"
+      },
+      "MatchConfig": {
+        "properties": {
+          "target_points": {
+            "type": "integer",
+            "maximum": 99.0,
+            "minimum": 1.0,
+            "title": "Target Points",
+            "default": 11
+          },
+          "win_by": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Win By",
+            "default": 2
+          },
+          "best_of": {
+            "type": "integer",
+            "maximum": 9.0,
+            "minimum": 1.0,
+            "title": "Best Of",
+            "default": 1
+          },
+          "first_server_id": {
+            "type": "string",
+            "enum": [
+              "p1",
+              "p2"
+            ],
+            "title": "First Server Id",
+            "default": "p1"
+          },
+          "scoring_mode": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "assisted",
+              "automatic"
+            ],
+            "title": "Scoring Mode",
+            "default": "assisted"
+          },
+          "persona": {
+            "type": "string",
+            "enum": [
+              "regular",
+              "corporate"
+            ],
+            "title": "Persona",
+            "default": "regular"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MatchConfig",
+        "description": "Create-time configuration. scoring_mode is fixed for the whole match in v1."
+      },
+      "MatchEndCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "match.end",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/ReasonPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type"
+        ],
+        "title": "MatchEndCommand"
+      },
+      "MatchPauseCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "match.pause",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/ReasonPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type"
+        ],
+        "title": "MatchPauseCommand"
+      },
+      "MatchResumeCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "match.resume",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/ReasonPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type"
+        ],
+        "title": "MatchResumeCommand"
+      },
+      "MatchSnapshot": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "match_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Match Id"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Revision"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "setup",
+              "between_rallies",
+              "rally",
+              "pending_decision",
+              "paused",
+              "finished"
+            ],
+            "title": "Status"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/Player"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Players"
+          },
+          "config": {
+            "$ref": "#/components/schemas/GameRules"
+          },
+          "score_by_player": {
+            "$ref": "#/components/schemas/ScoreByPlayer"
+          },
+          "first_server_id": {
+            "type": "string",
+            "enum": [
+              "p1",
+              "p2"
+            ],
+            "title": "First Server Id"
+          },
+          "server_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "p1",
+                  "p2"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Id"
+          },
+          "winner_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "p1",
+                  "p2"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner Id"
+          },
+          "assignment_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Assignment Version"
+          },
+          "court_end_by_player": {
+            "$ref": "#/components/schemas/CourtEndByPlayer"
+          },
+          "robot_side_by_player": {
+            "$ref": "#/components/schemas/RobotSideByPlayer"
+          },
+          "calibration_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calibration Id"
+          },
+          "active_rally_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Rally Id"
+          },
+          "active_proposal_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Proposal Id"
+          },
+          "persona": {
+            "type": "string",
+            "enum": [
+              "regular",
+              "corporate"
+            ],
+            "title": "Persona"
+          },
+          "scoring_mode": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "assisted",
+              "automatic"
+            ],
+            "title": "Scoring Mode"
+          },
+          "ready": {
+            "$ref": "#/components/schemas/Readiness"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "active_proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PointProposal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paused_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "setup",
+                  "between_rallies",
+                  "rally",
+                  "pending_decision",
+                  "paused",
+                  "finished"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused From"
+          },
+          "last_point_event_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Point Event Id"
+          },
+          "table_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "match_id",
+          "revision",
+          "status",
+          "players",
+          "config",
+          "score_by_player",
+          "first_server_id",
+          "server_id",
+          "winner_id",
+          "assignment_version",
+          "court_end_by_player",
+          "robot_side_by_player",
+          "calibration_id",
+          "active_rally_id",
+          "active_proposal_id",
+          "persona",
+          "scoring_mode",
+          "ready",
+          "updated_at"
+        ],
+        "title": "MatchSnapshot"
+      },
+      "MatchStartCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "match.start",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/EmptyPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type"
+        ],
+        "title": "MatchStartCommand"
+      },
+      "OperatorReadyPayload": {
+        "properties": {
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ready"
+        ],
+        "title": "OperatorReadyPayload"
+      },
+      "OperatorReadySetCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "operator.ready.set",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/OperatorReadyPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type",
+          "payload"
+        ],
+        "title": "OperatorReadySetCommand"
+      },
+      "PersonaSetCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "persona.set",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/PersonaSetPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type",
+          "payload"
+        ],
+        "title": "PersonaSetCommand"
+      },
+      "PersonaSetPayload": {
+        "properties": {
+          "persona": {
+            "type": "string",
+            "enum": [
+              "regular",
+              "corporate"
+            ],
+            "title": "Persona"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "persona"
+        ],
+        "title": "PersonaSetPayload"
+      },
+      "Player": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "p1",
+              "p2"
+            ],
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "role_label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Label"
+          },
+          "role_rank": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Rank"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "display_name"
+        ],
+        "title": "Player"
+      },
+      "PointAwardCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "point.award",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/PointAwardPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type",
+          "payload"
+        ],
+        "title": "PointAwardCommand"
+      },
+      "PointAwardPayload": {
+        "properties": {
+          "rally_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Rally Id"
+          },
+          "winner_id": {
+            "type": "string",
+            "enum": [
+              "p1",
+              "p2"
+            ],
+            "title": "Winner Id"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "missed_return",
+              "double_bounce",
+              "out_after_hit",
+              "service_fault",
+              "unknown"
+            ],
+            "title": "Reason",
+            "default": "unknown"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rally_id",
+          "winner_id"
+        ],
+        "title": "PointAwardPayload"
+      },
+      "PointConfirmCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "point.confirm",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/PointConfirmPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type",
+          "payload"
+        ],
+        "title": "PointConfirmCommand"
+      },
+      "PointConfirmPayload": {
+        "properties": {
+          "proposal_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Proposal Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "proposal_id"
+        ],
+        "title": "PointConfirmPayload"
+      },
+      "PointProposal": {
+        "properties": {
+          "proposal_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Proposal Id"
+          },
+          "rally_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Rally Id"
+          },
+          "winner_id": {
+            "type": "string",
+            "enum": [
+              "p1",
+              "p2"
+            ],
+            "title": "Winner Id"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "missed_return",
+              "double_bounce",
+              "out_after_hit",
+              "service_fault",
+              "unknown"
+            ],
+            "title": "Reason"
+          },
+          "calibration_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Calibration Id"
+          },
+          "assignment_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Assignment Version"
+          },
+          "capture_start_seq": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Capture Start Seq"
+          },
+          "capture_end_seq": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Capture End Seq"
+          },
+          "evidence_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Ref"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "proposal_id",
+          "rally_id",
+          "winner_id",
+          "confidence",
+          "reason",
+          "calibration_id",
+          "assignment_version",
+          "capture_start_seq",
+          "capture_end_seq"
+        ],
+        "title": "PointProposal"
+      },
+      "PointProposeCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "point.propose",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/PointProposal"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type",
+          "payload"
+        ],
+        "title": "PointProposeCommand"
+      },
+      "PointUndoCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "point.undo",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/PointUndoPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type",
+          "payload"
+        ],
+        "title": "PointUndoCommand"
+      },
+      "PointUndoPayload": {
+        "properties": {
+          "target_event_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Event Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target_event_id"
+        ],
+        "title": "PointUndoPayload"
+      },
+      "RallyArmCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "rally.arm",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/EmptyPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type"
+        ],
+        "title": "RallyArmCommand"
+      },
+      "RallyLetCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "rally.let",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/RallyLetPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type",
+          "payload"
+        ],
+        "title": "RallyLetCommand"
+      },
+      "RallyLetPayload": {
+        "properties": {
+          "rally_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Rally Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rally_id"
+        ],
+        "title": "RallyLetPayload"
+      },
+      "Readiness": {
+        "properties": {
+          "robot_ready": {
+            "type": "boolean",
+            "title": "Robot Ready",
+            "default": false
+          },
+          "camera_ready": {
+            "type": "boolean",
+            "title": "Camera Ready",
+            "default": false
+          },
+          "calibration_ready": {
+            "type": "boolean",
+            "title": "Calibration Ready",
+            "default": false
+          },
+          "operator_ready": {
+            "type": "boolean",
+            "title": "Operator Ready",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Readiness"
+      },
+      "ReadySetPayload": {
+        "properties": {
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ready"
+        ],
+        "title": "ReadySetPayload"
+      },
+      "ReasonPayload": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ReasonPayload"
+      },
+      "RobotCall": {
+        "properties": {
+          "call_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Call Id"
+          },
+          "table_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Table Id"
+          },
+          "named_waypoint_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Named Waypoint Id"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "requested",
+              "validating",
+              "moving",
+              "arrived",
+              "ready",
+              "failed",
+              "busy",
+              "cancel_requested",
+              "cancelled"
+            ],
+            "title": "State"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "match_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Id"
+          },
+          "native_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Native Task Id"
+          },
+          "simulated": {
+            "type": "boolean",
+            "title": "Simulated",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "call_id",
+          "table_id",
+          "named_waypoint_id",
+          "state",
+          "updated_at"
+        ],
+        "title": "RobotCall"
+      },
+      "RobotCallRequest": {
+        "properties": {
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "table_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Table Id"
+          },
+          "named_waypoint_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Named Waypoint Id"
+          },
+          "match_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "table_id",
+          "named_waypoint_id"
+        ],
+        "title": "RobotCallRequest"
+      },
+      "RobotCancelRequest": {
+        "properties": {
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id"
+        ],
+        "title": "RobotCancelRequest"
+      },
+      "RobotReadySetCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "robot.ready.set",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/ReadySetPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type",
+          "payload"
+        ],
+        "title": "RobotReadySetCommand"
+      },
+      "RobotSideByPlayer": {
+        "properties": {
+          "p1": {
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "title": "P1"
+          },
+          "p2": {
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "title": "P2"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "p1",
+          "p2"
+        ],
+        "title": "RobotSideByPlayer"
+      },
+      "RobotStatus": {
+        "properties": {
+          "call_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Id"
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "available",
+              "busy",
+              "offline",
+              "simulated"
+            ],
+            "title": "Availability"
+          },
+          "navigation_state": {
+            "type": "string",
+            "enum": [
+              "idle",
+              "validating",
+              "moving",
+              "arrived",
+              "failed",
+              "cancelling"
+            ],
+            "title": "Navigation State"
+          },
+          "pose_age_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pose Age Ms"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "simulated": {
+            "type": "boolean",
+            "title": "Simulated",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "availability",
+          "navigation_state",
+          "ready"
+        ],
+        "title": "RobotStatus"
+      },
+      "ScoreByPlayer": {
+        "properties": {
+          "p1": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "P1"
+          },
+          "p2": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "P2"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "p1",
+          "p2"
+        ],
+        "title": "ScoreByPlayer"
+      },
+      "SidesSetCommand": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "command_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Command Id"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "type": {
+            "type": "string",
+            "const": "sides.set",
+            "title": "Type"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/SidesSetPayload"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "type",
+          "payload"
+        ],
+        "title": "SidesSetCommand"
+      },
+      "SidesSetPayload": {
+        "properties": {
+          "court_end_by_player": {
+            "$ref": "#/components/schemas/CourtEndByPlayer"
+          },
+          "robot_side_by_player": {
+            "$ref": "#/components/schemas/RobotSideByPlayer"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "court_end_by_player",
+          "robot_side_by_player"
+        ],
+        "title": "SidesSetPayload"
+      }
+    }
+  }
+}
