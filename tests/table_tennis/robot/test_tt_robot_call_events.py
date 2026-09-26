@@ -115,6 +115,18 @@ def test_gesture_skipped_while_walking_stays_healthy(d, rt):
     assert gesture["skipped"] >= 1
 
 
+def test_a_call_that_fails_before_it_moves_still_tells_the_match(d, rt):
+    from table_tennis.robot.readiness import NavFacts
+
+    d.create(scoring_mode="manual")
+    rt.robot.navigator.facts = NavFacts(localization_running=False)
+    cid = _call(d)
+    assert rt.robot.get(cid).state == "failed"
+    assert rt.robot.tick() == []
+    ev = _events(rt, d.match_id)
+    assert [e.payload.reason for e in ev] == ["robot_call_failed"]
+
+
 def test_operator_unchanged_ready_is_still_noop(d, rt):
     d.create(scoring_mode="manual")
     d.ok("operator.ready.set", {"ready": False}, expected_revision=None)
