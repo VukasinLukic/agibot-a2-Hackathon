@@ -17,6 +17,9 @@
   nije `completed`. Undo briše samo red. Započet gest se ne vraća unazad.
   Tokom hoda i aktivne razmene gest se ne pušta. Po dolasku jedan `wave`.
   `handshake` nije hvatanje. `nod thanks` je zahvalnost na kraju meča.
+- `mission.py`: jedna misija. Provera pa tek onda walk hold i pose lease.
+  Globalni RUNNING nije napredak. Cleanup ne gasi motore niti vraća hod posle E-stop-a.
+- `cycle.py`: ceo sudijski ciklus i rezervni putevi (ručni dolazak, bez gesta, bez ekrana, lažni adapter).
 - `arrival.py`: dolazak nije prihvaćen RPC. `ready` traži isti `task_id` (ne 0),
   svežu pozu, toleranciju i zaustavljanje. Bez telemetrije poziv ostaje
   `arrived` / `need_operator_confirmation`.

@@ -100,6 +100,22 @@ navigator i dalje sam potvrdi dolazak, da mock demo stigne do `ready`.
 Pravi `PlanningNaviToGoal` se i dalje ne zove. Tolerancija u metrima čeka
 mentorov prostor.
 
+## Faza 5 u kodu
+
+`mission.py` ne uvozi `MissionRunner` i ne pokreće drugi. Hod se ne armi
+pre provere. Operater mora da potvrdi slobodnu rutu. Jedna misija drži
+sidecar poze. Napredak se veže za sačuvani `task_id`. Globalni `RUNNING`
+nije dolazak. Rok misije, stara poza i izostanak pomeraja zatvaraju zadatak
+i lease. Balans i motori se ne gase. Posle E-stop-a se hod ne vraća sam.
+
+## Faza 6 u kodu
+
+`cycle.py` je isti redosled za lažni i A2 adapter: poziv, potvrđen dolazak,
+spremnost operatera, pozdrav, meč, ekran, gest, govor, razmena, kraj,
+puštanje ekrana. Rezultat ostaje. Ako nema hoda, ostaje ručni dolazak. Ako
+nema gesta, ostaju ekran i govor. Ako nema ekrana, ostaju web skor i govor.
+Ako je robot offline, demo ide lažnim adapterom i to se vidi.
+
 ## Čeka termin sa mentorom
 
 Ne raditi ove stavke dok nema robota. Ne upisivati privremena imena kao prava.

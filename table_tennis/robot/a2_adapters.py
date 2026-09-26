@@ -24,6 +24,7 @@ from table_tennis.contracts.primitives import ROBOT_CALL_TERMINAL_STATES
 from table_tennis.core.ports import Clock, SystemClock
 
 from .gesture_output import GESTURE_HINTS, GestureJob, GestureSession, MotionCoordinator
+from .mission import MissionSession
 from .readiness import NavFacts, assess
 from .fake import FakeRobotNavigator
 from .score_display import ScoreboardSession
@@ -147,12 +148,14 @@ class A2RobotNavigator(_A2Base):
         clock: Optional[Clock] = None,
         facts: Optional[NavFacts] = None,
         coordinator: Optional[MotionCoordinator] = None,
+        mission: Optional[MissionSession] = None,
         **kw: Any,
     ):
         super().__init__(**kw)
         self.clock = clock or SystemClock()
         self.facts = facts or NavFacts()
         self.coordinator = coordinator
+        self.mission = mission
         self.calls: dict[str, RobotCall] = {}
         self._simulator = (
             FakeRobotNavigator(clock=self.clock, facts=self.facts) if self.dry_run else None
@@ -184,8 +187,23 @@ class A2RobotNavigator(_A2Base):
             )
             self.calls[call_id] = call
             return call
-        # REAL: operator route confirmation, then start ONE mission and remember
-        # the native task_id. Dry-run still does not drive the robot.
+        if self.mission is not None:
+            started = self.mission.begin(self.facts)
+            if started != "started":
+                call = RobotCall(
+                    call_id=call_id,
+                    table_id=request.table_id,
+                    named_waypoint_id=request.named_waypoint_id,
+                    state="busy" if started == "robot_busy" else "failed",
+                    updated_at=self.clock.now(),
+                    reason=started,
+                    match_id=request.match_id,
+                    simulated=self.dry_run,
+                )
+                self.calls[call_id] = call
+                return call
+        # REAL: one existing mission after the route is confirmed. Dry-run still
+        # does not drive the robot. An accepted RPC is not arrival.
         reply = self._send("nav.request", {"table_id": request.table_id, "waypoint": request.named_waypoint_id})
         # An accepted RPC is not arrival. task_id 0 does not identify a mission.
         task_id = _native_task_id(reply)
