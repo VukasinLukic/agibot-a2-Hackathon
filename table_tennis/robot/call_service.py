@@ -50,8 +50,15 @@ class RobotCallService:
     def startup(self) -> int:
         """Unfinished calls from a previous process: outcome unknown -> failed."""
         n = 0
+        abandon = getattr(self.navigator, "abandon", None)
         for row in self.store.robot_calls_active():
             call = RobotCall.model_validate_json(row["json"])
+            # The robot may still be walking this goal. Stop it; never resume it.
+            if abandon is not None:
+                try:
+                    abandon(call)
+                except Exception:
+                    log.exception("could not cancel the task of unfinished call %s", call.call_id)
             call = call.model_copy(
                 update={
                     "state": "failed",
@@ -135,6 +142,24 @@ class RobotCallService:
             self._persist(call, row["command_id"], row["payload_hash"])
             return call
 
+    def confirm_arrival(self, call_id: str, actor: str) -> RobotCall:
+        """Operator saw the robot stop at the spot, when the robot could not prove it."""
+        if actor != "operator":
+            raise ForbiddenError("forbidden_actor", f"actor {actor!r} may not confirm robot arrival")
+        with self._lock:
+            row = self.store.robot_call(call_id)
+            if row is None:
+                raise NotFoundError("call_not_found", f"robot call {call_id} does not exist")
+            confirm = getattr(self.navigator, "confirm_arrival", None)
+            if confirm is None or self.navigator.get_call(call_id) is None:
+                return self.get(call_id)
+            before = self.navigator.get_call(call_id)
+            call = confirm(call_id, actor)
+            self._persist(call, row["command_id"], row["payload_hash"])
+        if call.match_id and before is not None and before.state != "ready" and call.state == "ready":
+            self._report_to_match(call)
+        return call
+
     def cancel(self, call_id: str, command_id: str, actor: str) -> RobotCall:
         if actor != "operator":
             raise ForbiddenError("forbidden_actor", f"actor {actor!r} may not cancel robot calls")
@@ -176,6 +201,10 @@ class RobotCallService:
         """
         ready = call.state == "ready"
         reason = {"ready": "robot_arrived", "failed": "robot_call_failed", "cancelled": "robot_call_cancelled"}[call.state]
+        actor = "robot"
+        if call.reason == "operator_confirmed_arrival":
+            # The robot did not prove arrival; the operator did.
+            reason, actor = "manual_arrival", "operator"
         cmd = RobotReadySetCommand(
             command_id=str(uuid.uuid5(_READY_NS, f"{call.call_id}:{call.state}")),
             expected_revision=None,
@@ -183,7 +212,7 @@ class RobotCallService:
             payload={"ready": ready, "reason": reason},
         )
         try:
-            self.referee.handle(call.match_id, cmd, actor="robot")
+            self.referee.handle(call.match_id, cmd, actor=actor)
         except RefereeError as exc:
             log.warning("could not report robot call %s to match %s: %s", call.state, call.match_id, exc)
 

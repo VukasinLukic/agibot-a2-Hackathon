@@ -12,8 +12,14 @@
 - `a2_adapters.py`: ekran i gest i dalje imaju `REAL:` oznake. Navigacija u
   pravom režimu čita `nav.facts` / `nav.points`, šalje `nav.request` tek posle
   potvrde rute i sa `target_id` sa mape, a `tick` preko `nav.status` vodi poziv
-  do `ready` ili `cancelled`. `dry_run=False` i dalje odbija rad bez transporta.
-  Lažni navigator se ne menja.
+  do `ready` ili `cancelled`. `cancelled` tek kad robot javi da je zadatak stao
+  (bez `task_id` samo eksplicitno `global_running: false`). E-stop i restart
+  servera šalju `nav.cancel` za zapamćen zadatak i ne vraćaju hod. Bez pune
+  telemetrije operater zatvara poziv kroz `RobotCallService.confirm_arrival`
+  (meč dobija `manual_arrival`); HTTP ruta za to još nije registrovana. `dry_run=False` i dalje odbija rad bez transporta.
+- `tests/table_tennis/robot/test_real_flow.py`: lažni A2 koji odgovara kao robot
+  (`PncServiceState_*`, `task_id` 0, E-stop usred hoda). Tu se hvataju greške
+  u logici kad robot nije kod nas.
 - `gesture_output.py`: jedan kratak gest između poena. `winner_id` ide kroz
   `robot_side_by_player` tek pri reprodukciji, pa zamena strana važi. `accepted`
   nije `completed`. Undo briše samo red. Započet gest se ne vraća unazad.

@@ -119,7 +119,10 @@ class MissionSession:
         # None == None must not count as our task.
         if obs.global_running and (not self.task_id or obs.task_id != self.task_id):
             return MissionVerdict("moving", "global_running_ignored")
-        if obs.progress_mark != self.last_progress_mark:
+        # No progress mark means no progress telemetry; the mission timeout still applies.
+        if obs.progress_mark is None:
+            pass
+        elif obs.progress_mark != self.last_progress_mark:
             self.last_progress_mark = obs.progress_mark
             self.last_progress_at = obs.now_s
         elif self.last_progress_at is not None and obs.now_s - self.last_progress_at > self.progress_timeout_s:

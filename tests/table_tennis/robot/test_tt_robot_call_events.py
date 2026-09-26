@@ -57,6 +57,36 @@ def test_repeated_tick_does_not_duplicate_report(d, rt):
     assert len(_events(rt, d.match_id)) == 1
 
 
+def test_operator_confirms_arrival_when_telemetry_is_missing(d, rt):
+    from table_tennis.robot.arrival import ArrivalFacts
+
+    rt.robot.navigator.arrival = ArrivalFacts()
+    d.create(scoring_mode="manual")
+    cid = _call(d)
+    parked = d.wait_robot(cid, {"arrived"})
+    assert parked["reason"] == "goal accepted; arrival not confirmed"
+    rt.robot.tick()
+    assert rt.robot.get(cid).reason == "need_operator_confirmation"
+    done = rt.robot.confirm_arrival(cid, "operator")
+    assert done.state == "ready"
+    ev = _events(rt, d.match_id)
+    assert [e.payload.reason for e in ev] == ["manual_arrival"]
+    assert d.snapshot()["ready"]["robot_ready"] is True
+    # The call is finished, so a second call is not blocked as busy.
+    assert rt.robot._active_call() is None
+
+
+def test_restart_asks_the_navigator_to_stop_the_unfinished_call(d, rt):
+    d.create(scoring_mode="manual")
+    cid = _call(d)
+    stopped: list[str] = []
+    rt.robot.navigator.abandon = lambda call: stopped.append(call.call_id)
+    assert rt.robot.startup() == 1
+    assert stopped == [cid]
+    assert rt.robot.store.robot_call(cid) is not None
+    assert rt.robot._active_call() is None
+
+
 def test_operator_unchanged_ready_is_still_noop(d, rt):
     d.create(scoring_mode="manual")
     d.ok("operator.ready.set", {"ready": False}, expected_revision=None)
