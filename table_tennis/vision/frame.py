@@ -1,8 +1,7 @@
 """One captured image and the clock that belongs to it.
 
-The A2 interactive camera delivers the latest decoded picture without a frame
-number. Callers that read it twice can see the same pixels. A Frame is only
-created for a new sample, and its sequence is counted in this process.
+A raw fisheye read can return the same picture twice. A Frame is only created
+for a new sample, and its sequence is counted in this process.
 """
 
 from __future__ import annotations
@@ -12,7 +11,8 @@ from typing import Any
 
 ORIGIN_FILE = "file"
 ORIGIN_A2_H264 = "a2_h264"
-ORIGINS = frozenset({ORIGIN_FILE, ORIGIN_A2_H264})
+ORIGIN_A2_FISHEYE = "a2_fisheye"
+ORIGINS = frozenset({ORIGIN_FILE, ORIGIN_A2_H264, ORIGIN_A2_FISHEYE})
 
 
 @dataclass(frozen=True, slots=True)

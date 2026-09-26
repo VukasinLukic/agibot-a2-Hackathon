@@ -16,8 +16,8 @@ from table_tennis.vision.config import VisionConfig
 class ExampleConfigTests(unittest.TestCase):
     def test_example_leaves_ball_color_unset(self) -> None:
         config = load_example_config()
-        self.assertEqual(config.camera_id, "a2-interactive-main")
-        self.assertEqual(config.origin, "a2_h264")
+        self.assertEqual(config.camera_id, "CHEST_LEFT_FISHEYE")
+        self.assertEqual(config.origin, "a2_fisheye")
         self.assertFalse(config.ball.configured)
         self.assertIsNone(config.ball.hsv_lower)
         self.assertIsNone(config.ball.hsv_upper)

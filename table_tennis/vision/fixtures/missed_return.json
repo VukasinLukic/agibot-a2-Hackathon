@@ -1,0 +1,15 @@
+{
+  "note": "confidence is not a calibrated probability. Vision does not choose the server and does not write the score.",
+  "proposals": [
+    {
+      "winner_id": "p1",
+      "confidence": 0.8,
+      "reason": "missed_return",
+      "capture_start_seq": 10,
+      "capture_end_seq": 40,
+      "rally_id": "from_context",
+      "calibration_id": "from_context",
+      "assignment_version": "from_context"
+    }
+  ]
+}

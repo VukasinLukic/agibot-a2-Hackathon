@@ -26,6 +26,7 @@ MAX_FRAME_BYTES = 1920 * 1536 * 3
 class CaptureStats:
     frames_emitted: int = 0
     frames_dropped: int = 0
+    duplicate_frames: int = 0
 
 
 class FileCapture:

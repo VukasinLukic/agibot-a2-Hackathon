@@ -23,7 +23,7 @@ from table_tennis.contracts import MatchSnapshot, RobotCall, RobotCallRequest, R
 from table_tennis.core.ports import Clock, SystemClock
 
 from .readiness import NavFacts, assess
-from .scoreboard import scoreboard_lines
+from .score_display import ScoreboardSession
 
 log = logging.getLogger("table_tennis.robot.a2")
 
@@ -66,22 +66,28 @@ class A2ScoreDisplay(_A2Base):
 
     def __init__(self, **kw: Any):
         super().__init__(**kw)
-        self._watermark: dict[str, int] = {}
+        self.session = ScoreboardSession(self._playback)
+
+    def _playback(self, frame) -> None:
+        # REAL: persistent scoreboard in robot_services.screen_manip.emoticon_screen,
+        # slot emoticon_ct_message. Not the flash API, which restores the default face.
+        self._send(
+            "screen.show",
+            {
+                "slot": frame.slot_id,
+                "primary": frame.primary,
+                "secondary": frame.secondary,
+                "revision": frame.revision,
+            },
+        )
 
     def render(self, snapshot: MatchSnapshot) -> None:
-        if snapshot.revision < self._watermark.get(snapshot.match_id, -1):
-            return
-        self._watermark[snapshot.match_id] = snapshot.revision
-        top, bottom = scoreboard_lines(snapshot)
-        # REAL: persistent scoreboard mode (not the flash API that restores the
-        # default face). Reuse sanitize/render/SSH multiplexing from
-        # robot_services.screen_manip.emoticon_screen with a single latest-state
-        # worker and a revision check right before playback.
-        self._send("screen.show", {"primary": top, "secondary": bottom, "revision": snapshot.revision})
+        self.session.render(snapshot)
 
     def close(self) -> None:
         # REAL: restore the default face only on explicit release.
-        self._send("screen.release", {})
+        if self.session.release():
+            self._send("screen.release", {"slot": self.session.slot_id})
 
 
 class A2GestureOutput(_A2Base):
