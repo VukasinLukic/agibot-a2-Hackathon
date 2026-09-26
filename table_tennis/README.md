@@ -52,8 +52,8 @@ pip install -r table_tennis\requirements-vision.txt
 python -m pytest tests/table_tennis -q
 ```
 
-`requirements-dev.txt` je dovoljan za core/API/robot/persona testove; tri vision test
-modula se bez NumPy automatski preskaču. Za stvarnu proveru vision algoritama instaliraj
+`requirements-dev.txt` je dovoljan za core/API/robot/persona testove; vision test
+moduli koji računaju sliku se bez NumPy automatski preskaču. Za stvarnu proveru vision algoritama instaliraj
 NumPy/OpenCV iz `requirements-vision.txt`.
 
 API dokumentacija dok backend radi: http://127.0.0.1:8099/docs
@@ -74,7 +74,7 @@ ponavlja stare govore i gestove (pending -> `skipped_restart`, u toku ->
 | `storage/` | osoba 2 | `sqlite_store.py`: komanda + događaji + snapshot + outbox u jednoj transakciji |
 | `api/` | osoba 2 | router `/api/table-tennis`, SSE, auth, standalone app, Supervisor hook |
 | `sim/` | osoba 2 | scenariji, drajveri (in-process/HTTP), CLI, fixtures |
-| `vision/` | osoba 1 | kadar, kalibracija, tracker, `MatchVisionProducer`; `stub.py` ostaje fixture put |
+| `vision/` | osoba 1 | kadar, kalibracija, tracker (HSV, BlurBall ili BallNet), odskok, `MatchVisionProducer`, `live` klijent; `stub.py` ostaje fixture put |
 | `sound/` | osoba 1 | wav, vrhovi, kadar, podloga, sirovi blok, jedan `missed_return` samo uz slaganje sa slikom |
 | `robot/` | osoba 3 | `fake.py`, `call_service.py`, `scoreboard.py`, `a2_adapters.py` (dry-run scaffold) |
 | `persona/` | osoba 4 | `templates.py`, `commentator.py`, `speech.py` |

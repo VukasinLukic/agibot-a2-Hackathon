@@ -77,11 +77,19 @@ class SequenceTests(unittest.TestCase):
         fixture = json.loads(
             (REPO_ROOT / "table_tennis" / "vision" / "fixtures" / "missed_return.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(set(proposal), set(fixture["proposals"][0]))
+        self.assertEqual(set(proposal) - {"last_contact_ns"}, set(fixture["proposals"][0]))
+        self.assertEqual(proposal["last_contact_ns"], SECOND_NS)
         self.assertEqual(proposal["reason"], "missed_return")
         self.assertEqual(proposal["winner_id"], "p1")
         self.assertEqual(proposal["winner_id"], _other_player(ends, "end_b"))
         self.assertEqual(proposal["capture_start_seq"], 10)
+        later = _sights() + [
+            _Sight(10_000_000, "observed", 1, END_A_MM),
+            _Sight(150_000_000, "observed", 15, END_A_MM),
+        ]
+        named = missed_return_proposal(_contacts(), later, ends, quiet_until_ns=QUIET_NS, period_ns=PERIOD_NS)
+        assert named is not None
+        self.assertEqual(named["capture_start_seq"], 15)
         self.assertEqual(proposal["capture_end_seq"], 30)
         swapped = _Ends("end_b", "end_a")
         other = missed_return_proposal(
@@ -159,6 +167,16 @@ class SequenceTests(unittest.TestCase):
         assert proposal is not None
         self.assertEqual(proposal["winner_id"], "p1")
         self.assertGreaterEqual(calls["n"], 3)
+
+    def test_import_does_not_pull_the_camera(self) -> None:
+        import subprocess
+
+        code = (
+            "import sys, table_tennis.sound.sequence; "
+            "assert 'table_tennis.vision.a2' not in sys.modules; "
+            "assert 'table_tennis.vision.capture' not in sys.modules"
+        )
+        subprocess.run([sys.executable, "-c", code], cwd=REPO_ROOT, check=True)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 A proposal needs a racket, then two table contacts on the far half, then
 silence longer than 1.5 s. The ball must also have been observed on the near
-half before that first bounce. Predicted positions do not count. The winner
+half before that first bounce; the latest such sight is the start. Predicted positions do not count. The winner
 is the player who is not standing on the receiving end, the same split as
 ``vision/events.py``. ``service_fault`` is not returned from here.
 """
@@ -12,11 +12,10 @@ from __future__ import annotations
 from typing import Sequence
 
 from table_tennis.sound.sync import nearest_frame
-from table_tennis.vision.calibration import TABLE_LENGTH_MM
+from table_tennis.vision.table import table_half
 
 _KINDS = frozenset({"table", "racket", "floor", "abstain"})
 _SILENCE_NS = 1_500_000_000
-_NET_BAND = 0.08
 _CONFIDENCE = 0.8
 
 
@@ -57,6 +56,7 @@ def missed_return_proposal(
         "rally_id": "from_context",
         "calibration_id": "from_context",
         "assignment_version": "from_context",
+        "last_contact_ns": ordered[-1][0],
     }
 
 
@@ -113,7 +113,7 @@ def _approach(
         frame_seq = getattr(sight, "frame_seq", None)
         if half is None or half == receiver_half or type(frame_seq) is not int or isinstance(frame_seq, bool):
             continue
-        if best_stamp is None or stamp < best_stamp:
+        if best_stamp is None or stamp > best_stamp:
             best = (half, frame_seq)
             best_stamp = stamp
     return best
@@ -144,15 +144,7 @@ def _plane_y(sight: object, calibration: object | None) -> float | None:
 
 
 def _half(y_mm: float | None) -> str | None:
-    if y_mm is None:
-        return None
-    middle = TABLE_LENGTH_MM / 2.0
-    band = TABLE_LENGTH_MM * _NET_BAND
-    if y_mm < middle - band:
-        return "end_a"
-    if y_mm > middle + band:
-        return "end_b"
-    return None
+    return table_half(y_mm)
 
 
 def _other_player(ends: object, receiver_end: str) -> str:

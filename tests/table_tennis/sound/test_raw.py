@@ -10,10 +10,8 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from table_tennis.sound.clip import SAMPLE_RATE_HZ
+from table_tennis.sound.clip import SAMPLE_RATE_HZ, sample_offset_ns
 from table_tennis.sound.raw import RawBlock, clip_from_raw_blocks
-
-_NS = 1_000_000_000 // SAMPLE_RATE_HZ
 
 
 def _block(start_ns: int, count: int, level: int, *, before_aec: bool = True, rate: int = SAMPLE_RATE_HZ) -> RawBlock:
@@ -28,7 +26,7 @@ def _block(start_ns: int, count: int, level: int, *, before_aec: bool = True, ra
 class RawBlockTests(unittest.TestCase):
     def test_contiguous_blocks_keep_the_first_clock(self) -> None:
         first = _block(1_000, 10, 1000)
-        second = _block(1_000 + 10 * _NS, 5, 2000)
+        second = _block(1_000 + sample_offset_ns(10), 5, 2000)
         clip = clip_from_raw_blocks((first, second))
         self.assertEqual(clip.start_monotonic_ns, 1_000)
         self.assertEqual(clip.sample_rate_hz, SAMPLE_RATE_HZ)
@@ -45,7 +43,7 @@ class RawBlockTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             clip_from_raw_blocks((wrong_rate,))
         first = _block(0, 10, 1000)
-        gapped = _block(10 * _NS + 1, 4, 1000)
+        gapped = _block(sample_offset_ns(10) + 1, 4, 1000)
         with self.assertRaises(ValueError):
             clip_from_raw_blocks((first, gapped))
 

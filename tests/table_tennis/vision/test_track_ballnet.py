@@ -293,6 +293,38 @@ class PipelineTests(unittest.TestCase):
             kinds.add(tracker.update(Frame(t, t * 33_333_333, 1280, 720, image, "file-cam", ORIGIN_FILE)).observation_kind)
         self.assertEqual(kinds, {"missing"})
 
+    def test_a_short_gap_stays_predicted_until_missing_frames(self) -> None:
+        from table_tennis.vision.image import BgrImage
+        from table_tennis.vision.mht import TrackHit
+        from table_tennis.vision.track import BallTracker
+
+        tracker = BallTracker(_config(), ballnet=_Constant(0.9))
+        tracker._missing_limit = 3
+        hits = [
+            None,
+            TrackHit("observed", 10.0, 20.0, 1, 1.0, 0.9),
+            None,
+            TrackHit("predicted", 12.0, 22.0, 1, None, 0.9),
+            None,
+            TrackHit("predicted", 14.0, 24.0, 1, None, 0.9),
+        ]
+
+        class _Steps:
+            def __init__(self) -> None:
+                self._hits = iter(hits)
+
+            def step(self, frame: object) -> object:
+                del frame
+                return next(self._hits)
+
+        tracker._learned = _Steps()  # type: ignore[assignment]
+        image = BgrImage(8, 6)
+        kinds = [
+            tracker.update(Frame(index, index * 1_000_000, 8, 6, image, "file-cam", ORIGIN_FILE)).observation_kind
+            for index in range(len(hits))
+        ]
+        self.assertEqual(kinds, ["missing", "observed", "predicted", "predicted", "missing", "missing"])
+
     def test_configured_weights_load_and_blurball_is_exclusive(self) -> None:
         import numpy as np
 

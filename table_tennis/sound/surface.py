@@ -39,16 +39,23 @@ def classify_contact(clip: AudioClip, time_ns: int, min_rms: float) -> str:
 
 
 def _nearest_index(clip: AudioClip, time_ns: int) -> int:
-    if not clip.frames:
+    count = len(clip.frames)
+    if count == 0:
         raise ValueError("clip must contain at least one frame")
-    best = 0
-    best_distance = abs(clip.sample_time_ns(0) - time_ns)
-    for index in range(1, len(clip.frames)):
-        distance = abs(clip.sample_time_ns(index) - time_ns)
-        if distance < best_distance:
-            best = index
-            best_distance = distance
-    return best
+    low = 0
+    high = count - 1
+    while low < high:
+        mid = (low + high) // 2
+        if clip.sample_time_ns(mid) < time_ns:
+            low = mid + 1
+        else:
+            high = mid
+    if low == 0:
+        return 0
+    previous = low - 1
+    if abs(clip.sample_time_ns(previous) - time_ns) <= abs(clip.sample_time_ns(low) - time_ns):
+        return previous
+    return low
 
 
 def _measures(clip: AudioClip, index: int) -> tuple[float, float, float]:

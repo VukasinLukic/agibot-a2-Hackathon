@@ -10,9 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence
 
-from table_tennis.sound.clip import SAMPLE_RATE_HZ, AudioClip, _validate
-
-_NS_PER_SAMPLE = 1_000_000_000 // SAMPLE_RATE_HZ
+from table_tennis.sound.clip import SAMPLE_RATE_HZ, AudioClip, sample_offset_ns, validate_clip
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,7 +42,7 @@ def clip_from_raw_blocks(blocks: Sequence[RawBlock]) -> AudioClip:
         if expected is not None and block.start_monotonic_ns != expected:
             raise ValueError("raw blocks must meet with no gap and no overlap")
         frames.extend(block.frames)
-        expected = block.start_monotonic_ns + len(block.frames) * _NS_PER_SAMPLE
+        expected = block.start_monotonic_ns + sample_offset_ns(len(block.frames), block.sample_rate_hz)
     if channels is None or start_ns is None:
         raise ValueError("at least one raw block is required")
     clip = AudioClip(
@@ -53,7 +51,7 @@ def clip_from_raw_blocks(blocks: Sequence[RawBlock]) -> AudioClip:
         start_monotonic_ns=start_ns,
         frames=tuple(frames),
     )
-    _validate(clip)
+    validate_clip(clip)
     return clip
 
 

@@ -20,6 +20,7 @@ from table_tennis.vision.calibration import (
     TABLE_WIDTH_MM,
     CalibrationGate,
     mark_ends,
+    read_calibration,
     write_calibration,
     write_marked_ppm,
 )
@@ -137,6 +138,10 @@ class CalibrationTests(unittest.TestCase):
             payload = json.loads((folder / "calibration.json").read_text(encoding="utf-8"))
             self.assertEqual(payload["ends"], {"end_a": [0, 1], "end_b": [2, 3]})
             self.assertTrue((folder / "ends.ppm").read_bytes().startswith(b"P6\n"))
+            loaded = read_calibration(folder / "calibration.json")
+            self.assertEqual(loaded.calibration_id, calibration.calibration_id)
+            self.assertEqual(loaded.corners_px, calibration.corners_px)
+            self.assertEqual(loaded.homography, calibration.homography)
 
 
 if __name__ == "__main__":

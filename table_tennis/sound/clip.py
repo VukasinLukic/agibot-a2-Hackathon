@@ -30,7 +30,7 @@ class AudioClip:
     def sample_time_ns(self, index: int) -> int:
         if type(index) is not int or isinstance(index, bool) or index < 0 or index >= len(self.frames):
             raise ValueError("sample index is outside the clip")
-        return self.start_monotonic_ns + index * (_NS_PER_SECOND // self.sample_rate_hz)
+        return self.start_monotonic_ns + sample_offset_ns(index, self.sample_rate_hz)
 
     def times_increase(self) -> bool:
         if len(self.frames) < 2:
@@ -42,6 +42,20 @@ class AudioClip:
                 return False
             previous = current
         return True
+
+
+def sample_offset_ns(index: int, sample_rate_hz: int = SAMPLE_RATE_HZ) -> int:
+    """Nanoseconds from the first sample to sample ``index``. Truncates less than one nanosecond."""
+    if type(index) is not int or isinstance(index, bool) or index < 0:
+        raise ValueError("sample index must be a non-negative int")
+    if type(sample_rate_hz) is not int or isinstance(sample_rate_hz, bool) or sample_rate_hz <= 0:
+        raise ValueError("sample_rate_hz must be a positive int")
+    return (index * _NS_PER_SECOND) // sample_rate_hz
+
+
+def validate_clip(clip: AudioClip) -> None:
+    """Refuse a clip that is not 16-bit PCM at the bounce sample rate."""
+    _validate(clip)
 
 
 def write_clip(path: Path | str, clip: AudioClip) -> None:
