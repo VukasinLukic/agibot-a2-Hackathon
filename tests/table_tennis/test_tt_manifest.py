@@ -18,7 +18,7 @@ def _make_db(tmp_path) -> Path:
 
 def test_manifest_with_db(tmp_path):
     db = _make_db(tmp_path)
-    m = manifest.build_manifest(db_path=str(db), env={}, check_generated=False)
+    m = manifest.build_manifest(db_path=str(db), env={"TT_AUTH_MODE": "local"}, check_generated=False)
     assert m["mode"] == "mock" and m["simulated"] is True
     assert m["auth_mode"] == "local"
     assert m["automatic_scoring_enabled"] is False
