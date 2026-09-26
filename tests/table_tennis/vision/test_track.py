@@ -47,8 +47,20 @@ def _paint(width: int, height: int, squares: list[tuple[int, int, int, tuple[int
 
 class TrackTests(unittest.TestCase):
     def test_import_does_not_pull_a_model(self) -> None:
+        import ast
+
+        import table_tennis.vision.track as track
+
+        tree = ast.parse(Path(track.__file__).read_text(encoding="utf-8"))
+        for node in tree.body:
+            if isinstance(node, ast.Import):
+                names = [alias.name.split(".")[0] for alias in node.names]
+                self.assertNotIn("cv2", names)
+                self.assertNotIn("ultralytics", names)
+                self.assertNotIn("rclpy", names)
+            if isinstance(node, ast.ImportFrom):
+                self.assertNotIn(node.module, {"cv2", "ultralytics", "rclpy"})
         self.assertNotIn("ultralytics", sys.modules)
-        self.assertNotIn("cv2", sys.modules)
         self.assertNotIn("rclpy", sys.modules)
 
     def test_refuses_an_unset_ball_color(self) -> None:
@@ -123,6 +135,26 @@ class TrackTests(unittest.TestCase):
         self.assertEqual(rows[3]["observation_kind"], "predicted")
         self.assertEqual(rows[4]["x_px"], "")
         self.assertEqual(rows[3]["proves_bounce"], "False")
+
+    def test_numpy_frame_uses_the_same_tracker(self) -> None:
+        import numpy as np
+
+        first = _paint(80, 60, [(10, 20, 6, WHITE)])
+        second = _paint(80, 60, [(18, 20, 6, WHITE)])
+        array = np.frombuffer(bytes(second.data), dtype=np.uint8).reshape(second.height, second.width, 3).copy()
+        tracker = BallTracker(_config())
+        tracker.update(_frame(0, first))
+        sample = tracker.update(Frame(1, 50_000_000, array.shape[1], array.shape[0], array, "file-cam", ORIGIN_FILE))
+        self.assertEqual(sample.observation_kind, "observed")
+        observation = sample.as_observation()
+        self.assertEqual(observation["observation_kind"], "observed")
+        self.assertFalse(sample.proves_bounce)
+
+    def test_live_search_requires_the_table(self) -> None:
+        from table_tennis.vision.events import MatchVisionProducer
+
+        with self.assertRaises(ValueError):
+            MatchVisionProducer([], BallTracker(_config()), object())
 
 
 if __name__ == "__main__":

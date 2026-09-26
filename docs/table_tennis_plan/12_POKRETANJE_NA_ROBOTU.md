@@ -134,9 +134,10 @@ Persona i ime: `robot_name: TitanSudija` u lokalnom `livekit_config/prompt_confi
    ```
 2. **Provera feature-a:**
    ```bash
-   curl -s http://127.0.0.1:8070/api/table-tennis/health -H "Authorization: Bearer $TT_OPERATOR_TOKEN"
+   curl -s "http://127.0.0.1:8070/api/table-tennis/health?match_id=<id>" -H "Authorization: Bearer $TT_OPERATOR_TOKEN"
    ```
-   Treba `mode: real` i status adaptera (ekran, gest, govor, navigacija, vision).
+   Treba `mode: real` i status adaptera (ekran, gest, govor, navigacija, vision). Vision `available` ovde
+   znači samo da je za taj meč primljen `camera_ready`/kalibracija; ne zamenjuje fizički pregled kamere.
 3. **Govor spreman:** u Supervisor UI pokrenuti speech servise (`livekit`, `voice-agent`, `audio-bridge`) ili
    `POST /api/services/start-speech`. Test: `POST /api/conversation/command` sa `{"text":"TitanSudija je spreman."}`.
 4. **Isključiti auto-razgovor na osobe** (igrači su stalno u kadru):

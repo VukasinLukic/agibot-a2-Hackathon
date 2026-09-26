@@ -62,10 +62,59 @@ pusti samo najnoviju reviziju; starija čekanja se odbace pre reprodukcije.
 Duplikat se ne pušta ponovo. Undo briše nepuštene kadrove. Novi meč
 (`status=setup`) resetuje lokalni watermark. Upis kadra (`accepted`) i
 prikaz (`shown`) su odvojeni. Podrazumevano lice se vraća samo na `release`.
-Drugi worker na isti slot se odbija.
+Drugi pravi worker na isti slot se odbija. `FakeScoreDisplay` namerno ne zauzima
+globalni fizički slot, jer ne dira hardver i testovi mogu imati više runtime-a.
+
+`A2RobotNavigator` u mock/dry-run režimu koristi isti simulator kao fake navigator:
+preflight može odbiti poziv, a spreman poziv ide kroz `requested -> ready` uz
+`simulated: true`. To samo proverava lifecycle; nije dokaz da je A2 transport povezan.
 
 Fizička provera da li se skor vidi sa stola, i ko u sali drži taj slot dok
 agent pali sat ili kviz, i dalje čekaju termin. Ovaj kod ne zove ekran robota.
+
+## Faza 3 u kodu
+
+Gest se kači na backendov `point.confirmed` i `match.finished`. Strana dolazi
+iz snapshot-a (`robot_side_by_player`), istog polja koje operator potvrdi u
+meču. Persona i dalje izgovara poen. Vizija ne pokreće gest.
+
+Jedan worker pusti samo najnoviji nepušteni gest. Stariji se odbace. Isti
+`event_id` se ne ponavlja. Gest stariji od 20 s se ne pušta. Undo briše red.
+Započet pokret se ne poništava suprotnim. Dok je poziv u hodu, ili je razmena
+aktivna, gest se ne pušta. Kad poziv stigne u `ready`, jednom se maše (`wave`).
+Kraj meča je `nod thanks`. `handshake` se ne šalje.
+
+Imena u kodu nisu id-jevi firmware-a. Da li se `wave`, `point left`,
+`point right` i `nod thanks` i dalje razrešavaju na robotu, ostaje za termin.
+
+## Faza 4 u kodu
+
+Poziv i dalje ide kroz postojeći `call_service.py`: lista waypointa, isti
+`command_id`, jedan aktivan poziv, petlja na serveru. Prihvaćen `nav.request`
+nije dolazak. `ready` dolazi tek kad se poklope id zadatka, sveža poza,
+tolerancija i zaustavljanje (`arrival.py`). `task_id=0` se ne pamti i ne šalje
+kao otkaz. Ako telemetrije nema, poziv ostaje `arrived` sa razlogom
+`need_operator_confirmation`. Operater tada ručno označi dolazak. Lažni
+navigator i dalje sam potvrdi dolazak, da mock demo stigne do `ready`.
+
+Pravi `PlanningNaviToGoal` se i dalje ne zove. Tolerancija u metrima čeka
+mentorov prostor.
+
+## Faza 5 u kodu
+
+`mission.py` ne uvozi `MissionRunner` i ne pokreće drugi. Hod se ne armi
+pre provere. Operater mora da potvrdi slobodnu rutu. Jedna misija drži
+sidecar poze. Napredak se veže za sačuvani `task_id`. Globalni `RUNNING`
+nije dolazak. Rok misije, stara poza i izostanak pomeraja zatvaraju zadatak
+i lease. Balans i motori se ne gase. Posle E-stop-a se hod ne vraća sam.
+
+## Faza 6 u kodu
+
+`cycle.py` je isti redosled za lažni i A2 adapter: poziv, potvrđen dolazak,
+spremnost operatera, pozdrav, meč, ekran, gest, govor, razmena, kraj,
+puštanje ekrana. Rezultat ostaje. Ako nema hoda, ostaje ručni dolazak. Ako
+nema gesta, ostaju ekran i govor. Ako nema ekrana, ostaju web skor i govor.
+Ako je robot offline, demo ide lažnim adapterom i to se vidi.
 
 ## Čeka termin sa mentorom
 

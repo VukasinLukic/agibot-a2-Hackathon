@@ -23,6 +23,7 @@ from table_tennis.persona.speech import FakeSpeechOutput, LiveKitSpeechOutput
 from table_tennis.robot.a2_adapters import A2GestureOutput, A2RobotNavigator, A2ScoreDisplay, RealTransportMissing
 from table_tennis.robot.call_service import RobotCallService, TickerThread
 from table_tennis.robot.fake import FakeGestureOutput, FakeRobotNavigator, FakeScoreDisplay
+from table_tennis.robot.gesture_output import MotionCoordinator
 from table_tennis.storage.sqlite_store import SqliteEventStore
 
 log = logging.getLogger("table_tennis.runtime")
@@ -65,10 +66,11 @@ class Runtime:
 
     def stop(self) -> None:
         with self._lock:
-            if not self.started:
-                return
             if self.ticker:
                 self.ticker.stop()
+                self.ticker = None
+            # Adapters are acquired while building the runtime, before
+            # start(). Always release them, even if startup never happened.
             self.dispatcher.shutdown()
             self.store.close()
             self.started = False
@@ -91,6 +93,8 @@ def build_adapters(settings: Settings, fake_log: FakeOutputLog, clock: Clock) ->
             )
     dry_run = not real
     info: dict[str, dict] = {}
+    # One body: the navigator tells the gesture session when the robot is walking.
+    motion = MotionCoordinator()
     try:
         if a.display == "fake":
             display: Any = FakeScoreDisplay(fake_log)
@@ -99,9 +103,9 @@ def build_adapters(settings: Settings, fake_log: FakeOutputLog, clock: Clock) ->
         info["screen"] = {"adapter": a.display, "dry_run": a.display != "fake" and dry_run, "simulated": not real}
 
         if a.gesture == "fake":
-            gesture: Any = FakeGestureOutput(fake_log)
+            gesture: Any = FakeGestureOutput(fake_log, coordinator=motion)
         else:
-            gesture = A2GestureOutput(dry_run=dry_run)
+            gesture = A2GestureOutput(dry_run=dry_run, coordinator=motion)
         info["gesture"] = {"adapter": a.gesture, "dry_run": a.gesture != "fake" and dry_run, "simulated": not real}
 
         if a.speech == "fake":
@@ -111,12 +115,14 @@ def build_adapters(settings: Settings, fake_log: FakeOutputLog, clock: Clock) ->
         info["speech"] = {"adapter": a.speech, "dry_run": a.speech != "fake" and dry_run, "simulated": not real}
 
         if a.navigator == "fake":
-            navigator: Any = FakeRobotNavigator(clock=clock, fail_waypoints=set(settings.robot.fail_waypoints))
+            navigator: Any = FakeRobotNavigator(
+                clock=clock, fail_waypoints=set(settings.robot.fail_waypoints), coordinator=motion
+            )
         else:
-            navigator = A2RobotNavigator(clock=clock, dry_run=dry_run)
+            navigator = A2RobotNavigator(clock=clock, dry_run=dry_run, coordinator=motion)
         info["robot_navigation"] = {"adapter": a.navigator, "dry_run": a.navigator != "fake" and dry_run, "simulated": not real}
     except (RealTransportMissing, RuntimeError) as exc:
-        raise RealModeNotAvailable(f"mode=real: {exc}") from exc
+        raise RealModeNotAvailable(f"mode={settings.mode}: {exc}") from exc
     return display, speech, gesture, navigator, info
 
 

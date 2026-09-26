@@ -1,7 +1,8 @@
 # vision/ (osoba 1, grana comp-vision)
 
 - Plan: `docs/table_tennis_plan/01_COMP_VISION.md`.
-- Polazna tačka: `stub.py` (`FixtureVisionProducer`, `build_proposal`, `propose_command`).
+- Fixture put: `stub.py` (`FixtureVisionProducer`, `build_proposal`, `propose_command`).
+- Živi put: `MatchVisionProducer` u `events.py`. Jedan proces, jedan producer. Ne pokreći oba.
 - Šalješ samo `point.propose` i `camera.ready.set` (actor `vision`, u simulaciji `sim`).
   Nikad ne računaš rezultat ni servera.
 - Rally, `calibration_id` i `assignment_version` uzimaš iz aktuelnog snapshot-a.

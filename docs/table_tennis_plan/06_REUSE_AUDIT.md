@@ -1,6 +1,9 @@
 # Audit postojećeg koda za A2 sudiju za stoni tenis
 
-Datum: 26. septembar 2026. Izvor: lokalni checkout `C:\Users\Tea\OneDrive\Dokumenti\a2-hackathon`, HEAD `519ce20` u trenutku pregleda. Pregled je urađen čitanjem koda i testova, bez pokretanja robota, mrežnih poziva robotu, instaliranja paketa ili izvršavanja runtime skripti. Testovi navedeni u dokumentu nisu pokrenuti tokom audita.
+Datum: 26. septembar 2026. Ovo je istorijski reuse audit iz baseline checkout-a `519ce20`;
+aktuelno integraciono stanje je dokumentovano u `07_IMPLEMENTATION_STATUS.md` (snapshot
+`644d9ac` plus naknadne merge-fixes). Audit je urađen čitanjem koda i testova, bez
+pokretanja robota ili mrežnih poziva robotu.
 
 Putanje u tabelama su relativne u odnosu na koren repozitorijuma; brojevi iza `:` označavaju proverene početne linije u pregledanom checkoutu. Direktni linkovi vode do fajlova. Novi direktorijumi `table_tennis/*` i frontend feature `table-tennis` predstavljaju predlog implementacije, ne tvrdnju da taj kod već postoji.
 

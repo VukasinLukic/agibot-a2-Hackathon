@@ -48,7 +48,7 @@ class TrackSample:
             raise ValueError("missing observation cannot carry coordinates")
         if self.observation_kind != "missing" and (self.x_px is None or self.y_px is None):
             raise ValueError("observed/predicted observation needs x_px and y_px")
-        return {
+        payload = {
             "frame_seq": self.frame_seq,
             "capture_monotonic_ns": self.capture_monotonic_ns,
             "detected": self.detected,
@@ -58,6 +58,9 @@ class TrackSample:
             "confidence": self.confidence,
             "calibration_id": self.calibration_id,
         }
+        from table_tennis.contracts import VisionObservation
+
+        return VisionObservation.model_validate(payload).model_dump()
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,6 +81,7 @@ class BallTracker:
         self._missing_limit = config.missing_frames
         self._roi = _search_roi(config.roi, calibration)
         self._calibration_id = calibration.calibration_id if calibration is not None and calibration.ready else None
+        self.table_limited = self._calibration_id is not None and self._roi.width < 10**8
         self._previous: bytes | None = None
         self._last_ns: int | None = None
         self._misses = 0
@@ -103,9 +107,9 @@ class BallTracker:
             self._misses = 0
             sample = self._observed(frame, chosen)
             self._last_ns = frame.capture_monotonic_ns
-            return sample
+            return _checked(sample)
         if self._state is None:
-            return self._missing(frame)
+            return _checked(self._missing(frame))
         dt = _dt(self._last_ns, frame.capture_monotonic_ns)
         self._last_ns = frame.capture_monotonic_ns
         self._predict(dt)
@@ -114,9 +118,9 @@ class BallTracker:
             self._state = None
             self._cov = None
             self._misses = 0
-            return self._missing(frame)
+            return _checked(self._missing(frame))
         assert self._state is not None
-        return self._predicted(frame, self._state[0], self._state[1])
+        return _checked(self._predicted(frame, self._state[0], self._state[1]))
 
     def _observed(self, frame: Frame, blob: _Blob) -> TrackSample:
         if self._state is None or self._cov is None:
@@ -245,13 +249,17 @@ def _blobs(
 ) -> list[_Blob]:
     if previous is None:
         return []
+    hsv = _opencv_hsv(pixels, width, height)
     mask = bytearray(width * height)
     x1 = min(width, roi.x + roi.width)
     y1 = min(height, roi.y + roi.height)
     for y in range(max(0, roi.y), y1):
         for x in range(max(0, roi.x), x1):
             index = (y * width + x) * 3
-            if not _hsv_match(pixels[index], pixels[index + 1], pixels[index + 2], lower, upper):
+            hue, saturation, value = (int(hsv[y, x, 0]), int(hsv[y, x, 1]), int(hsv[y, x, 2]))
+            if not _hue_in(hue, lower[0], upper[0]) or not (
+                lower[1] <= saturation <= upper[1] and lower[2] <= value <= upper[2]
+            ):
                 continue
             if _channel_delta(pixels, previous, index) < MOTION_DELTA:
                 continue
@@ -313,25 +321,18 @@ def _component(
     return _Blob(x=sum_x / count, y=sum_y / count, diameter=max(box_w, box_h))
 
 
-def _hsv_match(b: int, g: int, r: int, lower: tuple[int, int, int], upper: tuple[int, int, int]) -> bool:
-    hue, saturation, value = _hsv(b, g, r)
-    if not _hue_in(hue, lower[0], upper[0]):
-        return False
-    return lower[1] <= saturation <= upper[1] and lower[2] <= value <= upper[2]
+def _opencv_hsv(pixels: bytes, width: int, height: int):
+    """OpenCV HSV, so a threshold tuned with cv2 matches this mask."""
+    import cv2
+    import numpy as np
+
+    bgr = np.frombuffer(pixels, dtype=np.uint8).reshape((height, width, 3))
+    return cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
 
 
-def _hsv(b: int, g: int, r: int) -> tuple[int, int, int]:
-    maximum = max(b, g, r)
-    span = maximum - min(b, g, r)
-    if span == 0 or maximum == 0:
-        return 0, 0, maximum
-    if maximum == r:
-        hue = (60.0 * ((g - b) / span) + 360.0) % 360.0
-    elif maximum == g:
-        hue = (60.0 * ((b - r) / span) + 120.0) % 360.0
-    else:
-        hue = (60.0 * ((r - g) / span) + 240.0) % 360.0
-    return int(hue / 2.0), int(span / maximum * 255.0), maximum
+def _checked(sample: TrackSample) -> TrackSample:
+    sample.as_observation()
+    return sample
 
 
 def _hue_in(hue: int, lower: int, upper: int) -> bool:
@@ -371,12 +372,18 @@ def _search_roi(roi: Roi | None, calibration: TableCalibration | None) -> Roi:
 
 def _bgr_bytes(frame: Frame) -> bytes:
     image = frame.image
+    expected = frame.width * frame.height * 3
     if isinstance(image, BgrImage):
         return bytes(image.data)
+    tobytes = getattr(image, "tobytes", None)
+    if callable(tobytes):
+        raw = bytes(tobytes())
+        if len(raw) == expected:
+            return raw
     data = getattr(image, "data", None)
-    if isinstance(data, (bytes, bytearray)) and len(data) == frame.width * frame.height * 3:
+    if isinstance(data, (bytes, bytearray)) and len(data) == expected:
         return bytes(data)
-    raise ValueError("tracker expects a BgrImage")
+    raise ValueError("tracker expects a BgrImage or a BGR array")
 
 
 def _dt(previous_ns: int | None, now_ns: int) -> float:

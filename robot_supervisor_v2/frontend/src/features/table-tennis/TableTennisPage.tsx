@@ -37,8 +37,8 @@ export function TableTennisPage() {
   const { snapshot, connection } = match;
 
   useEffect(() => {
-    ttApi.health().then(setHealth).catch(() => setHealth(null));
-  }, []);
+    ttApi.health(matchId).then(setHealth).catch(() => setHealth(null));
+  }, [matchId]);
 
   const openMatch = (id: string | null) => {
     storageSet(STORAGE_KEYS.lastMatchId, id);

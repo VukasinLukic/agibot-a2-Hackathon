@@ -1,8 +1,8 @@
 # 07 Stanje implementacije zajedničke osnove
 
 Datum: 26. septembar 2026. Osnova je u `table_tennis/` (uputstvo: `table_tennis/README.md`).
-Ništa nije testirano na fizičkom A2. Po dogovoru tima, pytest suite i React feature
-nisu deo ove isporuke.
+Ništa nije testirano na fizičkom A2. Mock/dry-run i statičke provere jesu izvršene;
+fizički transport, kamera u sali i bezbednosni postupak i dalje čekaju mentora.
 
 ## Šta postoji
 
@@ -13,12 +13,12 @@ nisu deo ove isporuke.
 | Trajnost (`storage/`) | SQLite: komanda, događaji, snapshot i outbox u jednoj transakciji; idempotency pre revizije; UNIQUE po reviziji i po `rally_id`; oporavak posle restarta bez ponavljanja govora/gesta. |
 | API (`api/`) | Sve rute iz ugovora pod `/api/table-tennis`, SSE sa cursor/resync i heartbeat-om, actor auth (local/token), standalone mock app (`run_demo`), Supervisor hook iza `TABLE_TENNIS_ENABLED=1` (ne menja `/api/events`). |
 | Fake adapteri | Ekran (latest revision wins, transliteracija), gest (p1/p2 -> robot left/right), navigator (requested -> ready, busy, cancel, failed), govor sa determinističkim srpskim replikama u regular i corporate personi, vision fixture producer. Sve je zabeleženo u `table_tennis/var/fake_outputs.log` i na `GET /debug/outputs`. |
-| A2/LiveKit scaffold | `robot/a2_adapters.py`, `persona/speech.py`: dry-run, sa `REAL:` oznakama; bez importa hardverskih modula. |
+| A2/LiveKit scaffold | `robot/a2_adapters.py`, `persona/speech.py`: eksplicitni dry-run, sa `REAL:` oznakama; bez importa hardverskih modula. A2 navigator u mock-u simulira `requested -> ready`, status i otkazivanje; to nije dokaz veze sa robotom. |
 | Simulator (`sim/`) | 14 scenarija iz odeljka 12 ugovora + `manual-game` i `disputed-point`; HTTP i in-process drajver; generator fixtures. |
 
 ## Ostalo po granama
 
-- **comp-vision (osoba 1):** capture sa `frame_seq`/timestamp, kalibracija stola, detektor/tracker, događaji, benchmark. Polazište `vision/stub.py`.
+- **comp-vision (osoba 1):** capture sa `frame_seq`/timestamp, kalibracija stola, detektor/tracker i događaji postoje. Benchmark rezultati (precision, coverage, abstention na približno 50 razmena) nisu pronađeni; automatic ostaje isključen.
 - **backend (osoba 2):** pytest suite (matrica iz 02_BACKEND.md, konkurentnost, SSE granica, restart), output orchestration sa pravim adapterima, automatski režim tek posle benchmark-a.
 - **navigation (osoba 3):** pravi ekran/gest/navigacija u `robot/a2_adapters.py` na postojećem A2 kodu, readiness provere, hardverski smoke test sa mentorom.
 - **persone (osoba 4):** React feature `features/table-tennis/` (setup, scoreboard, kontrole, predlog, poziv robota, SSE klijent sa reconnect-om) na generisanim tipovima; LiveKit govor; opcioni LLM komentar sa template fallback-om.
@@ -46,7 +46,8 @@ Integrator pokreće mock backend i oba simulator scenarija, pregleda diff (bez `
   gest se ne ponavljaju posle restarta (`skipped_restart`, `unknown_restart`); undo otkazuje zastarele izlaze; stari
   komentar se preskače kad počne nova razmena; ekran latest-wins; greška adaptera ne gubi poen; robot poziv prekinut
   restartom postaje `failed` (ishod nepoznat).
-- Nije bilo potrebe za izmenom koda: postojeća implementacija je prošla sve provere.
+- Posle merge-a popravljeni su cleanup runtime-a i izolacija fake ekrana: `Runtime.stop()` zatvara izlaze
+  i kada runtime nije startovan, a `FakeScoreDisplay` ne zauzima fizički globalni slot.
 
 ## Backend: ishod poziva robota kao događaj meča
 
@@ -78,10 +79,14 @@ Integrator pokreće mock backend i oba simulator scenarija, pregleda diff (bez `
   odbija fake adaptere i ne startuje dok osobe 3 i 4 ne ubace pravi transport (bez tihog fallback-a).
 - `GET /health` sada za ekran, govor i gest pokazuje adapter, dry-run, broj uspešnih/neuspelih/preskočenih i
   poslednju grešku; `available=false` dok poslednji pokušaj nije uspeo. Poen ostaje sačuvan.
+- Vision capability više nije hardkodirana: `GET /health?match_id=<id>` (ili najnoviji meč bez parametra)
+  čita `camera_ready` i `calibration_ready` iz snapshot-a. `automatic_scoring_enabled` prati podešavanje
+  i ostaje false dok benchmark ne odobri automatic režim.
 - Gubitak kamere u assisted režimu odbija nove CV predloge, ručni poen ostaje dostupan, režim se ne menja.
 - `python -m table_tennis.manifest`: SHA, grana, dirty, režim, adapteri, hash ugovora, da li su generisani
   fajlovi i fixtures ažurni, poslednji meč, poznate granice; `hardware_tested` je uvek false.
-- Testovi: `tests/table_tennis/integration/test_tt_phase4_outputs.py`, `tests/table_tennis/test_tt_manifest.py`.
+- Testovi: `tests/table_tennis/integration/test_tt_phase4_outputs.py`, `tests/table_tennis/test_tt_manifest.py`,
+  `tests/table_tennis/robot/test_screen.py`, `tests/table_tennis/robot/test_readiness.py`.
 - Preostalo: pravi transporti (osoba 3: ekran/gest/navigacija, osoba 4: LiveKit govor) na već postojećim
   `REAL:` mestima; Faza 5 čeka benchmark osobe 1; Faza 6 traži robota i mentora.
 
@@ -132,3 +137,14 @@ TT_ADAPTER_SPEECH=livekit TT_SPEECH_LIVE=1 TT_SUPERVISOR_URL=http://127.0.0.1:80
 
 - **Preostalo:** redosled pozdrav/gest/govor sa osobom 3; gašenje automatskog razgovora na detekciju osobe
   tokom meča (Vision Controller, Supervisor); provera na A2.
+
+## Integraciona provera posle merge-a (26. septembar 2026.)
+
+- Sa `table_tennis/requirements-vision.txt`: `213 passed, 1 warning` za `python -m pytest tests/table_tennis -q`.
+- Sa samo `requirements-dev.txt`: vision test moduli se bez NumPy uredno preskaču (`200 passed, 3 skipped`);
+  za stvarnu proveru vision algoritama koristi `requirements-vision.txt`.
+- `python -m table_tennis.contracts.generate --check` i `python -m table_tennis.sim.fixtures --check` prolaze.
+- `npm run build` (TypeScript + Vite) i eslint nad `src/features/table-tennis` prolaze; npm skripta je
+  platform-neutralna. Vite prijavljuje samo postojeće upozorenje o velikom bundle chunk-u.
+- Nema benchmark fajla za automatic scoring i nema fizičkog A2 smoke testa; manifest zato mora ostati
+  `hardware_tested: false`.
