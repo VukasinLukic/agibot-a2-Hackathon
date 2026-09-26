@@ -91,8 +91,8 @@ def _require_camera_id(data: dict[str, object]) -> str:
 
 def _require_origin(data: dict[str, object]) -> str:
     value = data.get("origin")
-    if value not in {"file", "a2_h264"}:
-        raise ValueError("origin must be 'file' or 'a2_h264'")
+    if value not in {"file", "a2_h264", "a2_fisheye"}:
+        raise ValueError("origin must be 'file', 'a2_h264', or 'a2_fisheye'")
     return value
 
 
