@@ -1,0 +1,63 @@
+"""Robot call outcome -> match event (readiness.changed) -> speech outbox."""
+
+
+def _events(rt, match_id, type_="readiness.changed"):
+    return [e for e in rt.store.events_for_match(match_id) if e.type == type_]
+
+
+def _speech_rows(rt, match_id):
+    return [r for r in rt.store.outbox_rows(match_id) if r["kind"] == "speech"]
+
+
+def _call(d, waypoint="referee-spot"):
+    r = d.robot_call(named_waypoint_id=waypoint)
+    assert r.status == 202
+    return r.body["call_id"]
+
+
+def test_arrival_emits_readiness_event_and_speech_job(d, rt):
+    d.create(scoring_mode="manual")
+    cid = _call(d)
+    d.wait_robot(cid, {"ready"})
+    ev = _events(rt, d.match_id)
+    assert len(ev) == 1
+    p = ev[0].payload
+    assert p.component == "robot_ready" and p.value is True and p.reason == "robot_arrived"
+    assert d.snapshot()["ready"]["robot_ready"] is True
+    assert any(r["event_id"] == ev[0].event_id for r in _speech_rows(rt, d.match_id))
+
+
+def test_failed_call_emits_event_even_if_robot_was_not_ready(d, rt):
+    d.create(scoring_mode="manual")
+    cid = _call(d, waypoint="broken-spot")
+    d.wait_robot(cid, {"failed"})
+    ev = _events(rt, d.match_id)
+    assert len(ev) == 1
+    p = ev[0].payload
+    assert p.value is False and p.reason == "robot_call_failed"
+    assert d.snapshot()["ready"]["robot_ready"] is False
+    assert any(r["event_id"] == ev[0].event_id for r in _speech_rows(rt, d.match_id))
+
+
+def test_cancelled_call_emits_event(d, rt):
+    d.create(scoring_mode="manual")
+    cid = _call(d)
+    assert d.robot_cancel(cid).status == 202
+    d.wait_robot(cid, {"cancelled"})
+    ev = _events(rt, d.match_id)
+    assert [e.payload.reason for e in ev] == ["robot_call_cancelled"]
+
+
+def test_repeated_tick_does_not_duplicate_report(d, rt):
+    d.create(scoring_mode="manual")
+    cid = _call(d)
+    d.wait_robot(cid, {"ready"})
+    call = rt.robot.get(cid)
+    rt.robot._report_to_match(call)  # same outcome reported again -> idempotent
+    assert len(_events(rt, d.match_id)) == 1
+
+
+def test_operator_unchanged_ready_is_still_noop(d, rt):
+    d.create(scoring_mode="manual")
+    d.ok("operator.ready.set", {"ready": False}, expected_revision=None)
+    assert _events(rt, d.match_id) == []

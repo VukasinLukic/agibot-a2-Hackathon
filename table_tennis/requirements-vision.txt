@@ -1,0 +1,5 @@
+# Optional, person 1 (comp-vision) only. Not needed for the mock demo.
+# Install into a separate venv; never import these from table_tennis.core.
+-r requirements-dev.txt
+numpy>=1.24
+opencv-python>=4.8

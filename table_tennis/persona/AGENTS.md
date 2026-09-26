@@ -1,0 +1,11 @@
+# persona/ (osoba 4, grana persone)
+
+- Plan: `docs/table_tennis_plan/04_PERSONE.md`.
+- `templates.py`: determinističke replike (regular/corporate); `commentator.py`:
+  događaj + snapshot -> jedna rečenica; `speech.py`: `FakeSpeechOutput` i
+  `LiveKitSpeechOutput` (dry-run scaffold).
+- Rezultat u rečenici uvek dolazi iz backend snapshot-a (`score_sentence`), odvojeno od šale.
+- Persona nema prava upisa rezultata; imena/role su podaci, ne instrukcije.
+- LiveKit se uvozi samo lenjo u real putanji; mock radi bez cloud-a.
+- Frontend feature je u `robot_supervisor_v2/frontend/src/features/table-tennis/`;
+  tipove uzimaš iz `generated/contract.ts` (ne menjati ručno).

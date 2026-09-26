@@ -1,0 +1,1483 @@
+{
+  "name": "left_right_swap",
+  "description": null,
+  "schema_version": "1.0",
+  "generated_by": "python -m table_tennis.sim.fixtures",
+  "steps": [
+    {
+      "kind": "create",
+      "actor": "operator",
+      "request": {
+        "command_id": "00000000-0000-4000-8000-000000000001",
+        "players": [
+          {
+            "id": "p1",
+            "display_name": "Ana",
+            "role_label": "direktorka",
+            "role_rank": 3
+          },
+          {
+            "id": "p2",
+            "display_name": "Marko",
+            "role_label": "inženjer",
+            "role_rank": 2
+          }
+        ],
+        "calibration_id": "table-1-camera-a-v1",
+        "config": {
+          "scoring_mode": "manual",
+          "persona": "regular"
+        }
+      },
+      "status": 201,
+      "response": {
+        "schema_version": "1.0",
+        "match_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 1,
+        "status": "setup",
+        "players": [
+          {
+            "id": "p1",
+            "display_name": "Ana",
+            "role_label": "direktorka",
+            "role_rank": 3
+          },
+          {
+            "id": "p2",
+            "display_name": "Marko",
+            "role_label": "inženjer",
+            "role_rank": 2
+          }
+        ],
+        "config": {
+          "target_points": 11,
+          "win_by": 2,
+          "best_of": 1
+        },
+        "score_by_player": {
+          "p1": 0,
+          "p2": 0
+        },
+        "first_server_id": "p1",
+        "server_id": "p1",
+        "winner_id": null,
+        "assignment_version": 1,
+        "court_end_by_player": {
+          "p1": "end_a",
+          "p2": "end_b"
+        },
+        "robot_side_by_player": {
+          "p1": "left",
+          "p2": "right"
+        },
+        "calibration_id": "table-1-camera-a-v1",
+        "active_rally_id": null,
+        "active_proposal_id": null,
+        "persona": "regular",
+        "scoring_mode": "manual",
+        "ready": {
+          "robot_ready": false,
+          "camera_ready": false,
+          "calibration_ready": true,
+          "operator_ready": false
+        },
+        "updated_at": "2026-09-26T12:00:00.000Z",
+        "active_proposal": null,
+        "paused_from": null,
+        "last_point_event_id": null,
+        "table_id": "table-1"
+      }
+    },
+    {
+      "kind": "command",
+      "actor": "operator",
+      "request": {
+        "command_id": "00000000-0000-4000-8000-000000000004",
+        "expected_revision": null,
+        "type": "robot.ready.set",
+        "payload": {
+          "ready": true,
+          "reason": "manual_arrival"
+        }
+      },
+      "status": 200,
+      "response": {
+        "command_id": "00000000-0000-4000-8000-000000000004",
+        "duplicate": false,
+        "event_ids": [
+          "00000000-0000-4000-8000-000000000005"
+        ],
+        "snapshot": {
+          "schema_version": "1.0",
+          "match_id": "00000000-0000-4000-8000-000000000002",
+          "revision": 2,
+          "status": "setup",
+          "players": [
+            {
+              "id": "p1",
+              "display_name": "Ana",
+              "role_label": "direktorka",
+              "role_rank": 3
+            },
+            {
+              "id": "p2",
+              "display_name": "Marko",
+              "role_label": "inženjer",
+              "role_rank": 2
+            }
+          ],
+          "config": {
+            "target_points": 11,
+            "win_by": 2,
+            "best_of": 1
+          },
+          "score_by_player": {
+            "p1": 0,
+            "p2": 0
+          },
+          "first_server_id": "p1",
+          "server_id": "p1",
+          "winner_id": null,
+          "assignment_version": 1,
+          "court_end_by_player": {
+            "p1": "end_a",
+            "p2": "end_b"
+          },
+          "robot_side_by_player": {
+            "p1": "left",
+            "p2": "right"
+          },
+          "calibration_id": "table-1-camera-a-v1",
+          "active_rally_id": null,
+          "active_proposal_id": null,
+          "persona": "regular",
+          "scoring_mode": "manual",
+          "ready": {
+            "robot_ready": true,
+            "camera_ready": false,
+            "calibration_ready": true,
+            "operator_ready": false
+          },
+          "updated_at": "2026-09-26T12:00:01.000Z",
+          "active_proposal": null,
+          "paused_from": null,
+          "last_point_event_id": null,
+          "table_id": "table-1"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "actor": "operator",
+      "request": {
+        "command_id": "00000000-0000-4000-8000-000000000006",
+        "expected_revision": 2,
+        "type": "match.start",
+        "payload": {}
+      },
+      "status": 200,
+      "response": {
+        "command_id": "00000000-0000-4000-8000-000000000006",
+        "duplicate": false,
+        "event_ids": [
+          "00000000-0000-4000-8000-000000000007"
+        ],
+        "snapshot": {
+          "schema_version": "1.0",
+          "match_id": "00000000-0000-4000-8000-000000000002",
+          "revision": 3,
+          "status": "between_rallies",
+          "players": [
+            {
+              "id": "p1",
+              "display_name": "Ana",
+              "role_label": "direktorka",
+              "role_rank": 3
+            },
+            {
+              "id": "p2",
+              "display_name": "Marko",
+              "role_label": "inženjer",
+              "role_rank": 2
+            }
+          ],
+          "config": {
+            "target_points": 11,
+            "win_by": 2,
+            "best_of": 1
+          },
+          "score_by_player": {
+            "p1": 0,
+            "p2": 0
+          },
+          "first_server_id": "p1",
+          "server_id": "p1",
+          "winner_id": null,
+          "assignment_version": 1,
+          "court_end_by_player": {
+            "p1": "end_a",
+            "p2": "end_b"
+          },
+          "robot_side_by_player": {
+            "p1": "left",
+            "p2": "right"
+          },
+          "calibration_id": "table-1-camera-a-v1",
+          "active_rally_id": null,
+          "active_proposal_id": null,
+          "persona": "regular",
+          "scoring_mode": "manual",
+          "ready": {
+            "robot_ready": true,
+            "camera_ready": false,
+            "calibration_ready": true,
+            "operator_ready": false
+          },
+          "updated_at": "2026-09-26T12:00:02.000Z",
+          "active_proposal": null,
+          "paused_from": null,
+          "last_point_event_id": null,
+          "table_id": "table-1"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "actor": "operator",
+      "request": {
+        "command_id": "00000000-0000-4000-8000-000000000008",
+        "expected_revision": 3,
+        "type": "rally.arm",
+        "payload": {}
+      },
+      "status": 200,
+      "response": {
+        "command_id": "00000000-0000-4000-8000-000000000008",
+        "duplicate": false,
+        "event_ids": [
+          "00000000-0000-4000-8000-00000000000a"
+        ],
+        "snapshot": {
+          "schema_version": "1.0",
+          "match_id": "00000000-0000-4000-8000-000000000002",
+          "revision": 4,
+          "status": "rally",
+          "players": [
+            {
+              "id": "p1",
+              "display_name": "Ana",
+              "role_label": "direktorka",
+              "role_rank": 3
+            },
+            {
+              "id": "p2",
+              "display_name": "Marko",
+              "role_label": "inženjer",
+              "role_rank": 2
+            }
+          ],
+          "config": {
+            "target_points": 11,
+            "win_by": 2,
+            "best_of": 1
+          },
+          "score_by_player": {
+            "p1": 0,
+            "p2": 0
+          },
+          "first_server_id": "p1",
+          "server_id": "p1",
+          "winner_id": null,
+          "assignment_version": 1,
+          "court_end_by_player": {
+            "p1": "end_a",
+            "p2": "end_b"
+          },
+          "robot_side_by_player": {
+            "p1": "left",
+            "p2": "right"
+          },
+          "calibration_id": "table-1-camera-a-v1",
+          "active_rally_id": "00000000-0000-4000-8000-000000000009",
+          "active_proposal_id": null,
+          "persona": "regular",
+          "scoring_mode": "manual",
+          "ready": {
+            "robot_ready": true,
+            "camera_ready": false,
+            "calibration_ready": true,
+            "operator_ready": false
+          },
+          "updated_at": "2026-09-26T12:00:03.000Z",
+          "active_proposal": null,
+          "paused_from": null,
+          "last_point_event_id": null,
+          "table_id": "table-1"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "actor": "operator",
+      "request": {
+        "command_id": "00000000-0000-4000-8000-00000000000b",
+        "expected_revision": 4,
+        "type": "point.award",
+        "payload": {
+          "rally_id": "00000000-0000-4000-8000-000000000009",
+          "winner_id": "p1",
+          "reason": "unknown"
+        }
+      },
+      "status": 200,
+      "response": {
+        "command_id": "00000000-0000-4000-8000-00000000000b",
+        "duplicate": false,
+        "event_ids": [
+          "00000000-0000-4000-8000-00000000000c"
+        ],
+        "snapshot": {
+          "schema_version": "1.0",
+          "match_id": "00000000-0000-4000-8000-000000000002",
+          "revision": 5,
+          "status": "between_rallies",
+          "players": [
+            {
+              "id": "p1",
+              "display_name": "Ana",
+              "role_label": "direktorka",
+              "role_rank": 3
+            },
+            {
+              "id": "p2",
+              "display_name": "Marko",
+              "role_label": "inženjer",
+              "role_rank": 2
+            }
+          ],
+          "config": {
+            "target_points": 11,
+            "win_by": 2,
+            "best_of": 1
+          },
+          "score_by_player": {
+            "p1": 1,
+            "p2": 0
+          },
+          "first_server_id": "p1",
+          "server_id": "p1",
+          "winner_id": null,
+          "assignment_version": 1,
+          "court_end_by_player": {
+            "p1": "end_a",
+            "p2": "end_b"
+          },
+          "robot_side_by_player": {
+            "p1": "left",
+            "p2": "right"
+          },
+          "calibration_id": "table-1-camera-a-v1",
+          "active_rally_id": null,
+          "active_proposal_id": null,
+          "persona": "regular",
+          "scoring_mode": "manual",
+          "ready": {
+            "robot_ready": true,
+            "camera_ready": false,
+            "calibration_ready": true,
+            "operator_ready": false
+          },
+          "updated_at": "2026-09-26T12:00:04.000Z",
+          "active_proposal": null,
+          "paused_from": null,
+          "last_point_event_id": "00000000-0000-4000-8000-00000000000c",
+          "table_id": "table-1"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "actor": "operator",
+      "request": {
+        "command_id": "00000000-0000-4000-8000-00000000000d",
+        "expected_revision": 5,
+        "type": "rally.arm",
+        "payload": {}
+      },
+      "status": 200,
+      "response": {
+        "command_id": "00000000-0000-4000-8000-00000000000d",
+        "duplicate": false,
+        "event_ids": [
+          "00000000-0000-4000-8000-00000000000f"
+        ],
+        "snapshot": {
+          "schema_version": "1.0",
+          "match_id": "00000000-0000-4000-8000-000000000002",
+          "revision": 6,
+          "status": "rally",
+          "players": [
+            {
+              "id": "p1",
+              "display_name": "Ana",
+              "role_label": "direktorka",
+              "role_rank": 3
+            },
+            {
+              "id": "p2",
+              "display_name": "Marko",
+              "role_label": "inženjer",
+              "role_rank": 2
+            }
+          ],
+          "config": {
+            "target_points": 11,
+            "win_by": 2,
+            "best_of": 1
+          },
+          "score_by_player": {
+            "p1": 1,
+            "p2": 0
+          },
+          "first_server_id": "p1",
+          "server_id": "p1",
+          "winner_id": null,
+          "assignment_version": 1,
+          "court_end_by_player": {
+            "p1": "end_a",
+            "p2": "end_b"
+          },
+          "robot_side_by_player": {
+            "p1": "left",
+            "p2": "right"
+          },
+          "calibration_id": "table-1-camera-a-v1",
+          "active_rally_id": "00000000-0000-4000-8000-00000000000e",
+          "active_proposal_id": null,
+          "persona": "regular",
+          "scoring_mode": "manual",
+          "ready": {
+            "robot_ready": true,
+            "camera_ready": false,
+            "calibration_ready": true,
+            "operator_ready": false
+          },
+          "updated_at": "2026-09-26T12:00:05.000Z",
+          "active_proposal": null,
+          "paused_from": null,
+          "last_point_event_id": "00000000-0000-4000-8000-00000000000c",
+          "table_id": "table-1"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "actor": "operator",
+      "request": {
+        "command_id": "00000000-0000-4000-8000-000000000010",
+        "expected_revision": 6,
+        "type": "point.award",
+        "payload": {
+          "rally_id": "00000000-0000-4000-8000-00000000000e",
+          "winner_id": "p1",
+          "reason": "unknown"
+        }
+      },
+      "status": 200,
+      "response": {
+        "command_id": "00000000-0000-4000-8000-000000000010",
+        "duplicate": false,
+        "event_ids": [
+          "00000000-0000-4000-8000-000000000011"
+        ],
+        "snapshot": {
+          "schema_version": "1.0",
+          "match_id": "00000000-0000-4000-8000-000000000002",
+          "revision": 7,
+          "status": "between_rallies",
+          "players": [
+            {
+              "id": "p1",
+              "display_name": "Ana",
+              "role_label": "direktorka",
+              "role_rank": 3
+            },
+            {
+              "id": "p2",
+              "display_name": "Marko",
+              "role_label": "inženjer",
+              "role_rank": 2
+            }
+          ],
+          "config": {
+            "target_points": 11,
+            "win_by": 2,
+            "best_of": 1
+          },
+          "score_by_player": {
+            "p1": 2,
+            "p2": 0
+          },
+          "first_server_id": "p1",
+          "server_id": "p2",
+          "winner_id": null,
+          "assignment_version": 1,
+          "court_end_by_player": {
+            "p1": "end_a",
+            "p2": "end_b"
+          },
+          "robot_side_by_player": {
+            "p1": "left",
+            "p2": "right"
+          },
+          "calibration_id": "table-1-camera-a-v1",
+          "active_rally_id": null,
+          "active_proposal_id": null,
+          "persona": "regular",
+          "scoring_mode": "manual",
+          "ready": {
+            "robot_ready": true,
+            "camera_ready": false,
+            "calibration_ready": true,
+            "operator_ready": false
+          },
+          "updated_at": "2026-09-26T12:00:06.000Z",
+          "active_proposal": null,
+          "paused_from": null,
+          "last_point_event_id": "00000000-0000-4000-8000-000000000011",
+          "table_id": "table-1"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "actor": "operator",
+      "request": {
+        "command_id": "00000000-0000-4000-8000-000000000012",
+        "expected_revision": 7,
+        "type": "sides.set",
+        "payload": {
+          "court_end_by_player": {
+            "p1": "end_b",
+            "p2": "end_a"
+          },
+          "robot_side_by_player": {
+            "p1": "right",
+            "p2": "left"
+          }
+        }
+      },
+      "status": 409,
+      "response": {
+        "code": "invalid_state",
+        "message": "sides can only change while paused (or in setup)",
+        "current_revision": 7,
+        "details": null
+      }
+    },
+    {
+      "kind": "command",
+      "actor": "operator",
+      "request": {
+        "command_id": "00000000-0000-4000-8000-000000000013",
+        "expected_revision": 7,
+        "type": "match.pause",
+        "payload": {
+          "reason": "players switch ends"
+        }
+      },
+      "status": 200,
+      "response": {
+        "command_id": "00000000-0000-4000-8000-000000000013",
+        "duplicate": false,
+        "event_ids": [
+          "00000000-0000-4000-8000-000000000014"
+        ],
+        "snapshot": {
+          "schema_version": "1.0",
+          "match_id": "00000000-0000-4000-8000-000000000002",
+          "revision": 8,
+          "status": "paused",
+          "players": [
+            {
+              "id": "p1",
+              "display_name": "Ana",
+              "role_label": "direktorka",
+              "role_rank": 3
+            },
+            {
+              "id": "p2",
+              "display_name": "Marko",
+              "role_label": "inženjer",
+              "role_rank": 2
+            }
+          ],
+          "config": {
+            "target_points": 11,
+            "win_by": 2,
+            "best_of": 1
+          },
+          "score_by_player": {
+            "p1": 2,
+            "p2": 0
+          },
+          "first_server_id": "p1",
+          "server_id": "p2",
+          "winner_id": null,
+          "assignment_version": 1,
+          "court_end_by_player": {
+            "p1": "end_a",
+            "p2": "end_b"
+          },
+          "robot_side_by_player": {
+            "p1": "left",
+            "p2": "right"
+          },
+          "calibration_id": "table-1-camera-a-v1",
+          "active_rally_id": null,
+          "active_proposal_id": null,
+          "persona": "regular",
+          "scoring_mode": "manual",
+          "ready": {
+            "robot_ready": true,
+            "camera_ready": false,
+            "calibration_ready": true,
+            "operator_ready": false
+          },
+          "updated_at": "2026-09-26T12:00:08.000Z",
+          "active_proposal": null,
+          "paused_from": "between_rallies",
+          "last_point_event_id": "00000000-0000-4000-8000-000000000011",
+          "table_id": "table-1"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "actor": "operator",
+      "request": {
+        "command_id": "00000000-0000-4000-8000-000000000015",
+        "expected_revision": 8,
+        "type": "sides.set",
+        "payload": {
+          "court_end_by_player": {
+            "p1": "end_b",
+            "p2": "end_a"
+          },
+          "robot_side_by_player": {
+            "p1": "right",
+            "p2": "left"
+          }
+        }
+      },
+      "status": 200,
+      "response": {
+        "command_id": "00000000-0000-4000-8000-000000000015",
+        "duplicate": false,
+        "event_ids": [
+          "00000000-0000-4000-8000-000000000016"
+        ],
+        "snapshot": {
+          "schema_version": "1.0",
+          "match_id": "00000000-0000-4000-8000-000000000002",
+          "revision": 9,
+          "status": "paused",
+          "players": [
+            {
+              "id": "p1",
+              "display_name": "Ana",
+              "role_label": "direktorka",
+              "role_rank": 3
+            },
+            {
+              "id": "p2",
+              "display_name": "Marko",
+              "role_label": "inženjer",
+              "role_rank": 2
+            }
+          ],
+          "config": {
+            "target_points": 11,
+            "win_by": 2,
+            "best_of": 1
+          },
+          "score_by_player": {
+            "p1": 2,
+            "p2": 0
+          },
+          "first_server_id": "p1",
+          "server_id": "p2",
+          "winner_id": null,
+          "assignment_version": 2,
+          "court_end_by_player": {
+            "p1": "end_b",
+            "p2": "end_a"
+          },
+          "robot_side_by_player": {
+            "p1": "right",
+            "p2": "left"
+          },
+          "calibration_id": "table-1-camera-a-v1",
+          "active_rally_id": null,
+          "active_proposal_id": null,
+          "persona": "regular",
+          "scoring_mode": "manual",
+          "ready": {
+            "robot_ready": true,
+            "camera_ready": false,
+            "calibration_ready": true,
+            "operator_ready": false
+          },
+          "updated_at": "2026-09-26T12:00:09.000Z",
+          "active_proposal": null,
+          "paused_from": "between_rallies",
+          "last_point_event_id": "00000000-0000-4000-8000-000000000011",
+          "table_id": "table-1"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "actor": "operator",
+      "request": {
+        "command_id": "00000000-0000-4000-8000-000000000017",
+        "expected_revision": 9,
+        "type": "match.resume",
+        "payload": {}
+      },
+      "status": 200,
+      "response": {
+        "command_id": "00000000-0000-4000-8000-000000000017",
+        "duplicate": false,
+        "event_ids": [
+          "00000000-0000-4000-8000-000000000018"
+        ],
+        "snapshot": {
+          "schema_version": "1.0",
+          "match_id": "00000000-0000-4000-8000-000000000002",
+          "revision": 10,
+          "status": "between_rallies",
+          "players": [
+            {
+              "id": "p1",
+              "display_name": "Ana",
+              "role_label": "direktorka",
+              "role_rank": 3
+            },
+            {
+              "id": "p2",
+              "display_name": "Marko",
+              "role_label": "inženjer",
+              "role_rank": 2
+            }
+          ],
+          "config": {
+            "target_points": 11,
+            "win_by": 2,
+            "best_of": 1
+          },
+          "score_by_player": {
+            "p1": 2,
+            "p2": 0
+          },
+          "first_server_id": "p1",
+          "server_id": "p2",
+          "winner_id": null,
+          "assignment_version": 2,
+          "court_end_by_player": {
+            "p1": "end_b",
+            "p2": "end_a"
+          },
+          "robot_side_by_player": {
+            "p1": "right",
+            "p2": "left"
+          },
+          "calibration_id": "table-1-camera-a-v1",
+          "active_rally_id": null,
+          "active_proposal_id": null,
+          "persona": "regular",
+          "scoring_mode": "manual",
+          "ready": {
+            "robot_ready": true,
+            "camera_ready": false,
+            "calibration_ready": true,
+            "operator_ready": false
+          },
+          "updated_at": "2026-09-26T12:00:10.000Z",
+          "active_proposal": null,
+          "paused_from": null,
+          "last_point_event_id": "00000000-0000-4000-8000-000000000011",
+          "table_id": "table-1"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "actor": "operator",
+      "request": {
+        "command_id": "00000000-0000-4000-8000-000000000019",
+        "expected_revision": 10,
+        "type": "rally.arm",
+        "payload": {}
+      },
+      "status": 200,
+      "response": {
+        "command_id": "00000000-0000-4000-8000-000000000019",
+        "duplicate": false,
+        "event_ids": [
+          "00000000-0000-4000-8000-00000000001b"
+        ],
+        "snapshot": {
+          "schema_version": "1.0",
+          "match_id": "00000000-0000-4000-8000-000000000002",
+          "revision": 11,
+          "status": "rally",
+          "players": [
+            {
+              "id": "p1",
+              "display_name": "Ana",
+              "role_label": "direktorka",
+              "role_rank": 3
+            },
+            {
+              "id": "p2",
+              "display_name": "Marko",
+              "role_label": "inženjer",
+              "role_rank": 2
+            }
+          ],
+          "config": {
+            "target_points": 11,
+            "win_by": 2,
+            "best_of": 1
+          },
+          "score_by_player": {
+            "p1": 2,
+            "p2": 0
+          },
+          "first_server_id": "p1",
+          "server_id": "p2",
+          "winner_id": null,
+          "assignment_version": 2,
+          "court_end_by_player": {
+            "p1": "end_b",
+            "p2": "end_a"
+          },
+          "robot_side_by_player": {
+            "p1": "right",
+            "p2": "left"
+          },
+          "calibration_id": "table-1-camera-a-v1",
+          "active_rally_id": "00000000-0000-4000-8000-00000000001a",
+          "active_proposal_id": null,
+          "persona": "regular",
+          "scoring_mode": "manual",
+          "ready": {
+            "robot_ready": true,
+            "camera_ready": false,
+            "calibration_ready": true,
+            "operator_ready": false
+          },
+          "updated_at": "2026-09-26T12:00:11.000Z",
+          "active_proposal": null,
+          "paused_from": null,
+          "last_point_event_id": "00000000-0000-4000-8000-000000000011",
+          "table_id": "table-1"
+        }
+      }
+    },
+    {
+      "kind": "command",
+      "actor": "operator",
+      "request": {
+        "command_id": "00000000-0000-4000-8000-00000000001c",
+        "expected_revision": 11,
+        "type": "point.award",
+        "payload": {
+          "rally_id": "00000000-0000-4000-8000-00000000001a",
+          "winner_id": "p1",
+          "reason": "unknown"
+        }
+      },
+      "status": 200,
+      "response": {
+        "command_id": "00000000-0000-4000-8000-00000000001c",
+        "duplicate": false,
+        "event_ids": [
+          "00000000-0000-4000-8000-00000000001d"
+        ],
+        "snapshot": {
+          "schema_version": "1.0",
+          "match_id": "00000000-0000-4000-8000-000000000002",
+          "revision": 12,
+          "status": "between_rallies",
+          "players": [
+            {
+              "id": "p1",
+              "display_name": "Ana",
+              "role_label": "direktorka",
+              "role_rank": 3
+            },
+            {
+              "id": "p2",
+              "display_name": "Marko",
+              "role_label": "inženjer",
+              "role_rank": 2
+            }
+          ],
+          "config": {
+            "target_points": 11,
+            "win_by": 2,
+            "best_of": 1
+          },
+          "score_by_player": {
+            "p1": 3,
+            "p2": 0
+          },
+          "first_server_id": "p1",
+          "server_id": "p2",
+          "winner_id": null,
+          "assignment_version": 2,
+          "court_end_by_player": {
+            "p1": "end_b",
+            "p2": "end_a"
+          },
+          "robot_side_by_player": {
+            "p1": "right",
+            "p2": "left"
+          },
+          "calibration_id": "table-1-camera-a-v1",
+          "active_rally_id": null,
+          "active_proposal_id": null,
+          "persona": "regular",
+          "scoring_mode": "manual",
+          "ready": {
+            "robot_ready": true,
+            "camera_ready": false,
+            "calibration_ready": true,
+            "operator_ready": false
+          },
+          "updated_at": "2026-09-26T12:00:12.000Z",
+          "active_proposal": null,
+          "paused_from": null,
+          "last_point_event_id": "00000000-0000-4000-8000-00000000001d",
+          "table_id": "table-1"
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "cursor": 1,
+      "event": {
+        "schema_version": "1.0",
+        "event_id": "00000000-0000-4000-8000-000000000003",
+        "match_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 1,
+        "occurred_at": "2026-09-26T12:00:00.000Z",
+        "received_at": "2026-09-26T12:00:00.000Z",
+        "causation_id": "00000000-0000-4000-8000-000000000001",
+        "type": "match.created",
+        "payload": {
+          "players": [
+            {
+              "id": "p1",
+              "display_name": "Ana",
+              "role_label": "direktorka",
+              "role_rank": 3
+            },
+            {
+              "id": "p2",
+              "display_name": "Marko",
+              "role_label": "inženjer",
+              "role_rank": 2
+            }
+          ],
+          "config": {
+            "target_points": 11,
+            "win_by": 2,
+            "best_of": 1
+          },
+          "first_server_id": "p1",
+          "scoring_mode": "manual",
+          "persona": "regular",
+          "court_end_by_player": {
+            "p1": "end_a",
+            "p2": "end_b"
+          },
+          "robot_side_by_player": {
+            "p1": "left",
+            "p2": "right"
+          },
+          "calibration_id": "table-1-camera-a-v1",
+          "table_id": "table-1"
+        }
+      }
+    },
+    {
+      "cursor": 2,
+      "event": {
+        "schema_version": "1.0",
+        "event_id": "00000000-0000-4000-8000-000000000005",
+        "match_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 2,
+        "occurred_at": "2026-09-26T12:00:01.000Z",
+        "received_at": "2026-09-26T12:00:01.000Z",
+        "causation_id": "00000000-0000-4000-8000-000000000004",
+        "type": "readiness.changed",
+        "payload": {
+          "component": "robot_ready",
+          "value": true,
+          "reason": "manual_arrival",
+          "ready": {
+            "robot_ready": true,
+            "camera_ready": false,
+            "calibration_ready": true,
+            "operator_ready": false
+          }
+        }
+      }
+    },
+    {
+      "cursor": 3,
+      "event": {
+        "schema_version": "1.0",
+        "event_id": "00000000-0000-4000-8000-000000000007",
+        "match_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 3,
+        "occurred_at": "2026-09-26T12:00:02.000Z",
+        "received_at": "2026-09-26T12:00:02.000Z",
+        "causation_id": "00000000-0000-4000-8000-000000000006",
+        "type": "match.started",
+        "payload": {
+          "server_id": "p1"
+        }
+      }
+    },
+    {
+      "cursor": 4,
+      "event": {
+        "schema_version": "1.0",
+        "event_id": "00000000-0000-4000-8000-00000000000a",
+        "match_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 4,
+        "occurred_at": "2026-09-26T12:00:03.000Z",
+        "received_at": "2026-09-26T12:00:03.000Z",
+        "causation_id": "00000000-0000-4000-8000-000000000008",
+        "type": "rally.armed",
+        "payload": {
+          "rally_id": "00000000-0000-4000-8000-000000000009",
+          "server_id": "p1"
+        }
+      }
+    },
+    {
+      "cursor": 5,
+      "event": {
+        "schema_version": "1.0",
+        "event_id": "00000000-0000-4000-8000-00000000000c",
+        "match_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 5,
+        "occurred_at": "2026-09-26T12:00:04.000Z",
+        "received_at": "2026-09-26T12:00:04.000Z",
+        "causation_id": "00000000-0000-4000-8000-00000000000b",
+        "type": "point.confirmed",
+        "payload": {
+          "rally_id": "00000000-0000-4000-8000-000000000009",
+          "winner_id": "p1",
+          "reason": "unknown",
+          "source": "operator_award",
+          "proposal_id": null,
+          "previous_score": {
+            "p1": 0,
+            "p2": 0
+          },
+          "new_score": {
+            "p1": 1,
+            "p2": 0
+          },
+          "snapshot": {
+            "schema_version": "1.0",
+            "match_id": "00000000-0000-4000-8000-000000000002",
+            "revision": 5,
+            "status": "between_rallies",
+            "players": [
+              {
+                "id": "p1",
+                "display_name": "Ana",
+                "role_label": "direktorka",
+                "role_rank": 3
+              },
+              {
+                "id": "p2",
+                "display_name": "Marko",
+                "role_label": "inženjer",
+                "role_rank": 2
+              }
+            ],
+            "config": {
+              "target_points": 11,
+              "win_by": 2,
+              "best_of": 1
+            },
+            "score_by_player": {
+              "p1": 1,
+              "p2": 0
+            },
+            "first_server_id": "p1",
+            "server_id": "p1",
+            "winner_id": null,
+            "assignment_version": 1,
+            "court_end_by_player": {
+              "p1": "end_a",
+              "p2": "end_b"
+            },
+            "robot_side_by_player": {
+              "p1": "left",
+              "p2": "right"
+            },
+            "calibration_id": "table-1-camera-a-v1",
+            "active_rally_id": null,
+            "active_proposal_id": null,
+            "persona": "regular",
+            "scoring_mode": "manual",
+            "ready": {
+              "robot_ready": true,
+              "camera_ready": false,
+              "calibration_ready": true,
+              "operator_ready": false
+            },
+            "updated_at": "2026-09-26T12:00:04.000Z",
+            "active_proposal": null,
+            "paused_from": null,
+            "last_point_event_id": "00000000-0000-4000-8000-00000000000c",
+            "table_id": "table-1"
+          }
+        }
+      }
+    },
+    {
+      "cursor": 6,
+      "event": {
+        "schema_version": "1.0",
+        "event_id": "00000000-0000-4000-8000-00000000000f",
+        "match_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 6,
+        "occurred_at": "2026-09-26T12:00:05.000Z",
+        "received_at": "2026-09-26T12:00:05.000Z",
+        "causation_id": "00000000-0000-4000-8000-00000000000d",
+        "type": "rally.armed",
+        "payload": {
+          "rally_id": "00000000-0000-4000-8000-00000000000e",
+          "server_id": "p1"
+        }
+      }
+    },
+    {
+      "cursor": 7,
+      "event": {
+        "schema_version": "1.0",
+        "event_id": "00000000-0000-4000-8000-000000000011",
+        "match_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 7,
+        "occurred_at": "2026-09-26T12:00:06.000Z",
+        "received_at": "2026-09-26T12:00:06.000Z",
+        "causation_id": "00000000-0000-4000-8000-000000000010",
+        "type": "point.confirmed",
+        "payload": {
+          "rally_id": "00000000-0000-4000-8000-00000000000e",
+          "winner_id": "p1",
+          "reason": "unknown",
+          "source": "operator_award",
+          "proposal_id": null,
+          "previous_score": {
+            "p1": 1,
+            "p2": 0
+          },
+          "new_score": {
+            "p1": 2,
+            "p2": 0
+          },
+          "snapshot": {
+            "schema_version": "1.0",
+            "match_id": "00000000-0000-4000-8000-000000000002",
+            "revision": 7,
+            "status": "between_rallies",
+            "players": [
+              {
+                "id": "p1",
+                "display_name": "Ana",
+                "role_label": "direktorka",
+                "role_rank": 3
+              },
+              {
+                "id": "p2",
+                "display_name": "Marko",
+                "role_label": "inženjer",
+                "role_rank": 2
+              }
+            ],
+            "config": {
+              "target_points": 11,
+              "win_by": 2,
+              "best_of": 1
+            },
+            "score_by_player": {
+              "p1": 2,
+              "p2": 0
+            },
+            "first_server_id": "p1",
+            "server_id": "p2",
+            "winner_id": null,
+            "assignment_version": 1,
+            "court_end_by_player": {
+              "p1": "end_a",
+              "p2": "end_b"
+            },
+            "robot_side_by_player": {
+              "p1": "left",
+              "p2": "right"
+            },
+            "calibration_id": "table-1-camera-a-v1",
+            "active_rally_id": null,
+            "active_proposal_id": null,
+            "persona": "regular",
+            "scoring_mode": "manual",
+            "ready": {
+              "robot_ready": true,
+              "camera_ready": false,
+              "calibration_ready": true,
+              "operator_ready": false
+            },
+            "updated_at": "2026-09-26T12:00:06.000Z",
+            "active_proposal": null,
+            "paused_from": null,
+            "last_point_event_id": "00000000-0000-4000-8000-000000000011",
+            "table_id": "table-1"
+          }
+        }
+      }
+    },
+    {
+      "cursor": 8,
+      "event": {
+        "schema_version": "1.0",
+        "event_id": "00000000-0000-4000-8000-000000000014",
+        "match_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 8,
+        "occurred_at": "2026-09-26T12:00:08.000Z",
+        "received_at": "2026-09-26T12:00:08.000Z",
+        "causation_id": "00000000-0000-4000-8000-000000000013",
+        "type": "match.paused",
+        "payload": {
+          "reason": "players switch ends",
+          "previous_status": "between_rallies",
+          "resume_to": "between_rallies",
+          "cancelled_rally_id": null
+        }
+      }
+    },
+    {
+      "cursor": 9,
+      "event": {
+        "schema_version": "1.0",
+        "event_id": "00000000-0000-4000-8000-000000000016",
+        "match_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 9,
+        "occurred_at": "2026-09-26T12:00:09.000Z",
+        "received_at": "2026-09-26T12:00:09.000Z",
+        "causation_id": "00000000-0000-4000-8000-000000000015",
+        "type": "sides.changed",
+        "payload": {
+          "assignment_version": 2,
+          "court_end_by_player": {
+            "p1": "end_b",
+            "p2": "end_a"
+          },
+          "robot_side_by_player": {
+            "p1": "right",
+            "p2": "left"
+          },
+          "invalidated_proposal_id": null,
+          "invalidated_rally_id": null
+        }
+      }
+    },
+    {
+      "cursor": 10,
+      "event": {
+        "schema_version": "1.0",
+        "event_id": "00000000-0000-4000-8000-000000000018",
+        "match_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 10,
+        "occurred_at": "2026-09-26T12:00:10.000Z",
+        "received_at": "2026-09-26T12:00:10.000Z",
+        "causation_id": "00000000-0000-4000-8000-000000000017",
+        "type": "match.resumed",
+        "payload": {
+          "reason": null,
+          "status": "between_rallies"
+        }
+      }
+    },
+    {
+      "cursor": 11,
+      "event": {
+        "schema_version": "1.0",
+        "event_id": "00000000-0000-4000-8000-00000000001b",
+        "match_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 11,
+        "occurred_at": "2026-09-26T12:00:11.000Z",
+        "received_at": "2026-09-26T12:00:11.000Z",
+        "causation_id": "00000000-0000-4000-8000-000000000019",
+        "type": "rally.armed",
+        "payload": {
+          "rally_id": "00000000-0000-4000-8000-00000000001a",
+          "server_id": "p2"
+        }
+      }
+    },
+    {
+      "cursor": 12,
+      "event": {
+        "schema_version": "1.0",
+        "event_id": "00000000-0000-4000-8000-00000000001d",
+        "match_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 12,
+        "occurred_at": "2026-09-26T12:00:12.000Z",
+        "received_at": "2026-09-26T12:00:12.000Z",
+        "causation_id": "00000000-0000-4000-8000-00000000001c",
+        "type": "point.confirmed",
+        "payload": {
+          "rally_id": "00000000-0000-4000-8000-00000000001a",
+          "winner_id": "p1",
+          "reason": "unknown",
+          "source": "operator_award",
+          "proposal_id": null,
+          "previous_score": {
+            "p1": 2,
+            "p2": 0
+          },
+          "new_score": {
+            "p1": 3,
+            "p2": 0
+          },
+          "snapshot": {
+            "schema_version": "1.0",
+            "match_id": "00000000-0000-4000-8000-000000000002",
+            "revision": 12,
+            "status": "between_rallies",
+            "players": [
+              {
+                "id": "p1",
+                "display_name": "Ana",
+                "role_label": "direktorka",
+                "role_rank": 3
+              },
+              {
+                "id": "p2",
+                "display_name": "Marko",
+                "role_label": "inženjer",
+                "role_rank": 2
+              }
+            ],
+            "config": {
+              "target_points": 11,
+              "win_by": 2,
+              "best_of": 1
+            },
+            "score_by_player": {
+              "p1": 3,
+              "p2": 0
+            },
+            "first_server_id": "p1",
+            "server_id": "p2",
+            "winner_id": null,
+            "assignment_version": 2,
+            "court_end_by_player": {
+              "p1": "end_b",
+              "p2": "end_a"
+            },
+            "robot_side_by_player": {
+              "p1": "right",
+              "p2": "left"
+            },
+            "calibration_id": "table-1-camera-a-v1",
+            "active_rally_id": null,
+            "active_proposal_id": null,
+            "persona": "regular",
+            "scoring_mode": "manual",
+            "ready": {
+              "robot_ready": true,
+              "camera_ready": false,
+              "calibration_ready": true,
+              "operator_ready": false
+            },
+            "updated_at": "2026-09-26T12:00:12.000Z",
+            "active_proposal": null,
+            "paused_from": null,
+            "last_point_event_id": "00000000-0000-4000-8000-00000000001d",
+            "table_id": "table-1"
+          }
+        }
+      }
+    }
+  ],
+  "final_snapshot": {
+    "schema_version": "1.0",
+    "match_id": "00000000-0000-4000-8000-000000000002",
+    "revision": 12,
+    "status": "between_rallies",
+    "players": [
+      {
+        "id": "p1",
+        "display_name": "Ana",
+        "role_label": "direktorka",
+        "role_rank": 3
+      },
+      {
+        "id": "p2",
+        "display_name": "Marko",
+        "role_label": "inženjer",
+        "role_rank": 2
+      }
+    ],
+    "config": {
+      "target_points": 11,
+      "win_by": 2,
+      "best_of": 1
+    },
+    "score_by_player": {
+      "p1": 3,
+      "p2": 0
+    },
+    "first_server_id": "p1",
+    "server_id": "p2",
+    "winner_id": null,
+    "assignment_version": 2,
+    "court_end_by_player": {
+      "p1": "end_b",
+      "p2": "end_a"
+    },
+    "robot_side_by_player": {
+      "p1": "right",
+      "p2": "left"
+    },
+    "calibration_id": "table-1-camera-a-v1",
+    "active_rally_id": null,
+    "active_proposal_id": null,
+    "persona": "regular",
+    "scoring_mode": "manual",
+    "ready": {
+      "robot_ready": true,
+      "camera_ready": false,
+      "calibration_ready": true,
+      "operator_ready": false
+    },
+    "updated_at": "2026-09-26T12:00:12.000Z",
+    "active_proposal": null,
+    "paused_from": null,
+    "last_point_event_id": "00000000-0000-4000-8000-00000000001d",
+    "table_id": "table-1"
+  }
+}

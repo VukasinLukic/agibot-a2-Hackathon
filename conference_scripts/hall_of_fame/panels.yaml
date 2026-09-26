@@ -1,0 +1,283 @@
+section: Hall of Fame Panels
+description: Each button plays the curated narration for exactly one Hall of Fame panel.
+scenarios:
+- id: panel-01-beginnings
+  label: 01. Beginnings — Mens Sana in Corpore Sano
+  summary_text: Our story starts not with a computer, but with an athlete. Veselin Jevrosimovic, known to everyone as Vesa, was a pole-vaulter and champion of the former Yugoslav University League, competing for Red Star. At eighteen, his results earned him a full athletic scholarship to study in the United States.
+  single_action_only: true
+  action_label: Play panel 01
+  steps:
+  - text: Our story starts not with a computer, but with an athlete. Veselin Jevrosimovic, known to everyone as Vesa, was a pole-vaulter and champion of the former Yugoslav University League, competing for Red Star. At eighteen, his results earned him a full athletic scholarship to study in the United States.
+- id: panel-02-first-sparks
+  label: 02. First Sparks
+  summary_text: It was during his studies in the United States that Vesa saw where the future was heading. He discovered the potential of the emerging IT industry, built his first business connections, and met people who would become tomorrow's tech leaders.
+  single_action_only: true
+  action_label: Play panel 02
+  steps:
+  - text: It was during his studies in the United States that Vesa saw where the future was heading. He discovered the potential of the emerging IT industry, built his first business connections, and met people who would become tomorrow's tech leaders.
+- id: panel-03-chs-electronics
+  label: 03. CHS Electronics — A Global Venture
+  summary_text: Together with his longtime friend Alexis Lope-Bello, Vesa became a shareholder of CHS Electronics — at the time the second-largest computer distributor in the world, with annual revenue of twelve billion dollars. He had already proven himself on the global stage.
+  single_action_only: true
+  action_label: Play panel 03
+  steps:
+  - text: Together with his longtime friend Alexis Lope-Bello, Vesa became a shareholder of CHS Electronics — at the time the second-largest computer distributor in the world, with annual revenue of twelve billion dollars. He had already proven himself on the global stage.
+- id: panel-04-bringing-business-back
+  label: 04. Bringing Business Back to Belgrade
+  summary_text: On the twenty-third of May, nineteen ninety-one, Comtrad Yugoslavia was founded — a bold decision to build a technology company in a country going through its most difficult times. The name came from the English words for computer and trade. And so it began.
+  single_action_only: true
+  action_label: Play panel 04
+  steps:
+  - text: On the twenty-third of May, nineteen ninety-one, Comtrad Yugoslavia was founded — a bold decision to build a technology company in a country going through its most difficult times. The name came from the English words for computer and trade. And so it began.
+- id: panel-05-tv-commercial
+  label: 05. The TV Commercial That Changed Everything
+  summary_text: 'In nineteen ninety-two, Comtrade became a household name thanks to a historic television campaign. It ended with a line people still remember: with our computers, your work becomes fun.'
+  single_action_only: true
+  action_label: Play panel 05
+  steps:
+  - text: 'In nineteen ninety-two, Comtrade became a household name thanks to a historic television campaign. It ended with a line people still remember: with our computers, your work becomes fun.'
+- id: panel-06-ct-computers
+  label: 06. New Identity — CT Computers Is Born
+  summary_text: In nineteen ninety-seven the company adopted a new name — CT Computers — marking a new chapter in its growth.
+  single_action_only: true
+  action_label: Play panel 06
+  steps:
+  - text: In nineteen ninety-seven the company adopted a new name — CT Computers — marking a new chapter in its growth.
+- id: panel-07-crossing-borders
+  label: 07. Crossing Borders
+  summary_text: Regional expansion began in February nineteen ninety-nine with a company in Sarajevo — first called NTCHS, later CT Computers Sarajevo. That same year came TradeCom in Podgorica, then Skopje in two thousand, and in two thousand one the acquisition of the Bulgarian company Ekus.
+  single_action_only: true
+  action_label: Play panel 07
+  steps:
+  - text: Regional expansion began in February nineteen ninety-nine with a company in Sarajevo — first called NTCHS, later CT Computers Sarajevo. That same year came TradeCom in Podgorica, then Skopje in two thousand, and in two thousand one the acquisition of the Bulgarian company Ekus.
+- id: panel-08-first-retail
+  label: 08. First Retail Steps
+  summary_text: In two thousand one the first pilot store opened in downtown Belgrade, offering IT products directly to consumers for the first time.
+  single_action_only: true
+  action_label: Play panel 08
+  steps:
+  - text: In two thousand one the first pilot store opened in downtown Belgrade, offering IT products directly to consumers for the first time.
+- id: panel-09-spinnaker
+  label: 09. Spinnaker New Technologies Sets Sail
+  summary_text: In April two thousand one, Comtrade entered the world of system integration. The new business, headquartered in Dedinje, was named Spinnaker New Technologies — and it eventually became Comtrade System Integration. This was the start of a whole new business trajectory.
+  single_action_only: true
+  action_label: Play panel 09
+  steps:
+  - text: In April two thousand one, Comtrade entered the world of system integration. The new business, headquartered in Dedinje, was named Spinnaker New Technologies — and it eventually became Comtrade System Integration. This was the start of a whole new business trajectory.
+- id: panel-10-can-advertising
+  label: 10. CAN Advertising Is Founded
+  summary_text: Also in two thousand one, the in-house creative team grew into a full-service marketing agency — CAN Advertising — supporting all the companies of the Comtrade Group.
+  single_action_only: true
+  action_label: Play panel 10
+  steps:
+  - text: Also in two thousand one, the in-house creative team grew into a full-service marketing agency — CAN Advertising — supporting all the companies of the Comtrade Group.
+- id: panel-11-shipyard-site
+  label: 11. Belgrade Shipyard Site Acquired
+  summary_text: In December two thousand three, Comtrade bought an eight-thousand-square-metre building and over three hectares of land — laying the foundation for what would become the largest IT campus in Southeast Europe.
+  single_action_only: true
+  action_label: Play panel 11
+  steps:
+  - text: In December two thousand three, Comtrade bought an eight-thousand-square-metre building and over three hectares of land — laying the foundation for what would become the largest IT campus in Southeast Europe.
+- id: panel-12-retail-on-the-rise
+  label: 12. Retail on the Rise
+  summary_text: In March two thousand five, Comtrade separated its retail operations into a new entity and began developing the Comtrade Shop franchise.
+  single_action_only: true
+  action_label: Play panel 12
+  steps:
+  - text: In March two thousand five, Comtrade separated its retail operations into a new entity and began developing the Comtrade Shop franchise.
+- id: panel-13-new-hq
+  label: 13. A New Headquarters — A Belgrade Landmark Opens
+  summary_text: After two years of renovation, Comtrade's new headquarters opened in two thousand five — soon a symbol of modern Belgrade, spread across more than three hectares. The first design was by architect Milan Dimitrijevic; fifteen years later the whole complex was refreshed by architect Bojan Supeljak, giving the campus its contemporary look.
+  single_action_only: true
+  action_label: Play panel 13
+  steps:
+  - text: After two years of renovation, Comtrade's new headquarters opened in two thousand five — soon a symbol of modern Belgrade, spread across more than three hectares. The first design was by architect Milan Dimitrijevic; fifteen years later the whole complex was refreshed by architect Bojan Supeljak, giving the campus its contemporary look.
+- id: panel-14-comtrade-computer
+  label: 14. Launch of the Comtrade Computer Brand
+  summary_text: In two thousand five, Comtrade began manufacturing its own personal computers on a high-capacity line producing up to thirty thousand units a month.
+  single_action_only: true
+  action_label: Play panel 14
+  steps:
+  - text: In two thousand five, Comtrade began manufacturing its own personal computers on a high-capacity line producing up to thirty thousand units a month.
+- id: panel-15-crypton
+  label: 15. Crypton Brand Launched
+  summary_text: Also in two thousand five, Comtrade entered consumer electronics with the Crypton brand — a stepping stone toward the Tesla brand that would come later.
+  single_action_only: true
+  action_label: Play panel 15
+  steps:
+  - text: Also in two thousand five, Comtrade entered consumer electronics with the Crypton brand — a stepping stone toward the Tesla brand that would come later.
+- id: panel-16-holding-amsterdam
+  label: 16. Comtrade Holding Incorporated in Amsterdam
+  summary_text: In September two thousand five, ownership was consolidated through Comtrade Holding in Amsterdam — paving the way for international growth.
+  single_action_only: true
+  action_label: Play panel 16
+  steps:
+  - text: In September two thousand five, ownership was consolidated through Comtrade Holding in Amsterdam — paving the way for international growth.
+- id: panel-17-ct-sarajevo-home
+  label: 17. A New Home for CT Sarajevo
+  summary_text: In two thousand six, Comtrade Bosnia acquired its own three-thousand-square-metre office building in Sarajevo.
+  single_action_only: true
+  action_label: Play panel 17
+  steps:
+  - text: In two thousand six, Comtrade Bosnia acquired its own three-thousand-square-metre office building in Sarajevo.
+- id: panel-18-unicredit
+  label: 18. Partnership with UniCredit Investment
+  summary_text: In two thousand eight, Comtrade sold a twenty-one percent stake to UniCredit, securing funds for major expansion.
+  single_action_only: true
+  action_label: Play panel 18
+  steps:
+  - text: In two thousand eight, Comtrade sold a twenty-one percent stake to UniCredit, securing funds for major expansion.
+- id: panel-19-hermes
+  label: 19. Acquisition of Hermes SoftLab
+  summary_text: In two thousand eight, Comtrade acquired Slovenia's Hermes SoftLab — the largest Serbian investment in Slovenia up to that point. The merger created a software powerhouse of sixteen hundred people and shifted the focus toward solutions.
+  single_action_only: true
+  action_label: Play panel 19
+  steps:
+  - text: In two thousand eight, Comtrade acquired Slovenia's Hermes SoftLab — the largest Serbian investment in Slovenia up to that point. The merger created a software powerhouse of sixteen hundred people and shifted the focus toward solutions.
+- id: panel-20-three-pillars
+  label: 20. Three Pillars of Business
+  summary_text: 'After the Hermes acquisition, Comtrade reorganized around three pillars: distribution, IT solutions and services, and gaming.'
+  single_action_only: true
+  action_label: Play panel 20
+  steps:
+  - text: 'After the Hermes acquisition, Comtrade reorganized around three pillars: distribution, IT solutions and services, and gaming.'
+- id: panel-21-keys-to-garage
+  label: 21. Partners in Innovation — Keys to the Garage
+  summary_text: 'HP recognized Comtrade for twenty years of successful partnership with a symbolic award: the Keys to the Garage.'
+  single_action_only: true
+  action_label: Play panel 21
+  steps:
+  - text: 'HP recognized Comtrade for twenty years of successful partnership with a symbolic award: the Keys to the Garage.'
+- id: panel-22-knowledge-factory
+  label: 22. Knowledge Is the Key — Knowledge Factory
+  summary_text: In two thousand eleven, the education initiative Knowledge Factory by Comtrade spread across the region — more than fifteen thousand pupils and students attended events in Belgrade, Podgorica, Zvornik, and Andricgrad.
+  single_action_only: true
+  action_label: Play panel 22
+  steps:
+  - text: In two thousand eleven, the education initiative Knowledge Factory by Comtrade spread across the region — more than fifteen thousand pupils and students attended events in Belgrade, Podgorica, Zvornik, and Andricgrad.
+- id: panel-23-gaming
+  label: 23. Entering the Global Gaming Market
+  summary_text: 'At the end of two thousand eleven came a breakthrough for Comtrade Gaming: Bally''s became its first major client, with many renowned names soon to follow. In twenty fifteen, a new branch in the Philippines began supporting clients like Amatic, Dafabet, and Genting.'
+  single_action_only: true
+  action_label: Play panel 23
+  steps:
+  - text: 'At the end of two thousand eleven came a breakthrough for Comtrade Gaming: Bally''s became its first major client, with many renowned names soon to follow. In twenty fifteen, a new branch in the Philippines began supporting clients like Amatic, Dafabet, and Genting.'
+- id: panel-24-dual-focus
+  label: 24. Dual Focus — Two New Companies Emerge
+  summary_text: 'In March two thousand thirteen, Comtrade IT Solutions and Services split into two companies: Comtrade System Integration and Comtrade Digital Services.'
+  single_action_only: true
+  action_label: Play panel 24
+  steps:
+  - text: 'In March two thousand thirteen, Comtrade IT Solutions and Services split into two companies: Comtrade System Integration and Comtrade Digital Services.'
+- id: panel-25-tesla
+  label: 25. A Tribute to Innovation — The Tesla Brand Is Born
+  summary_text: In two thousand fourteen, inspired by the legacy of Nikola Tesla, Comtrade launched its own consumer-electronics brand. Guided by the vision technology for all, Tesla began with tablets and phones and grew to TVs and air conditioners. Today it offers over six hundred products across forty-five markets worldwide.
+  single_action_only: true
+  action_label: Play panel 25
+  steps:
+  - text: In two thousand fourteen, inspired by the legacy of Nikola Tesla, Comtrade launched its own consumer-electronics brand. Guided by the vision technology for all, Tesla began with tablets and phones and grew to TVs and air conditioners. Today it offers over six hundred products across forty-five markets worldwide.
+- id: panel-26-cern
+  label: 26. Comtrade Partners with CERN
+  summary_text: In two thousand fifteen, Comtrade joined CERN openlab, contributing to data-management solutions for the world's largest scientific project — the Large Hadron Collider. The partner lineup included Oracle, Siemens, and NVIDIA. Comtrade was responsible for EOS, the system that handles the petabytes of data the collider generates.
+  single_action_only: true
+  action_label: Play panel 26
+  steps:
+  - text: In two thousand fifteen, Comtrade joined CERN openlab, contributing to data-management solutions for the world's largest scientific project — the Large Hadron Collider. The partner lineup included Oracle, Siemens, and NVIDIA. Comtrade was responsible for EOS, the system that handles the petabytes of data the collider generates.
+- id: panel-27-citrix
+  label: 27. Innovation Pays Off — Citrix Acquires Comtrade IP
+  summary_text: In January two thousand sixteen, Comtrade sold its management-pack intellectual property to Citrix — the company's first asset sale.
+  single_action_only: true
+  action_label: Play panel 27
+  steps:
+  - text: In January two thousand sixteen, Comtrade sold its management-pack intellectual property to Citrix — the company's first asset sale.
+- id: panel-28-distribution-expansion
+  label: 28. Growing Presence — Distribution Expands Across Europe
+  summary_text: Between two thousand sixteen and two thousand eighteen, Comtrade Distribution opened new offices across Europe. By the end of the expansion it was present in fourteen countries reaching seventy-five million people.
+  single_action_only: true
+  action_label: Play panel 28
+  steps:
+  - text: Between two thousand sixteen and two thousand eighteen, Comtrade Distribution opened new offices across Europe. By the end of the expansion it was present in fourteen countries reaching seventy-five million people.
+- id: panel-29-hycu
+  label: 29. Reinvention — HYCU Is Born
+  summary_text: In two thousand eighteen, Comtrade Software rebranded as HYCU, entering a new growth phase.
+  single_action_only: true
+  action_label: Play panel 29
+  steps:
+  - text: In two thousand eighteen, Comtrade Software rebranded as HYCU, entering a new growth phase.
+- id: panel-30-data-center
+  label: 30. Regional Data Center Opens in Belgrade
+  summary_text: In two thousand eighteen, the largest data center in Southeast Europe began operation, here at the Belgrade campus.
+  single_action_only: true
+  action_label: Play panel 30
+  steps:
+  - text: In two thousand eighteen, the largest data center in Southeast Europe began operation, here at the Belgrade campus.
+- id: panel-31-strategic-transactions
+  label: 31. Strategic Transactions
+  summary_text: Two landmark deals mark this period. In August two thousand twenty, Endava acquired Comtrade Digital Services. In March two thousand twenty-one, Bain Capital acquired HYCU.
+  single_action_only: true
+  action_label: Play panel 31
+  steps:
+  - text: Two landmark deals mark this period. In August two thousand twenty, Endava acquired Comtrade Digital Services. In March two thousand twenty-one, Bain Capital acquired HYCU.
+- id: panel-32-comtrade-360
+  label: 32. Comtrade 360 Launched
+  summary_text: 'In two thousand twenty-one, a new company was born to meet modern software-engineering needs: Comtrade 360. Headquartered in Ljubljana, with offices in Belgrade, Novi Sad, and Kragujevac, it specializes in software services, AI and machine-learning solutions, and Salesforce.'
+  single_action_only: true
+  action_label: Play panel 32
+  steps:
+  - text: 'In two thousand twenty-one, a new company was born to meet modern software-engineering needs: Comtrade 360. Headquartered in Ljubljana, with offices in Belgrade, Novi Sad, and Kragujevac, it specializes in software services, AI and machine-learning solutions, and Salesforce.'
+- id: panel-33-record-year
+  label: 33. Record Year — Half a Billion in Revenue
+  summary_text: In two thousand twenty-two, the Comtrade Group reached five hundred million euros in revenue for the first time.
+  single_action_only: true
+  action_label: Play panel 33
+  steps:
+  - text: In two thousand twenty-two, the Comtrade Group reached five hundred million euros in revenue for the first time.
+- id: panel-34-hq-switzerland
+  label: 34. A New Chapter — Headquarters Move to Switzerland
+  summary_text: In June two thousand twenty-four, the headquarters moved to Switzerland — marking a new era of global presence.
+  single_action_only: true
+  action_label: Play panel 34
+  steps:
+  - text: In June two thousand twenty-four, the headquarters moved to Switzerland — marking a new era of global presence.
+- id: panel-35-tesla-1m
+  label: 35. Tesla Milestone — One Million TVs Sold
+  summary_text: In two thousand twenty-five, the Tesla brand passed a milestone of one million TVs sold — a symbol of how far the original vision has come.
+  single_action_only: true
+  action_label: Play panel 35
+  steps:
+  - text: In two thousand twenty-five, the Tesla brand passed a milestone of one million TVs sold — a symbol of how far the original vision has come.
+- id: panel-36-athletics
+  label: 36. Supporting the Queen of Sports
+  summary_text: From its founding, Comtrade has supported sports, and athletics has always held a special place. A former athlete himself, Mr. Jevrosimovic served as President of the Serbian Athletics Federation for fourteen years — its most successful era, from building the Belgrade Athletics Hall to a remarkable medal tally. Comtrade was also general sponsor of the Belgrade Marathon in twenty twenty-four and twenty twenty-five, its highest-participation years.
+  single_action_only: true
+  action_label: Play panel 36
+  steps:
+  - text: From its founding, Comtrade has supported sports, and athletics has always held a special place. A former athlete himself, Mr. Jevrosimovic served as President of the Serbian Athletics Federation for fourteen years — its most successful era, from building the Belgrade Athletics Hall to a remarkable medal tally. Comtrade was also general sponsor of the Belgrade Marathon in twenty twenty-four and twenty twenty-five, its highest-participation years.
+- id: panel-37-csi-achievements
+  label: 37. Comtrade SI — Achievements Over the Years
+  summary_text: Comtrade System Integration has been named Microsoft Partner of the Year in seven of ten consecutive years. In twenty twenty-five it ranked seventy-fifth on the MSSP Alert Global Top 250 in cybersecurity, up from one hundred forty-nine the year before. It also received the Djordje Vajfert Award for social responsibility in twenty twenty-three.
+  single_action_only: true
+  action_label: Play panel 37
+  steps:
+  - text: Comtrade System Integration has been named Microsoft Partner of the Year in seven of ten consecutive years. In twenty twenty-five it ranked seventy-fifth on the MSSP Alert Global Top 250 in cybersecurity, up from one hundred forty-nine the year before. It also received the Djordje Vajfert Award for social responsibility in twenty twenty-three.
+- id: panel-38-ct-series
+  label: 38. Comtrade Computer — the CT Series
+  summary_text: By two thousand nine, Comtrade was building its own home and business computers under the CT Series, ready-to-use systems with preinstalled software and purpose-built hardware.
+  single_action_only: true
+  action_label: Play panel 38
+  steps:
+  - text: By two thousand nine, Comtrade was building its own home and business computers under the CT Series, ready-to-use systems with preinstalled software and purpose-built hardware.
+- id: panel-39-new-premises
+  label: 39. New Premises Across the Region
+  summary_text: Over these years Comtrade opened new premises across the region, in Ljubljana in twenty twelve, Banja Luka in twenty thirteen, Maribor in twenty sixteen, and a new Belgrade site in twenty twenty-one.
+  single_action_only: true
+  action_label: Play panel 39
+  steps:
+  - text: Over these years Comtrade opened new premises across the region, in Ljubljana in twenty twelve, Banja Luka in twenty thirteen, Maribor in twenty sixteen, and a new Belgrade site in twenty twenty-one.
+- id: panel-40-events
+  label: 40. Comtrade Events Over the Years
+  summary_text: Since its founding, Comtrade has run events that set standards in the industry, from the May Days of Technology in the nineties, to its own IT exhibitions in the early two-thousands, and later conferences on financial technology and cybersecurity, across cities like Zagreb, Bucharest, Sarajevo, Ljubljana, and Belgrade.
+  single_action_only: true
+  action_label: Play panel 40
+  steps:
+  - text: Since its founding, Comtrade has run events that set standards in the industry, from the May Days of Technology in the nineties, to its own IT exhibitions in the early two-thousands, and later conferences on financial technology and cybersecurity, across cities like Zagreb, Bucharest, Sarajevo, Ljubljana, and Belgrade.

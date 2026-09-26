@@ -1,0 +1,110 @@
+# Example configuration for the robot supervisor API.
+# Commands that start with "python" will automatically use the repo's .venv interpreter if present.
+# When set to "systemd", services default to using systemd units unless overridden per service.
+default_backend: process
+process_log_dir: ./logs
+services:
+  - name: livekit
+    display_name: LiveKit Server
+    backend: process
+    command:
+      - livekit-server
+      - --dev
+    working_dir: ..
+    ready_after_seconds: 1
+  - name: voice-agent
+    display_name: Voice Agent
+    backend: process
+    command:
+      - python
+      - livekit-client/agent_main.py
+      - start
+    working_dir: ..
+    depends_on:
+      - livekit
+    ready_after_seconds: 2
+  - name: audio-bridge
+    display_name: Audio Bridge
+    backend: process
+    working_dir: ..
+    depends_on:
+      - voice-agent
+    ready_after_seconds: 3
+    default_mode: jabra
+    modes:
+      - name: external
+        display_name: External Audio
+        command:
+          - python
+          - examples/livekit_audio_patching/local/stream_audio.py
+      - name: robot
+        display_name: Robot Audio
+        command:
+          - python
+          - examples/livekit_audio_patching/robot_audio_bridge.py
+          - --iface
+          - eth0
+      - name: local
+        display_name: Local Audio
+        command:
+          - python
+          - examples/livekit_audio_patching/local/stream_audio.py
+      - name: jabra
+        display_name: Jabra Speak2 55
+        command:
+          - python
+          - examples/livekit_audio_patching/local/stream_jabra_audio.py
+  - name: camera-bridge
+    display_name: Camera Bridge
+    backend: process
+    working_dir: ..
+    depends_on:
+      - audio-bridge
+    default_mode: local_linux
+    modes:
+      - name: external
+        display_name: External Camera
+        command:
+          - python
+          - examples/livekit_camera_publisher/local/camera_publisher_mac.py
+          - --interval
+          - "3.0"
+      - name: robot
+        display_name: Robot Camera
+        command:
+          - python
+          - examples/livekit_camera_publisher/local/camera_publisher_mac.py
+          - --interval
+          - "3.0"
+      - name: local_macos
+        display_name: Local Camera MacOS
+        command:
+          - python
+          - examples/livekit_camera_publisher/local/camera_publisher_mac.py
+          - --interval
+          - "3.0"
+      - name: local_linux
+        display_name: Local Camera Linux
+        command:
+          - python
+          - examples/livekit_camera_publisher/local/camera_publisher_linux.py
+          - --interval
+          - "3.0"
+  - name: gesture-bridge
+    display_name: Gesture Bridge
+    backend: process
+    working_dir: ..
+    depends_on:
+      - voice-agent
+    default_mode: robot
+    modes:
+      - name: robot
+        display_name: Robot
+        command:
+          - python
+          - livekit-client/gesture_api.py
+      - name: mock
+        display_name: Mock
+        command:
+          - python
+          - livekit-client/gesture_api.py

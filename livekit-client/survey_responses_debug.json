@@ -1,0 +1,46 @@
+{
+  "survey_id": "test_survey",
+  "started_at": "2026-06-03T12:43:56.444837+00:00",
+  "active": false,
+  "phase": "finished",
+  "current_index": 2,
+  "total_questions": 2,
+  "responses_recorded": 2,
+  "contact_info": "",
+  "questions": [
+    {
+      "id": "kako_pogosto_obi_ete_bencinski_servis",
+      "question": "Kako pogosto obiščete bencinski servis?",
+      "response_kind": "single_choice",
+      "options": [
+        "Vsak dan",
+        "enkrat na teden",
+        "redko"
+      ],
+      "allow_skip": true,
+      "response": {
+        "question_id": "kako_pogosto_obi_ete_bencinski_servis",
+        "raw_input": "vsak dan",
+        "selected_options": [
+          "Vsak dan"
+        ],
+        "free_text": "vsak dan",
+        "ranking": []
+      }
+    },
+    {
+      "id": "od_1_do_5_kako_zadovoljni_ste_s_isto_o_rpalke",
+      "question": "Od 1 do 5, kako zadovoljni ste s čistočo črpalke.",
+      "response_kind": "free_text",
+      "options": [],
+      "allow_skip": true,
+      "response": {
+        "question_id": "od_1_do_5_kako_zadovoljni_ste_s_isto_o_rpalke",
+        "raw_input": "tri",
+        "selected_options": [],
+        "free_text": "tri",
+        "ranking": []
+      }
+    }
+  ]
+}

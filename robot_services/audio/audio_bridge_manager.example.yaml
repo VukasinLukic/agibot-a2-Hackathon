@@ -1,0 +1,53 @@
+# PC3 audio bridge manager example configuration.
+# Copy to a local file on PC3 and set AUDIO_BRIDGE_MANAGER_CONFIG to that path.
+
+host: 0.0.0.0
+port: 8766
+manager_token: "dev-secret"
+
+python_executable: /home/agi/humanoid-platform/.venv/bin/python
+working_dir: /home/agi/humanoid-platform
+bridge_script: robot_services/audio/audio_bridge.py
+child_log_path: robot_supervisor_v2/logs/audio_bridge_pc3_child.log
+
+bridge_name: audio-streamer
+mic_track_name: g1-mic
+child_control_host: 127.0.0.1
+child_control_port: 8767
+
+child_startup_timeout_seconds: 10.0
+child_request_timeout_seconds: 5.0
+child_stop_timeout_seconds: 10.0
+device_list_timeout_seconds: 10.0
+
+# Agibot X2 PC3 low-latency mode. The code default is disabled, but this PC3
+# deployment example keeps native AIMA audio owners stopped so bridge startup
+# does not wait on `aima em stop-app ...`.
+agibot_aima:
+  enabled: true
+  command: aima
+  default_mode: audio_bridge
+  reconcile_on_manager_start: true
+  auto_stop_before_bridge_start: false
+  bridge_mode_stop_apps:
+    - agent
+    - hal_audio
+  agibot_mode_start_apps:
+    - hal_audio
+    - agent
+  command_timeout_seconds: 60.0
+
+# Environment variables override these LiveKit and naming values when set:
+# LIVEKIT_URL, LIVEKIT_ROOM, LIVEKIT_API_KEY, LIVEKIT_API_SECRET,
+# AUDIO_BRIDGE_IDENTITY, LIVEKIT_TRACK_NAME
+livekit_url: ws://10.0.1.41:7880
+livekit_room: g1-lab
+livekit_api_key: devkey
+livekit_api_secret: secret
+
+# Runtime microphone/speaker selections are sent by the supervisor service
+# config on each /start request. For the Rockchip ES7210 mic array, configure
+# the supervisor audio-bridge service with:
+#   default_microphone: "hw:2,0"
+#   input_capture_channels: 8
+#   input_mix_channels: [0]

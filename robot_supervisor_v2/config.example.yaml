@@ -1,0 +1,363 @@
+# Robot Supervisor V2 Configuration Example
+# Copy to config.yaml and customize for your environment
+
+robot:
+  id: unitree-g1-edu-01
+  name: "G1 Edu"
+  location: "Robot lab"
+  platform: unitree
+  model: unitree_g1_edu
+
+api:
+  host: 0.0.0.0
+  port: 8080
+  token: your-secret-token-here  # Change this!
+
+devices:
+  audio:
+    # Target top-level defaults. During migration, keep these aligned with the
+    # audio-bridge service defaults below.
+    default_microphone: null
+    default_speakers: null
+  camera:
+    default_device: "/dev/video10"
+
+services:
+  - name: teleimager-server
+    type: teleimager-server
+    config:
+      display_name: "Teleimager Server"
+      python_path: /home/unitree/miniconda3/envs/teleimager/bin/python
+      working_dir: /home/unitree/teleimager/src
+      module: teleimager.image_server
+      realsense: true
+      #solo_camera: additional
+
+  - name: inspire-hands
+    type: inspire-hands
+    config:
+      display_name: "Inspire Hands"
+      python_path: /usr/bin/python
+      working_dir: /home/unitree/inspire_hand_ws
+      script: inspire_hand_sdk/example/Headless_driver_double.py
+
+  - name: xr-teleop
+    type: xr-teleop
+    config:
+      display_name: "XR Teleoperation"
+      python_path: /home/unitree/miniconda3/envs/teleimager/bin/python
+      working_dir: /home/unitree/xr_teleoperate/teleop
+      script: teleop_hand_and_arm.py
+      arm: G1_29
+      img_server_ip: 127.0.0.1
+      network_interface: eth0
+      ee: inspire_ftp
+      motion: true
+      headless: false
+      sim: false
+      record: false
+
+  - name: robot-temperature-monitor
+    type: robot-temperature-monitor
+    config:
+      display_name: "Robot Temperature Monitor"
+      topic: rt/lowstate
+      network_interface: eth0
+      startup_timeout: 5.0
+      stale_timeout: 3.0
+      warn_threshold_c: 65.0
+      critical_threshold_c: 95.0
+      manual_only: true
+      optional: true
+
+  # LiveKit Server
+  - name: livekit
+    type: livekit-server
+    config:
+      display_name: "LiveKit Server"
+      bind: 0.0.0.0
+
+  # Voice Agent (with directory-based agent discovery)
+  - name: voice-agent
+    type: voice-agent
+    config:
+      display_name: "Voice Agent"
+      # script: ../livekit-client/agent_main.py  # Main agent script to run
+      agents_directory: livekit-client  # Directory containing agent implementations
+      selected_agent: agent_main  # Agent module name (without .py extension)
+      # Where the agent calls back for face-identity lookups and face
+      # capture/forget. Must match api.port above.
+      supervisor_url: http://127.0.0.1:8080
+
+  # Audio Bridge
+  - name: audio-bridge
+    type: audio-bridge
+    config:
+      display_name: "Audio Bridge"
+      script: robot_services/audio/audio_bridge.py
+      default_microphone: null                  # PortAudio index/name or Linux ALSA id (null = PortAudio default)
+      default_speakers: null                    # PortAudio index/name or Linux ALSA id (null = PortAudio default)
+      # input_capture_channels: 8               # Open multi-channel mic arrays with this many input channels
+      # input_mix_channels: [0]                 # Zero-based captured channels to average into the mono LiveKit mic
+      enable_rnnoise: false                    # Optional second-pass RNNoise denoising (CPU-heavy)
+      mic_track_name: "g1-mic"                 # LiveKit track name for the published microphone
+      # For robot.model agibot_a2_ultra, AIMA EM audio-app management is
+      # enabled by default. aima em stop-app can take >8s to respond on real
+      # hardware, so raise command_timeout_seconds or the manager gets stuck
+      # in "unknown" mode after the first reconcile and blocks every restart:
+      # agibot_aima:
+      #   enabled: true
+      #   command_timeout_seconds: 25
+      # For robot.model agibot_x2_ultra, this same service entry selects the
+      # supervisor remote wrapper. Replace local script settings with:
+      # manager_url: http://<pc3-ip>:8766
+      # manager_token_env: AUDIO_BRIDGE_MANAGER_TOKEN
+      # enable_aec: true
+
+  # Shared camera rule:
+  # camera_share produces /dev/video10 at one source resolution/FPS.
+  # Every /dev/video10 consumer should request that same resolution.
+  # Downstream FPS may be lower, e.g. Camera Bridge can publish 15 FPS while
+  # Vision Controller consumes the 30 FPS source stream.
+
+  # Camera Bridge
+  - name: camera-bridge
+    type: camera-bridge
+    config:
+      display_name: "Camera Bridge"
+      # For Agibot ROS 2 cameras, use a Python 3.10 env with LiveKit deps because
+      # ROS Humble rclpy is built for Python 3.10 on Jetson:
+      # python_bin: .camera-bridge-venv/bin/python
+      # pythonpath:
+      #   - jetson_deps
+      #   - .
+      #   - /opt/ros/humble/lib/python3.10/site-packages
+      #   - /opt/ros/humble/local/lib/python3.10/dist-packages
+      # source: ros2
+      # device: HEAD_FRONT_RGBD
+      script: robot_services/vision/camera_bridge.py
+      device: "/dev/video10"  # Shared camera from camera_share/camera_share.sh
+      room: g1-lab
+      resolution: 960x540
+      framerate: 15
+      # publish_fps: 15  # Optional LiveKit output FPS; defaults to framerate/actual camera FPS
+      # video_max_bitrate: 1500000      # Optional LiveKit encoding bitrate cap
+      # video_max_framerate: 15         # Optional LiveKit encoding FPS cap; defaults to publish FPS
+      # idle_fps: 2.0                   # Camera read/discard FPS while no browser monitor is active
+      # demand_poll_interval_seconds: 0.5
+      # supervisor_url: http://127.0.0.1:8080
+      # device_list_timeout: 20.0      # Helpful on Jetson/ROS camera probes
+      # ros_log_dir: tmp/ros_logs      # Keep ROS logs off the small root filesystem
+      send_to_agent: false
+      react_to_visuals: false  # Experimental and independent from send_to_agent
+      interval: 3.0
+      optional: true
+
+  - name: vision-controller
+    type: vision-controller
+    config:
+      display_name: "Vision Controller"
+      # python_bin: "/home/unitree/HumanoidSupervisor2/Humanoid%20Livekit/.vision/bin/python"
+      python_bin: "/home/unitree/HumanoidLivekit/rag_gpu_env/bin/python"
+      # python_bin: "/home/unitree/HumanoidLivekit/rag_torch/bin/python"
+      working_dir: "/home/unitree/HumanoidSupervisor2/Humanoid%20Livekit"
+      detector_script: robot_services/vision/detection/main.py
+      supervisor_url: http://127.0.0.1:8080
+      # Optional overrides. Defaults live in robot_services/vision/detection/defaults.py.
+      detection_fps: 30
+      card_capture_fps: 8
+      camera_id: "/dev/video10"
+      camera_fps: 30
+      # camera_fourcc: MJPG
+      # camera_buffer_size: 1
+      camera_resolution: 960x540
+      yolo_image_size: 640
+      enable_id_scanning: false
+      # Face recognition: greet enrolled people by name, run voice-driven
+      # enrollment for unknown faces, and honour "forget me". Independent of the
+      # general vision toggle, and applied live without restarting the detector.
+      enable_face_recognition: false
+      # face_match_threshold: 0.62    # cosine similarity to count as a known face
+      # face_dedupe_threshold: 0.75   # above this, a new enrollment reuses the existing row
+      # face_store_path: robot_supervisor_v2/data/faces.db  # relative paths resolve to the repo root
+      opencv_num_threads: 1
+      torch_num_threads: 1
+      optional: true
+
+  - name: video-recording-service
+    type: video-recording-service
+    config:
+      display_name: "Video Recording Service"
+      device: "/dev/video10"
+      resolution: 960x540
+      framerate: 30
+      output_dir: tmp/video_recording_service
+      record_overlay_enabled: false
+      cv_debug_enabled: false
+      cv_debug_mode: id_capture
+      id_debug_enabled: false
+      id_debug_overlay_enabled: false
+      id_debug_record_captures_enabled: false
+      id_debug_mode: capture
+      id_debug_capture_image_mode: crop
+      manual_only: true
+      optional: true
+
+  # Legacy operator-only conversation camera stream (non-LiveKit fallback).
+  # Frontend monitoring should use Camera Bridge / LiveKit instead.
+  # Uncomment only if you explicitly need the old MJPEG/OpenCV monitor path.
+  # - name: conversation-camera-stream
+  #   type: conversation-camera-stream
+  #   config:
+  #     display_name: "Conversation Camera Stream"
+  #     device: "/dev/video6"
+  #     resolution: 1280x720
+  #     framerate: 60
+  #     jpeg_quality: 85
+  #     manual_only: true
+  #     optional: true
+
+  # Gesture Bridge
+  # For robot.model agibot_a2_ultra, this plays curated AIMA preset motions
+  # through the native MotionCommandService/ResourceService HTTP JSON-RPC
+  # interfaces. Confirm the reachable IPs on this unit and override if they
+  # differ from AgiBot's documented example addresses:
+  #   AGIBOT_MOTION_COMMAND_URL=http://192.168.100.100:56444
+  #   AGIBOT_RESOURCE_SERVICE_URL=http://192.168.100.110:51049
+  - name: gesture-bridge
+    type: gesture-bridge
+    config:
+      display_name: "Gesture Bridge"
+      script: robot_services/gestures/gesture_api.py
+      port: 8090
+      safety_pool: safe_only
+      optional: true  # Mark as optional since it may not be used in all deployments
+
+  # RAG Service
+  - name: rag-service
+    type: rag-service
+    config:
+      display_name: "RAG Service"
+      host: 0.0.0.0
+      port: 8098
+      # Resolve from working_dir so this works on Unitree and Agibot checkouts.
+      python_bin: rag_torch/bin/python
+      # GPU is opt-in. On Jetson use a CUDA-enabled environment, set cuda, and
+      # enable strict_device so a broken CUDA runtime cannot silently use CPU.
+      device: cpu
+      strict_device: false
+      startup_timeout: 45  # BGE-M3 cold load can exceed the generic 15s timeout.
+      app_module: rag_service.app:app
+      working_dir: .
+      optional: true  # RAG is optional unless your agent depends on it
+
+# Health monitoring settings
+health_monitoring:
+  enabled: true
+  interval: 5.0  # Check health every 5 seconds
+
+# Engagement settings
+engagement:
+  default_room: main-room
+  conversation_history_limit: 50
+
+# Operator command presets exposed in the frontend Commands pane.
+# These are allowlisted commands only; the frontend cannot submit arbitrary shell text.
+# Configure sudoers with NOPASSWD for the sudo commands and configure git credentials
+# for the user running the supervisor before using these.
+command_presets:
+  - id: wifi-ct-guest
+    label: "WIFI: CT Guest"
+    description: "Connect to COMTRADE GUEST through NetworkManager."
+    command: ["sudo", "-n", "nmcli", "conn", "up", "COMTRADE GUEST"]
+    timeout_seconds: 20
+    requires_confirmation: true
+
+  - id: wifi-teltonika
+    label: "WIFI: Teltonika"
+    description: "Connect to wrobo through NetworkManager."
+    command: ["sudo", "-n", "nmcli", "conn", "up", "wrobo"]
+    timeout_seconds: 20
+    requires_confirmation: true
+
+  - id: git-pull
+    label: "GIT Pull"
+    description: "Pull the latest supervisor repository changes."
+    cwd: "~/HumanoidSupervisor2/Humanoid%20Livekit"
+    command: ["git", "pull", "--ff-only"]
+    timeout_seconds: 60
+
+  - id: build-frontend
+    label: "BUILD"
+    description: "Build the supervisor frontend."
+    cwd: "~/HumanoidSupervisor2/Humanoid%20Livekit/robot_supervisor_v2/frontend"
+    command: ["npm", "run", "build"]
+    timeout_seconds: 180
+
+  - id: restart-supervisor
+    label: "Restart Supervisor"
+    description: "Restart the robot_supervisor tmux session."
+    command:
+      - "sh"
+      - "-lc"
+      - "sleep 1; tmux kill-session -t robot_supervisor 2>/dev/null || true; cd \"$HOME/HumanoidSupervisor2/Humanoid%20Livekit\" && ./run_robot_supervisor_v2.sh"
+    timeout_seconds: 5
+    requires_confirmation: true
+    detached: true
+
+  - id: restart-robot
+    label: "Restart Robot"
+    description: "Reboot the robot host."
+    command: ["sudo", "-n", "reboot"]
+    timeout_seconds: 5
+    requires_confirmation: true
+    detached: true
+
+  - id: robot-query-state
+    label: "Query Robot State"
+    description: "Read current FSM ID, FSM mode, balance mode, stand height, and active MotionSwitcher mode. Run this first to understand why a locomotion command isn't working."
+    command:
+      - "/home/unitree/HumanoidSupervisor2/Humanoid%20Livekit/.venv/bin/python3"
+      - "/home/unitree/HumanoidSupervisor2/Humanoid%20Livekit/robot_services/locomotion/query_robot_state.py"
+      - "eth0"
+    timeout_seconds: 15
+
+  - id: robot-damp-mode
+    label: "Damp Mode"
+    description: "Put the robot into Damp mode (FSM 1): motors apply passive damping and the robot becomes compliant. If the robot was left in debug/development mode, this first restores MotionSwitcher 'ai' so the sport service answers."
+    command:
+      - "/home/unitree/HumanoidSupervisor2/Humanoid%20Livekit/.venv/bin/python3"
+      - "/home/unitree/HumanoidSupervisor2/Humanoid%20Livekit/robot_services/locomotion/set_damp_mode.py"
+      - "eth0"
+    timeout_seconds: 30
+    requires_confirmation: true
+
+  - id: robot-locked-standing
+    label: "Locked Standing"
+    description: "G1 Lock Standing (FSM 4): no balance control. Use only when upright on the rack/gantry or physically supported. The command now verifies the observed FSM instead of treating RPC acceptance as success."
+    command:
+      - "/home/unitree/HumanoidSupervisor2/Humanoid%20Livekit/.venv/bin/python3"
+      - "/home/unitree/HumanoidSupervisor2/Humanoid%20Livekit/robot_services/locomotion/set_locked_standing.py"
+      - "eth0"
+    timeout_seconds: 30
+    requires_confirmation: true
+
+  - id: robot-walk-mode
+    label: "Walk Mode"
+    description: "G1 Edu 29DoF standard walk/self-balancing mode (FSM 801, verified from remote): selects low speed, BalanceStand, and zero velocity."
+    command:
+      - "/home/unitree/HumanoidSupervisor2/Humanoid%20Livekit/.venv/bin/python3"
+      - "/home/unitree/HumanoidSupervisor2/Humanoid%20Livekit/robot_services/locomotion/set_walk_mode.py"
+      - "eth0"
+    timeout_seconds: 30
+    requires_confirmation: true
+
+  - id: robot-run-mode
+    label: "Run Mode"
+    description: "G1 Edu 29DoF high-speed mode: uses the same verified FSM 801 self-balancing controller, selects a higher speed profile, then BalanceStand and zero velocity."
+    command:
+      - "/home/unitree/HumanoidSupervisor2/Humanoid%20Livekit/.venv/bin/python3"
+      - "/home/unitree/HumanoidSupervisor2/Humanoid%20Livekit/robot_services/locomotion/set_run_mode.py"
+      - "eth0"
+    timeout_seconds: 30
+    requires_confirmation: true

@@ -1,0 +1,90 @@
+# =====================================================
+# Head camera configuration
+# =====================================================
+# camera topic
+#head_camera:
+#  enable_zmq: true
+#  zmq_port: 55555
+#  enable_webrtc: true
+#  webrtc_port: 60001
+#  webrtc_codec: h264
+
+#  type: realsense
+
+  # choose what you want to publish as "head camera"
+  # If you want color stream from the D435i, these are common:
+#  image_shape: [480, 640]   # [height, width]
+#  binocular: false
+#  fps: 30
+
+  # For type=realsense: serial_number only
+#  video_id: null
+#  serial_number: "347622072295"
+#  physical_path: null
+
+left_wrist_camera:
+  enable_zmq: false
+  enable_webrtc: false
+  # (whatever minimal fields are required)
+
+right_wrist_camera:
+  enable_zmq: false
+  enable_webrtc: false
+
+
+
+#webcam:
+  #enable_zmq: true
+  #zmq_port: 55558
+  #enable_webrtc: true
+  #webrtc_port: 60004
+  #webrtc_codec: h264
+
+  #type: uvc
+
+  #image_shape: [480, 640]
+  #binocular: false
+  #fps: 30
+
+  # Prefer stable ID if available:
+  #video_id: 6
+  #serial_number: "SN0001"
+  #physical_path: null
+
+
+builtin_camera:
+  enable_zmq: true
+  zmq_port: 55555
+  enable_webrtc: false
+  webrtc_port: 60001
+  webrtc_codec: h264
+
+  type: multicast_rtp
+
+  image_shape: [240, 320]   # [height, width]
+  binocular: false
+  fps: 15
+
+  # videohub_pc4 multicast stream (holds /dev/video4, so we consume its output)
+  multicast_group: "230.1.1.1"
+  rtp_port: 1720
+  network_iface: "eth0"
+  source_ip: "192.168.123.174"
+
+
+additional_camera:
+  enable_zmq: true
+  zmq_port: 55558
+  enable_webrtc: false
+  webrtc_port: 60004
+  webrtc_codec: h264
+
+  type: uvc
+
+  image_shape: [240, 320]
+  binocular: false
+  fps: 30
+
+  video_id: 0
+  serial_number: "01.00.00"
+  physical_path: null

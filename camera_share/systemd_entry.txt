@@ -1,0 +1,18 @@
+[Unit]
+Description=Shared camera fanout to v4l2loopback
+After=systemd-modules-load.service
+Wants=systemd-modules-load.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/camera-share
+EnvironmentFile=-/etc/default/camera-share
+ExecStart=/opt/camera-share/camera-share.sh
+Restart=always
+RestartSec=3
+
+# Basic hardening; remove if it causes issues on your distro.
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

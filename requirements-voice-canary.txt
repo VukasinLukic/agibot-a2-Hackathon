@@ -1,0 +1,4 @@
+# Install only into .venv-voice-canary, which is cloned from the live Python 3.12 .venv.
+livekit-plugins-deepgram==1.6.4
+livekit-plugins-cartesia==1.6.4
+livekit-plugins-assemblyai==1.6.4

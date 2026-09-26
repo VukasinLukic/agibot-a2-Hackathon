@@ -1,0 +1,24 @@
+services:
+  rag-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: humanoid-rag-api
+    restart: unless-stopped
+    ports:
+      - "8098:8098"
+    environment:
+      LOG_LEVEL: INFO
+      RAG_QDRANT_URL: ${RAG_QDRANT_URL:-http://host.docker.internal:6333}
+      RAG_QDRANT_COLLECTION: ${RAG_QDRANT_COLLECTION:-robot_knowledge}
+      RAG_EMBED_MODEL: ${RAG_EMBED_MODEL:-/models/bge-m3-local}
+      RAG_DEVICE: ${RAG_DEVICE:-cpu}
+      RAG_MAX_LENGTH: ${RAG_MAX_LENGTH:-256}
+      RAG_TOP_K: ${RAG_TOP_K:-5}
+      RAG_QDRANT_TIMEOUT_SECONDS: ${RAG_QDRANT_TIMEOUT_SECONDS:-4.0}
+      RAG_CHUNK_CHARS: ${RAG_CHUNK_CHARS:-2500}
+      RAG_OVERLAP_CHARS: ${RAG_OVERLAP_CHARS:-300}
+    volumes:
+      - ../bge-m3-local:/models/bge-m3-local:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

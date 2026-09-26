@@ -1,0 +1,14 @@
+# Minimal Python dependencies for PC3 remote audio bridge manager + child bridge.
+# This intentionally excludes supervisor UI, RAG, vision, and teleoperation deps.
+
+fastapi
+uvicorn[standard]
+pydantic
+PyYAML
+python-dotenv
+
+livekit
+livekit-api
+sounddevice
+numpy
+pyrnnoise

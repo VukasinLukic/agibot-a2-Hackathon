@@ -1,0 +1,18 @@
+# Laptop-safe defaults. Ball color is unset until a real ball is chosen.
+# hsv_lower / hsv_upper use OpenCV HSV: H 0-179, S 0-255, V 0-255.
+
+camera_id: a2-interactive-main
+origin: a2_h264
+
+ball:
+  hsv_lower: null
+  hsv_upper: null
+  min_diameter_px: 4
+  max_diameter_px: 48
+
+# null means the whole frame. Otherwise [x, y, width, height] in pixels.
+roi: null
+
+tracker:
+  # Consecutive missing samples before the track is dropped.
+  missing_frames: 8
