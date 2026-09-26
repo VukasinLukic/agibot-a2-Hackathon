@@ -35,6 +35,16 @@ def _frame(seq: int, image: BgrImage) -> Frame:
     return Frame(seq, seq * 50_000_000, image.width, image.height, image, "file-cam", ORIGIN_FILE)
 
 
+def _rect(width: int, height: int, boxes: list[tuple[int, int, int, int]]) -> BgrImage:
+    image = BgrImage(width, height)
+    image.fill(DARK)
+    for x, y, box_w, box_h in boxes:
+        for py in range(y, y + box_h):
+            for px in range(x, x + box_w):
+                image.set(px, py, WHITE)
+    return image
+
+
 def _paint(width: int, height: int, squares: list[tuple[int, int, int, tuple[int, int, int]]]) -> BgrImage:
     image = BgrImage(width, height)
     image.fill(DARK)
@@ -56,10 +66,23 @@ class TrackTests(unittest.TestCase):
             if isinstance(node, ast.Import):
                 names = [alias.name.split(".")[0] for alias in node.names]
                 self.assertNotIn("cv2", names)
+                self.assertNotIn("torch", names)
                 self.assertNotIn("ultralytics", names)
                 self.assertNotIn("rclpy", names)
             if isinstance(node, ast.ImportFrom):
-                self.assertNotIn(node.module, {"cv2", "ultralytics", "rclpy"})
+                module = node.module or ""
+                self.assertNotIn(module.split(".")[0], {"cv2", "torch", "ultralytics", "rclpy"})
+        blurball = ast.parse(
+            Path(track.__file__).with_name("blurball.py").read_text(encoding="utf-8")
+        )
+        for node in blurball.body:
+            if isinstance(node, ast.Import):
+                names = [alias.name.split(".")[0] for alias in node.names]
+                self.assertNotIn("torch", names)
+                self.assertNotIn("cv2", names)
+            if isinstance(node, ast.ImportFrom):
+                module = node.module or ""
+                self.assertNotIn(module.split(".")[0], {"torch", "cv2"})
         self.assertNotIn("ultralytics", sys.modules)
         self.assertNotIn("rclpy", sys.modules)
 
@@ -149,6 +172,56 @@ class TrackTests(unittest.TestCase):
         observation = sample.as_observation()
         self.assertEqual(observation["observation_kind"], "observed")
         self.assertFalse(sample.proves_bounce)
+
+    def test_a_blur_streak_is_kept_and_the_nearest_candidate_wins(self) -> None:
+        tracker = BallTracker(_config())
+        blank = _rect(80, 60, [])
+        streak = _rect(80, 60, [(20, 28, 16, 4)])
+        self.assertEqual(tracker.update(_frame(0, blank)).observation_kind, "missing")
+        seen = tracker.update(_frame(1, streak))
+        self.assertEqual(seen.observation_kind, "observed")
+        self.assertAlmostEqual(seen.x_px or 0, 27.5, delta=1.5)
+        self.assertAlmostEqual(seen.y_px or 0, 29.5, delta=1.5)
+        self.assertFalse(seen.proves_bounce)
+
+        follow = BallTracker(_config())
+        for index, image in enumerate(
+            [
+                _paint(80, 60, [(10, 20, 6, WHITE)]),
+                _paint(80, 60, [(18, 20, 6, WHITE)]),
+                _paint(80, 60, [(26, 20, 6, WHITE)]),
+            ]
+        ):
+            follow.update(_frame(index, image))
+        both = _paint(80, 60, [(34, 20, 6, WHITE), (60, 40, 6, WHITE)])
+        chosen = follow.update(_frame(3, both))
+        self.assertEqual(chosen.observation_kind, "observed")
+        self.assertLess(chosen.x_px or 99, 50)
+
+    def test_a_learned_point_is_used_when_the_model_answers(self) -> None:
+        class _Fixed:
+            def locate(self, _pixels: bytes, _width: int, _height: int) -> tuple[float, float, float]:
+                return (12.0, 14.0, 0.91)
+
+        blank = _paint(80, 60, [])
+        tracker = BallTracker(_config(), model=_Fixed())
+        sample = tracker.update(_frame(0, blank))
+        self.assertEqual(sample.observation_kind, "observed")
+        self.assertAlmostEqual(sample.x_px or 0, 12.0)
+        self.assertAlmostEqual(sample.y_px or 0, 14.0)
+        self.assertGreaterEqual(sample.confidence, 0.9)
+        self.assertFalse(sample.proves_bounce)
+
+        unset = VisionConfig(
+            camera_id="file-cam",
+            origin="file",
+            ball=BallColor(None, None),
+            min_diameter_px=4,
+            max_diameter_px=12,
+            roi=None,
+            missing_frames=2,
+        )
+        BallTracker(unset, model=_Fixed())
 
     def test_live_search_requires_the_table(self) -> None:
         from table_tennis.vision.events import MatchVisionProducer

@@ -84,7 +84,9 @@ if calibration.ready:
 
 ## Predlog
 
-HSV u `config.example.yaml` ostaje prazan dok se ne izmeri na pravom fisheye kadru. `BallTracker` bez te boje ne kreće. Pretraga živog producera ide samo unutar kalibrisanog stola.
+HSV u `config.example.yaml` ostaje prazan dok se ne izmeri na pravom fisheye kadru. Bez boje i bez `model_path`, `BallTracker` ne kreće. Pretraga živog producera ide samo unutar kalibrisanog stola, plus pojas iznad njega. Igrač izvan tog pojasa nije kandidat.
+
+Boja i pokret idu preko OpenCV-a (`inRange`, razlika tri kadra, `connectedComponentsWithStats`). Izdužen trag zamućenja se zadržava: položaj je sredina traga, a debljina traga je prečnik. Kad ima više kandidata, uzima se onaj najbliži predikciji.
 
 Predlog nastaje samo za jasan promašen povratak: lopta je viđena na obe polovine, van pojasa mreže, pa track pređe u `missing`. Pobednik je igrač koji nije na prijemnoj strani (`court_end_by_player` iz snapshot-a). Isti `command_id` ostaje pri ponovnom slanju. Posle 409 predlog se baca i ne šalje se ponovo sa novim `expected_revision`.
 
@@ -96,9 +98,17 @@ Komanda ide na `POST /api/table-tennis/matches/{id}/commands` sa actorom `vision
 
 `benchmark.evaluate` meri finalni skup odvojeno od tuning snimaka. Demo bar je bar 50 razmena sa stvarnog A2 stola, oznake mreže, zaklona, brze loptice i prekida, precision bar 95% i coverage jednostavnih razmena bar 80%. Sintetički snimak taj bar ne otvara. Ispunjen bar ne uključuje automatiku.
 
+## BlurBall
+
+Naučeni detektor je BlurBall (cogsys-tuebingen/blurball, MIT), treniran na pravim kadrovima stonog tenisa sa označenim zamućenjem. Težine nisu u git-u:
+
+https://cloud.cs.uni-tuebingen.de/index.php/s/6Z8TpM3sXRKHzGC
+
+U configu `model_path` pokazuje na taj checkpoint. Njihov paket traži checkout u `TT_BLURBALL_ROOT` i CUDA; na CPU `locate` ćuti i kadar ostaje na OpenCV putu. Prag skora je 0.7. Jedan korak, ulaz tri kadra, izlaz je sredina traga. Torch se ne uvozi dok se taj put ne pozove, i nije u korenskom `requirements.txt`.
+
 ## Granice
 
-- Nema obučenog modela. Ako boja i pokret ne drže loptu, sužavaju se pragovi i ROI.
+- Težine i snimci ne idu u git. Dok checkout i CUDA nisu tu, kadar obrađuje OpenCV.
 - Nema 50 označenih A2 razmena, pa automatika ostaje isključena.
 - Vision ne pomera robota i ne bira servera.
 - Snimci i težine ne idu u git.
