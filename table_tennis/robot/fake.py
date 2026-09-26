@@ -15,6 +15,7 @@ from table_tennis.contracts.primitives import ROBOT_CALL_TERMINAL_STATES
 from table_tennis.core.fake_log import FakeOutputLog
 from table_tennis.core.ports import Clock, SystemClock
 
+from .arrival import ArrivalFacts, assess_arrival
 from .gesture_output import GestureJob, GestureSession, MotionCoordinator
 from .readiness import NavFacts, assess
 from .score_display import ScoreboardSession
@@ -126,11 +127,15 @@ class FakeRobotNavigator:
         fail_waypoints: Optional[set[str]] = None,
         facts: Optional[NavFacts] = None,
         coordinator: Optional[MotionCoordinator] = None,
+        arrival: Optional[ArrivalFacts] = None,
     ):
         self.clock = clock or SystemClock()
         self.fail_waypoints = set(fail_waypoints or ())
         self.facts = facts or NavFacts()
         self.coordinator = coordinator
+        # None: the mock supplies a passing arrival report. A caller-supplied
+        # report is used instead, including an empty one (no telemetry).
+        self.arrival = arrival
         self.calls: dict[str, RobotCall] = {}
         self._lock = threading.Lock()
         self.native_calls: list[str] = []  # would-be native actions (for assertions)
@@ -241,14 +246,40 @@ class FakeRobotNavigator:
                     new_state, reason = "cancelled", "cancel confirmed (simulated)"
                 elif call.state == "validating" and call.named_waypoint_id in self.fail_waypoints:
                     new_state, reason = "failed", "simulated navigation failure"
+                elif call.state == "arrived":
+                    verdict = assess_arrival(self._arrival_for(call))
+                    new_state, reason = verdict.state, verdict.reason
+                    if new_state == call.state and reason == call.reason:
+                        continue
                 else:
                     new_state = self.FLOW[self.FLOW.index(call.state) + 1]
-                    reason = "simulated" if new_state != "ready" else "simulated arrival; robot ready"
-                call = call.model_copy(update={"state": new_state, "updated_at": self.clock.now(), "reason": reason})
+                    if new_state == "ready":
+                        continue
+                    reason = "simulated" if new_state != "arrived" else "goal accepted; arrival not confirmed"
+                update: dict[str, Any] = {
+                    "state": new_state,
+                    "updated_at": self.clock.now(),
+                    "reason": reason,
+                }
+                if new_state == "moving" and not call.native_task_id:
+                    update["native_task_id"] = f"sim-{call.call_id}"
+                call = call.model_copy(update=update)
                 self.calls[cid] = call
                 changed.append(call)
                 self._note_motion(call)
         return changed
+
+    def _arrival_for(self, call: RobotCall) -> ArrivalFacts:
+        if self.arrival is not None:
+            return self.arrival
+        task_id = call.native_task_id
+        return ArrivalFacts(
+            expected_task_id=task_id,
+            observed_task_id=task_id,
+            pose_age_ms=0,
+            within_tolerance=True,
+            settled=True,
+        )
 
     def _note_motion(self, call: RobotCall) -> None:
         if self.coordinator is not None:

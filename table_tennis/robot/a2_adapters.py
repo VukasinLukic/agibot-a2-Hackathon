@@ -20,6 +20,7 @@ import logging
 from typing import Any, Callable, Optional
 
 from table_tennis.contracts import MatchSnapshot, RobotCall, RobotCallRequest, RobotStatus
+from table_tennis.contracts.primitives import ROBOT_CALL_TERMINAL_STATES
 from table_tennis.core.ports import Clock, SystemClock
 
 from .gesture_output import GESTURE_HINTS, GestureJob, GestureSession, MotionCoordinator
@@ -33,6 +34,18 @@ Transport = Callable[[str, dict], Any]
 
 class RealTransportMissing(RuntimeError):
     pass
+
+
+def _native_task_id(reply: Any) -> Optional[str]:
+    if not isinstance(reply, dict):
+        return None
+    raw = reply.get("task_id")
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    if not text or text == "0":
+        return None
+    return text
 
 
 def _dry_run_transport(action: str, args: dict) -> dict:
@@ -160,15 +173,18 @@ class A2RobotNavigator(_A2Base):
             return call
         # REAL: operator route confirmation, then start ONE mission and remember
         # the native task_id. Dry-run still does not drive the robot.
-        self._send("nav.request", {"table_id": request.table_id, "waypoint": request.named_waypoint_id})
+        reply = self._send("nav.request", {"table_id": request.table_id, "waypoint": request.named_waypoint_id})
+        # An accepted RPC is not arrival. task_id 0 does not identify a mission.
+        task_id = _native_task_id(reply)
         call = RobotCall(
             call_id=call_id,
             table_id=request.table_id,
             named_waypoint_id=request.named_waypoint_id,
             state="failed" if self.dry_run else "requested",
             updated_at=self.clock.now(),
-            reason="dry-run: A2 navigation not wired yet" if self.dry_run else None,
+            reason="dry-run: A2 navigation not wired yet" if self.dry_run else "goal accepted; arrival not confirmed",
             match_id=request.match_id,
+            native_task_id=task_id,
             simulated=self.dry_run,
         )
         self.calls[call_id] = call
@@ -187,10 +203,23 @@ class A2RobotNavigator(_A2Base):
         )
 
     def cancel(self, call_id: str) -> RobotCall:
-        # REAL: cancel with the real native task_id (never task_id=0); report
-        # cancelled only after the robot confirms.
-        self._send("nav.cancel", {"call_id": call_id})
-        return self.calls[call_id]
+        # Cancel is a request. ``cancelled`` waits until the robot confirms.
+        # task_id 0 is not a mission id and is not sent.
+        call = self.calls[call_id]
+        if call.state in ROBOT_CALL_TERMINAL_STATES:
+            return call
+        task_id = call.native_task_id
+        if task_id and task_id != "0":
+            self._send("nav.cancel", {"call_id": call_id, "native_task_id": task_id})
+        call = call.model_copy(
+            update={
+                "state": "cancel_requested",
+                "updated_at": self.clock.now(),
+                "reason": "cancel requested",
+            }
+        )
+        self.calls[call_id] = call
+        return call
 
     def tick(self) -> list[RobotCall]:
         # REAL: poll task status with deadline + stale-pose watchdog.

@@ -17,6 +17,9 @@
   nije `completed`. Undo briše samo red. Započet gest se ne vraća unazad.
   Tokom hoda i aktivne razmene gest se ne pušta. Po dolasku jedan `wave`.
   `handshake` nije hvatanje. `nod thanks` je zahvalnost na kraju meča.
+- `arrival.py`: dolazak nije prihvaćen RPC. `ready` traži isti `task_id` (ne 0),
+  svežu pozu, toleranciju i zaustavljanje. Bez telemetrije poziv ostaje
+  `arrived` / `need_operator_confirmation`.
 - `accepted` nije `completed`; prihvaćen HTTP poziv nije dolazak; programski cancel nije E-stop.
 - Import `robot_services` samo lenjo, unutar real adaptera. Mock nikad ne konstruiše real adapter.
 - Poziv prvo pita `readiness.assess`. Ako presuda nije `ready`, stanje poziva je
