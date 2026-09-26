@@ -28,6 +28,11 @@ GESTURE_HINTS = {
 
 _BLOCKED_STATUS = frozenset({"rally", "pending_decision"})
 _MOVING = frozenset({"requested", "validating", "moving", "arrived", "cancel_requested"})
+UNPLAYED = frozenset({"navigating", "active_rally"})
+
+
+class GestureNotPlayed(RuntimeError):
+    """The body did not play this gesture. The match score is unchanged."""
 
 
 @dataclass

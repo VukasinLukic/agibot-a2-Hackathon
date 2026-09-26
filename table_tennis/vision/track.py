@@ -1,8 +1,9 @@
-"""Deterministic ball track. Color and motion only; no model and no score.
+"""Ball track. OpenCV color and motion, with BlurBall when a checkpoint is set.
 
 HSV bounds, diameter and the missing-frame limit come from ``VisionConfig``.
 A short gap is ``predicted``. A longer gap is ``missing`` and drops the track.
-Neither kind is a bounce or a point.
+Neither kind is a bounce or a point. The learned locator, when it answers,
+is the blur center from BlurBall. It never writes the score.
 """
 
 from __future__ import annotations
@@ -68,20 +69,34 @@ class _Blob:
     x: float
     y: float
     diameter: int
+    axis_x: float = 0.0
+    axis_y: float = 0.0
+    streak: float = 0.0
+    confidence: float = 0.8
 
 
 class BallTracker:
-    def __init__(self, config: VisionConfig, calibration: TableCalibration | None = None) -> None:
-        if not config.ball.configured or config.ball.hsv_lower is None or config.ball.hsv_upper is None:
+    def __init__(
+        self,
+        config: VisionConfig,
+        calibration: TableCalibration | None = None,
+        model: object | None = None,
+    ) -> None:
+        self._model = model if model is not None else _optional_model(config.model_path)
+        if self._model is None and (
+            not config.ball.configured or config.ball.hsv_lower is None or config.ball.hsv_upper is None
+        ):
             raise ValueError("ball color is not configured")
-        self._lower = config.ball.hsv_lower
-        self._upper = config.ball.hsv_upper
+        self._color_on = config.ball.hsv_lower is not None and config.ball.hsv_upper is not None
+        self._lower = config.ball.hsv_lower or (0, 0, 0)
+        self._upper = config.ball.hsv_upper or (0, 0, 0)
         self._min_diameter = config.min_diameter_px
         self._max_diameter = config.max_diameter_px
         self._missing_limit = config.missing_frames
         self._roi = _search_roi(config.roi, calibration)
         self._calibration_id = calibration.calibration_id if calibration is not None and calibration.ready else None
         self.table_limited = self._calibration_id is not None and self._roi.width < 10**8
+        self._older: bytes | None = None
         self._previous: bytes | None = None
         self._last_ns: int | None = None
         self._misses = 0
@@ -90,19 +105,25 @@ class BallTracker:
 
     def update(self, frame: Frame) -> TrackSample:
         pixels = _bgr_bytes(frame)
-        blobs = _blobs(
-            pixels,
-            frame.width,
-            frame.height,
-            self._previous,
-            self._lower,
-            self._upper,
-            self._roi,
-            self._min_diameter,
-            self._max_diameter,
-        )
+        chosen = _from_model(self._model, pixels, frame.width, frame.height, self._min_diameter)
+        if chosen is None and self._color_on:
+            blobs = _blobs(
+                pixels,
+                frame.width,
+                frame.height,
+                self._previous,
+                self._older,
+                self._lower,
+                self._upper,
+                self._roi,
+                self._min_diameter,
+                self._max_diameter,
+            )
+            chosen = _choose(
+                blobs, self._state, self._cov, self._last_ns, frame.capture_monotonic_ns, self._max_diameter
+            )
+        self._older = self._previous
         self._previous = pixels
-        chosen = _choose(blobs, self._state, self._cov, self._last_ns, frame.capture_monotonic_ns, self._max_diameter)
         if chosen is not None:
             self._misses = 0
             sample = self._observed(frame, chosen)
@@ -129,6 +150,7 @@ class BallTracker:
         else:
             self._predict(_dt(self._last_ns, frame.capture_monotonic_ns))
             _correct(self._state, self._cov, blob.x, blob.y)
+        _follow_streak(self._state, blob, _dt(self._last_ns, frame.capture_monotonic_ns))
         return TrackSample(
             frame_seq=frame.frame_seq,
             capture_monotonic_ns=frame.capture_monotonic_ns,
@@ -136,7 +158,7 @@ class BallTracker:
             x_px=blob.x,
             y_px=blob.y,
             observation_kind="observed",
-            confidence=0.8,
+            confidence=blob.confidence,
             calibration_id=self._calibration_id,
         )
 
@@ -214,6 +236,42 @@ def mark_track(image: BgrImage, sample: TrackSample) -> BgrImage:
     return marked
 
 
+def _optional_model(model_path: str | None) -> object | None:
+    if not model_path:
+        return None
+    from table_tennis.vision.blurball import BlurBallDetector
+
+    return BlurBallDetector(model_path)
+
+
+def _from_model(
+    model: object | None, pixels: bytes, width: int, height: int, min_diameter: int
+) -> _Blob | None:
+    locate = getattr(model, "locate", None)
+    if not callable(locate):
+        return None
+    found = locate(pixels, width, height)
+    if not isinstance(found, tuple) or len(found) < 3:
+        return None
+    x, y, score = float(found[0]), float(found[1]), float(found[2])
+    if score < 0.7:
+        return None
+    return _Blob(x=x, y=y, diameter=min_diameter, confidence=min(score, 1.0))
+
+
+def _follow_streak(state: list[float] | None, blob: _Blob, dt: float) -> None:
+    """A blur streak is a line. Its middle is the position; its axis sets speed."""
+    if state is None or blob.streak <= 0.0 or dt <= 0.0:
+        return
+    along = state[2] * blob.axis_x + state[3] * blob.axis_y
+    if abs(along) < 1.0:
+        return
+    sign = 1.0 if along >= 0.0 else -1.0
+    speed = blob.streak / dt
+    state[2] = sign * blob.axis_x * speed
+    state[3] = sign * blob.axis_y * speed
+
+
 def _choose(
     blobs: list[_Blob],
     state: list[float] | None,
@@ -229,11 +287,15 @@ def _choose(
     dt = _dt(last_ns, now_ns)
     pred_x = state[0] + state[2] * dt
     pred_y = state[1] + state[3] * dt
-    gate = float(max(max_diameter * 2, 12))
-    near = [blob for blob in blobs if (blob.x - pred_x) ** 2 + (blob.y - pred_y) ** 2 <= gate * gate]
-    if len(near) == 1:
-        return near[0]
-    return None
+    gate = float(max(max_diameter * 8, 64))
+    best: _Blob | None = None
+    best_dist = gate * gate
+    for blob in blobs:
+        dist = (blob.x - pred_x) ** 2 + (blob.y - pred_y) ** 2
+        if dist <= best_dist:
+            best = blob
+            best_dist = dist
+    return best
 
 
 def _blobs(
@@ -241,6 +303,7 @@ def _blobs(
     width: int,
     height: int,
     previous: bytes | None,
+    older: bytes | None,
     lower: tuple[int, int, int],
     upper: tuple[int, int, int],
     roi: Roi,
@@ -249,104 +312,101 @@ def _blobs(
 ) -> list[_Blob]:
     if previous is None:
         return []
-    hsv = _opencv_hsv(pixels, width, height)
-    mask = bytearray(width * height)
-    x1 = min(width, roi.x + roi.width)
-    y1 = min(height, roi.y + roi.height)
-    for y in range(max(0, roi.y), y1):
-        for x in range(max(0, roi.x), x1):
-            index = (y * width + x) * 3
-            hue, saturation, value = (int(hsv[y, x, 0]), int(hsv[y, x, 1]), int(hsv[y, x, 2]))
-            if not _hue_in(hue, lower[0], upper[0]) or not (
-                lower[1] <= saturation <= upper[1] and lower[2] <= value <= upper[2]
-            ):
-                continue
-            if _channel_delta(pixels, previous, index) < MOTION_DELTA:
-                continue
-            mask[y * width + x] = 1
-    found: list[_Blob] = []
-    seen = bytearray(width * height)
-    for y in range(max(0, roi.y), y1):
-        for x in range(max(0, roi.x), x1):
-            start = y * width + x
-            if mask[start] == 0 or seen[start]:
-                continue
-            blob = _component(mask, seen, width, height, x, y)
-            if blob is not None and min_diameter <= blob.diameter <= max_diameter:
-                found.append(blob)
-    return found
-
-
-def _component(
-    mask: bytearray,
-    seen: bytearray,
-    width: int,
-    height: int,
-    x: int,
-    y: int,
-) -> _Blob | None:
-    stack = [(x, y)]
-    seen[y * width + x] = 1
-    count = 0
-    sum_x = 0
-    sum_y = 0
-    min_x = x
-    max_x = x
-    min_y = y
-    max_y = y
-    while stack:
-        cx, cy = stack.pop()
-        count += 1
-        sum_x += cx
-        sum_y += cy
-        min_x = min(min_x, cx)
-        max_x = max(max_x, cx)
-        min_y = min(min_y, cy)
-        max_y = max(max_y, cy)
-        for nx, ny in ((cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)):
-            if nx < 0 or ny < 0 or nx >= width or ny >= height:
-                continue
-            flat = ny * width + nx
-            if mask[flat] == 0 or seen[flat]:
-                continue
-            seen[flat] = 1
-            stack.append((nx, ny))
-    box_w = max_x - min_x + 1
-    box_h = max_y - min_y + 1
-    if box_w == 0 or box_h == 0:
-        return None
-    aspect = box_w / box_h if box_w < box_h else box_h / box_w
-    if aspect < 0.6 or count / (box_w * box_h) < 0.45:
-        return None
-    return _Blob(x=sum_x / count, y=sum_y / count, diameter=max(box_w, box_h))
-
-
-def _opencv_hsv(pixels: bytes, width: int, height: int):
-    """OpenCV HSV, so a threshold tuned with cv2 matches this mask."""
     import cv2
     import numpy as np
 
-    bgr = np.frombuffer(pixels, dtype=np.uint8).reshape((height, width, 3))
-    return cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    current = np.frombuffer(pixels, dtype=np.uint8).reshape((height, width, 3))
+    prior = np.frombuffer(previous, dtype=np.uint8).reshape((height, width, 3))
+    hsv = cv2.cvtColor(current, cv2.COLOR_BGR2HSV)
+    color = _color_mask(cv2, np, hsv, lower, upper)
+    motion = _motion_mask(cv2, np, current, prior, older, width, height)
+    mask = cv2.bitwise_and(color, motion)
+    x0 = min(width, max(0, roi.x))
+    y0 = min(height, max(0, roi.y))
+    x1 = min(width, max(0, roi.x + roi.width))
+    y1 = min(height, max(0, roi.y + roi.height))
+    if x1 <= x0 or y1 <= y0:
+        return []
+    clipped = np.zeros_like(mask)
+    clipped[y0:y1, x0:x1] = mask[y0:y1, x0:x1]
+    color_clipped = np.zeros_like(color)
+    color_clipped[y0:y1, x0:x1] = color[y0:y1, x0:x1]
+    _color_count, color_labels, color_stats, _color_centroids = cv2.connectedComponentsWithStats(color_clipped)
+    count, labels, stats, centroids = cv2.connectedComponentsWithStats(clipped)
+    found: list[_Blob] = []
+    for index in range(1, count):
+        _left, _top, box_w, box_h, area = (int(stats[index, i]) for i in range(5))
+        if box_w < 1 or box_h < 1 or area < 4:
+            continue
+        short = min(box_w, box_h)
+        long = max(box_w, box_h)
+        if short / long < 0.2 or area / (box_w * box_h) < 0.25:
+            continue
+        if not min_diameter <= short <= max_diameter:
+            continue
+        cx, cy = float(centroids[index, 0]), float(centroids[index, 1])
+        color_label = int(color_labels[int(round(cy)), int(round(cx))])
+        if color_label > 0:
+            color_short = min(int(color_stats[color_label, 2]), int(color_stats[color_label, 3]))
+            if color_short > max_diameter:
+                continue
+        axis_x, axis_y, streak = (0.0, 0.0, 0.0)
+        if long >= short * 1.8:
+            axis_x, axis_y, streak = _streak_axis(np, labels, index, float(long))
+        found.append(_Blob(x=cx, y=cy, diameter=short, axis_x=axis_x, axis_y=axis_y, streak=streak))
+    return found
+
+
+def _color_mask(cv2: object, np: object, hsv: object, lower: tuple[int, int, int], upper: tuple[int, int, int]) -> object:
+    low = np.array(lower, dtype=np.uint8)
+    high = np.array(upper, dtype=np.uint8)
+    if lower[0] <= upper[0]:
+        return cv2.inRange(hsv, low, high)
+    upper_wrap = np.array((179, upper[1], upper[2]), dtype=np.uint8)
+    lower_wrap = np.array((0, lower[1], lower[2]), dtype=np.uint8)
+    return cv2.bitwise_or(cv2.inRange(hsv, low, upper_wrap), cv2.inRange(hsv, lower_wrap, high))
+
+
+def _motion_mask(
+    cv2: object,
+    np: object,
+    current: object,
+    prior: object,
+    older: bytes | None,
+    width: int,
+    height: int,
+) -> object:
+    moved = cv2.absdiff(current, prior).sum(axis=2) >= MOTION_DELTA
+    if older is not None:
+        earlier = np.frombuffer(older, dtype=np.uint8).reshape((height, width, 3))
+        moved = moved & (cv2.absdiff(current, earlier).sum(axis=2) >= MOTION_DELTA)
+    return moved.astype(np.uint8) * 255
+
+
+def _streak_axis(np: object, labels: object, index: int, length: float) -> tuple[float, float, float]:
+    ys, xs = np.where(labels == index)
+    if len(xs) < 2:
+        return 0.0, 0.0, 0.0
+    dx = xs.astype(np.float64) - float(xs.mean())
+    dy = ys.astype(np.float64) - float(ys.mean())
+    cov_xx = float((dx * dx).mean())
+    cov_yy = float((dy * dy).mean())
+    cov_xy = float((dx * dy).mean())
+    if abs(cov_xy) < 1e-6:
+        axis_x, axis_y = (1.0, 0.0) if cov_xx >= cov_yy else (0.0, 1.0)
+    else:
+        lam = (cov_xx + cov_yy + float(np.hypot(cov_xx - cov_yy, 2 * cov_xy))) / 2
+        axis_x = cov_xy
+        axis_y = lam - cov_xx
+        norm = float(np.hypot(axis_x, axis_y)) or 1.0
+        axis_x /= norm
+        axis_y /= norm
+    return axis_x, axis_y, length
 
 
 def _checked(sample: TrackSample) -> TrackSample:
     sample.as_observation()
     return sample
-
-
-def _hue_in(hue: int, lower: int, upper: int) -> bool:
-    if lower <= upper:
-        return lower <= hue <= upper
-    return hue >= lower or hue <= upper
-
-
-def _channel_delta(current: bytes, previous: bytes, index: int) -> int:
-    return (
-        abs(current[index] - previous[index])
-        + abs(current[index + 1] - previous[index + 1])
-        + abs(current[index + 2] - previous[index + 2])
-    )
 
 
 def _search_roi(roi: Roi | None, calibration: TableCalibration | None) -> Roi:

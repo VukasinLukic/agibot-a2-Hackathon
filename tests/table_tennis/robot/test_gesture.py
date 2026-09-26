@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from uuid import uuid4
@@ -19,7 +20,7 @@ from table_tennis.contracts import (
 from table_tennis.core.fake_log import FakeOutputLog
 from table_tennis.robot.a2_adapters import A2GestureOutput
 from table_tennis.robot.fake import FakeGestureOutput, FakeRobotNavigator
-from table_tennis.robot.gesture_output import GESTURE_HINTS, GestureSession, MotionCoordinator
+from table_tennis.robot.gesture_output import GESTURE_HINTS, GestureNotPlayed, GestureSession, MotionCoordinator
 
 MATCH = "00000000-0000-4000-8000-0000000000c3"
 OTHER = "00000000-0000-4000-8000-0000000000d4"
@@ -160,6 +161,8 @@ def test_arrival_waves_once_then_a_point_can_play() -> None:
     blocked = gesture.session.present(_point(2), _snap(revision=2))
     assert call.state == "requested"
     assert blocked.reason == "navigating"
+    with pytest.raises(GestureNotPlayed):
+        gesture.present_point(_point(2), _snap(revision=2))
     for _ in range(4):
         navigator.tick()
     assert navigator.get_call(call.call_id).state == "ready"  # type: ignore[union-attr]

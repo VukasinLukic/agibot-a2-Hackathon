@@ -23,7 +23,7 @@ from table_tennis.contracts import MatchSnapshot, RobotCall, RobotCallRequest, R
 from table_tennis.contracts.primitives import ROBOT_CALL_TERMINAL_STATES
 from table_tennis.core.ports import Clock, SystemClock
 
-from .gesture_output import GESTURE_HINTS, GestureJob, GestureSession, MotionCoordinator
+from .gesture_output import GESTURE_HINTS, UNPLAYED, GestureJob, GestureNotPlayed, GestureSession, MotionCoordinator
 from .mission import MissionSession
 from .readiness import NavFacts, assess
 from .fake import FakeRobotNavigator
@@ -132,7 +132,9 @@ class A2GestureOutput(_A2Base):
         self._send("gesture.neutral", {})
 
     def present_point(self, event: Any, snapshot: MatchSnapshot) -> None:
-        self.session.present(event, snapshot)
+        ack = self.session.present(event, snapshot)
+        if ack.reason in UNPLAYED:
+            raise GestureNotPlayed(ack.reason or "not_played")
 
     def cancel_pending(self, match_id: str) -> None:
         dropped = self.session.cancel_pending(match_id)
@@ -155,8 +157,10 @@ class A2RobotNavigator(_A2Base):
         self.clock = clock or SystemClock()
         self.facts = facts or NavFacts()
         self.coordinator = coordinator
-        self.mission = mission
+        # Real mode waits for the operator. Dry-run keeps the simulated lifecycle.
+        self.mission = mission if mission is not None or self.dry_run else MissionSession()
         self.calls: dict[str, RobotCall] = {}
+        self._requests: dict[str, RobotCallRequest] = {}
         self._simulator = (
             FakeRobotNavigator(clock=self.clock, facts=self.facts) if self.dry_run else None
         )
@@ -187,6 +191,33 @@ class A2RobotNavigator(_A2Base):
             )
             self.calls[call_id] = call
             return call
+        if self.mission is not None and not self.mission.route_clear:
+            call = RobotCall(
+                call_id=call_id,
+                table_id=request.table_id,
+                named_waypoint_id=request.named_waypoint_id,
+                state="requested",
+                updated_at=self.clock.now(),
+                reason="route_not_confirmed",
+                match_id=request.match_id,
+                simulated=self.dry_run,
+            )
+            self._requests[call_id] = request
+            self.calls[call_id] = call
+            return call
+        return self._start(request, call_id)
+
+    def confirm_route(self, call_id: str, actor: str) -> RobotCall:
+        """Operator says the path is free. Until then nothing is sent."""
+        call = self.calls[call_id]
+        if self.mission is None or call.reason != "route_not_confirmed":
+            return call
+        if not self.mission.confirm_route(actor):
+            return call
+        request = self._requests.pop(call_id)
+        return self._start(request, call_id)
+
+    def _start(self, request: RobotCallRequest, call_id: str) -> RobotCall:
         if self.mission is not None:
             started = self.mission.begin(self.facts)
             if started != "started":
@@ -202,8 +233,7 @@ class A2RobotNavigator(_A2Base):
                 )
                 self.calls[call_id] = call
                 return call
-        # REAL: one existing mission after the route is confirmed. Dry-run still
-        # does not drive the robot. An accepted RPC is not arrival.
+        # One existing mission, after the route is confirmed. Acceptance is not arrival.
         reply = self._send("nav.request", {"table_id": request.table_id, "waypoint": request.named_waypoint_id})
         # An accepted RPC is not arrival. task_id 0 does not identify a mission.
         task_id = _native_task_id(reply)
