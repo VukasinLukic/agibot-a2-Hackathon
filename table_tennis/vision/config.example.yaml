@@ -16,3 +16,7 @@ roi: null
 tracker:
   # Consecutive missing samples before the track is dropped.
   missing_frames: 8
+
+# BlurBall checkpoint stays outside git. null keeps the OpenCV tracker.
+# Weights: https://cloud.cs.uni-tuebingen.de/index.php/s/6Z8TpM3sXRKHzGC
+model_path: null

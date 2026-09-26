@@ -9,4 +9,5 @@
   Posle 409 preuzmi novo stanje; ako se rally/strane/kalibracija promenili, odbaci predlog.
 - `confidence` je model score, ne kalibrisana verovatnoća. Nestanak loptice nije dokaz poena.
 - OpenCV/numpy samo iz `requirements-vision.txt`, u zasebnom venv-u; ne uvoziti iz `core/`.
+- BlurBall je naučeni detektor (`blurball.py`). Težine su van gita. Torch se ne uvozi na importu paketa.
 - Snimci, težine i veliki fajlovi ne idu u Git.
