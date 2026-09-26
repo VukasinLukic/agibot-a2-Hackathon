@@ -17,12 +17,15 @@ In referee mode the agent:
     robot adapter).
 
 The backend is reached over plain HTTP on the same machine; a slow or missing
-backend only means "no match info", never a blocked conversation.
+backend only means "no match info", never a blocked conversation. While referee
+mode is on, a background thread keeps the latest snapshot fresh, so the check
+before every reply (``should_stay_silent``) reads memory, not the network.
 
 Env:
   TT_API_URL          table tennis backend (default http://127.0.0.1:8099)
-  TT_PERSONA_TOKEN    bearer token when the backend runs in token auth mode
-  TT_REFEREE_TIMEOUT_S  per-request timeout (default 0.8)
+  TT_PERSONA_TOKEN    read-only bearer token when the backend runs in token auth mode
+  TT_REFEREE_TIMEOUT_S  per-request timeout (default 0.2)
+  TT_REFEREE_POLL_S     background refresh interval (default 0.25)
 """
 
 from __future__ import annotations
@@ -30,6 +33,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import threading
 import time
 import urllib.request
 from pathlib import Path
@@ -82,15 +86,38 @@ class RefereeMode:
         self.persona = "regular"
         self.api = (os.getenv("TT_API_URL") or "http://127.0.0.1:8099").rstrip("/") + "/api/table-tennis"
         self.token = os.getenv("TT_PERSONA_TOKEN") or None
-        self.timeout_s = float(os.getenv("TT_REFEREE_TIMEOUT_S", "0.8"))
+        self.timeout_s = float(os.getenv("TT_REFEREE_TIMEOUT_S", "0.2"))
+        self.poll_s = float(os.getenv("TT_REFEREE_POLL_S", "0.25"))
+        # A snapshot older than this is not trusted to keep the agent silent.
+        self.stale_s = max(2.0, 4 * self.poll_s)
         self._cache: tuple[float, Optional[dict]] = (0.0, None)
+        self._reachable = True
+        self._stop = threading.Event()
+        self._poller: Optional[threading.Thread] = None
 
     def set(self, on: bool, persona: Optional[str]) -> None:
         self.active = on
         if persona:
             self.persona = persona
         self._cache = (0.0, None)
+        if on:
+            self._start_poller()
+        else:
+            self._stop.set()
         logger.info("REFEREE_MODE %s persona=%s", "ON" if on else "OFF", self.persona)
+
+    def _start_poller(self) -> None:
+        if self._poller is not None and self._poller.is_alive() and not self._stop.is_set():
+            return
+        self._stop = threading.Event()
+        self._poller = threading.Thread(target=self._poll, args=(self._stop,), name="referee-poll", daemon=True)
+        self._poller.start()
+
+    def _poll(self, stop: threading.Event) -> None:
+        while not stop.is_set():
+            self._refresh()
+            # back off while the backend is down; the cached None keeps replies unblocked
+            stop.wait(self.poll_s if self._reachable else max(1.0, self.poll_s))
 
     # ------------------------------------------------------------ prompt
 
@@ -121,20 +148,39 @@ class RefereeMode:
         at, snap = self._cache
         if time.monotonic() - at < max_age_s:
             return snap
+        return self._refresh()
+
+    def _refresh(self) -> Optional[dict]:
         try:
             ids = self._get("/matches")
             snap = self._get(f"/matches/{ids[-1]}") if ids else None
+            if not self._reachable:
+                logger.info("REFEREE_MODE backend reachable again")
+            self._reachable = True
         except Exception as exc:
-            logger.warning("REFEREE_MODE backend unreachable: %s", exc)
+            if self._reachable:  # log the transition, not every poll
+                logger.warning("REFEREE_MODE backend unreachable: %s", exc)
+            self._reachable = False
             snap = None
         self._cache = (time.monotonic(), snap)
         return snap
 
     def should_stay_silent(self) -> bool:
-        """True while a rally is being played (never talk over the game)."""
+        """True while a rally is being played (never talk over the game).
+
+        Called before every reply, so it must not wait on the network while the
+        poller runs: it reads the cached snapshot and treats a stale one as
+        "not in a rally" (speaking is safer than a mute robot).
+        """
         if not self.active:
             return False
-        snap = self.current_match()
+        at, snap = self._cache
+        if at and self._poller is not None and self._poller.is_alive():
+            if time.monotonic() - at > self.stale_s:
+                snap = None
+        else:
+            # before the first poll (or without a poller): one bounded read
+            snap = self.current_match()
         return bool(snap and snap.get("status") == "rally")
 
 

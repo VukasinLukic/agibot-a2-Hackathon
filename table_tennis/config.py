@@ -4,7 +4,7 @@ Load order: defaults -> YAML file (``--config`` or ``TT_CONFIG``) -> env vars.
 Secrets (tokens) should come from env vars, never from a committed file.
 
 Env overrides: TT_MODE, TT_HOST, TT_PORT, TT_DB_PATH, TT_AUTH_MODE,
-TT_OPERATOR_TOKEN, TT_VISION_TOKEN, TT_ROBOT_TOKEN, TT_SIM_TOKEN,
+TT_OPERATOR_TOKEN, TT_VISION_TOKEN, TT_ROBOT_TOKEN, TT_SIM_TOKEN, TT_PERSONA_TOKEN,
 TT_FAKE_LOG_PATH, TT_ROBOT_SIM_STEP_S, TT_ADAPTER_DISPLAY, TT_ADAPTER_GESTURE,
 TT_ADAPTER_SPEECH, TT_ADAPTER_NAVIGATOR.
 """
@@ -47,6 +47,9 @@ class Tokens(_Cfg):
     vision: Optional[str] = None
     robot: Optional[str] = None
     sim: Optional[str] = None
+    # Voice agent (livekit-client/referee_mode.py). Read-only: no command,
+    # match creation or robot call lists "persona" as an allowed actor.
+    persona: Optional[str] = None
 
 
 class AuthSettings(_Cfg):
@@ -104,6 +107,9 @@ class Settings(_Cfg):
             )
         if self.auth.mode == "token" and not self.auth.tokens.operator:
             raise ValueError("auth.mode=token requires at least an operator token (TT_OPERATOR_TOKEN)")
+        configured = [t for t in self.auth.tokens.model_dump().values() if t]
+        if len(configured) != len(set(configured)):
+            raise ValueError("auth tokens must be distinct: one token maps to exactly one actor")
         return self
 
     @property
@@ -146,6 +152,7 @@ def _env_overrides(data: dict, env: Mapping[str, str]) -> dict:
         "TT_VISION_TOKEN": ["auth", "tokens", "vision"],
         "TT_ROBOT_TOKEN": ["auth", "tokens", "robot"],
         "TT_SIM_TOKEN": ["auth", "tokens", "sim"],
+        "TT_PERSONA_TOKEN": ["auth", "tokens", "persona"],
         "TT_FAKE_LOG_PATH": ["outputs", "fake_log_path"],
         "TT_ROBOT_SIM_STEP_S": ["robot", "sim_step_s"],
         "TT_ADAPTER_DISPLAY": ["adapters", "display"],

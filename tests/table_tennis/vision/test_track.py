@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import importlib.util
 import sys
 import tempfile
 import unittest
@@ -14,6 +15,11 @@ from table_tennis.vision.config import BallColor, VisionConfig
 from table_tennis.vision.frame import ORIGIN_FILE, Frame
 from table_tennis.vision.image import BgrImage
 from table_tennis.vision.track import BallTracker, mark_track, write_track_csv
+
+# The tracker's colour mask runs on OpenCV (requirements-vision.txt); the light
+# backend deps do not include it, so those cases skip instead of failing.
+HAS_OPENCV = all(importlib.util.find_spec(name) for name in ("cv2", "numpy"))
+needs_opencv = unittest.skipUnless(HAS_OPENCV, "needs cv2 + numpy (table_tennis/requirements-vision.txt)")
 
 WHITE = (240, 240, 240)
 DARK = (30, 40, 20)
@@ -76,6 +82,7 @@ class TrackTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             BallTracker(config)
 
+    @needs_opencv
     def test_motion_keeps_the_ball_and_drops_a_static_blob(self) -> None:
         tracker = BallTracker(_config())
         still = _paint(80, 60, [(10, 40, 6, WHITE)])
@@ -92,6 +99,7 @@ class TrackTests(unittest.TestCase):
         self.assertFalse(seen.proves_bounce)
         self.assertTrue(seen.detected)
 
+    @needs_opencv
     def test_two_movers_stay_ambiguous_and_a_large_blob_is_not_the_ball(self) -> None:
         tracker = BallTracker(_config())
         both = _paint(80, 60, [(8, 8, 6, WHITE), (50, 8, 6, WHITE)])
@@ -108,6 +116,7 @@ class TrackTests(unittest.TestCase):
         self.assertEqual(seen.observation_kind, "observed")
         self.assertGreater(seen.x_px or 0, 50)
 
+    @needs_opencv
     def test_gap_is_predicted_then_missing_and_does_not_score(self) -> None:
         tracker = BallTracker(_config(missing=2))
         frames = [
@@ -136,6 +145,7 @@ class TrackTests(unittest.TestCase):
         self.assertEqual(rows[4]["x_px"], "")
         self.assertEqual(rows[3]["proves_bounce"], "False")
 
+    @needs_opencv
     def test_numpy_frame_uses_the_same_tracker(self) -> None:
         import numpy as np
 

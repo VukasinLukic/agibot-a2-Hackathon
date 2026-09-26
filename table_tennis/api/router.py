@@ -97,7 +97,10 @@ def build_router(get_runtime: Callable[[], "object"]) -> APIRouter:
                 available=ready,
                 simulated=sim,
                 detail=(
-                    f"match={vision_match_id}; camera_ready={ready}; "
+                    # In mock, camera_ready comes from the simulator or fake
+                    # vision: say so, so a demo screen never reads it as a real camera.
+                    ("SIMULATED camera, no real vision process; " if sim else "")
+                    + f"match={vision_match_id}; camera_ready={ready}; "
                     f"calibration_ready={calibration}"
                 ),
             )
