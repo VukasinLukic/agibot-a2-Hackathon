@@ -55,7 +55,8 @@ Integrator pokreće mock backend i oba simulator scenarija, pregleda diff (bez `
   `robot_arrived` (value true), `robot_call_failed` (false), `robot_call_cancelled` (false).
   Izveštaj robota stvara događaj i kad se vrednost ne menja (npr. neuspeh dok robot nije bio spreman).
 - `readiness.changed` je dodat u govorni outbox (`SPEECH_EVENT_TYPES` u `core/service.py`). Tekst najave je na
-  personi (osoba 4): `Commentator.line_for` za `readiness.changed` + `robot_ready`; dok ne postoji, ništa se ne izgovara.
+  personi (osoba 4): `Commentator.line_for` za `readiness.changed` + `robot_ready` (urađeno na grani `persone`,
+  uključujući i `manual_arrival`); ostale komponente ne izgovaraju ništa.
 - Mock: waypoint-i iz `robot.fail_waypoints` (`broken-spot`) automatski su dozvoljeni, da bi UI mogao da proba neuspeh.
 - Testovi: `tests/table_tennis/robot/test_tt_robot_call_events.py`.
 
@@ -83,3 +84,23 @@ Integrator pokreće mock backend i oba simulator scenarija, pregleda diff (bez `
 - Testovi: `tests/table_tennis/integration/test_tt_phase4_outputs.py`, `tests/table_tennis/test_tt_manifest.py`.
 - Preostalo: pravi transporti (osoba 3: ekran/gest/navigacija, osoba 4: LiveKit govor) na već postojećim
   `REAL:` mestima; Faza 5 čeka benchmark osobe 1; Faza 6 traži robota i mentora.
+
+## Persone grana (osoba 4): aplikacija i dve persone, mock
+
+- **Replike** (`table_tennis/persona/`): regular (vedar, neutralan sudija) i corporate (dobronamerno zezanje po
+  poziciji u firmi, nasumičan „miljenik” po meču, samo u rečima). Robot se predstavlja kao Titan; za igrače samo
+  rodno neutralni oblici. Rezultat uvek prvi i iz snapshot-a, šala posle; na važnim trenucima uvek replika, inače
+  otprilike svaki treći poen. Izbor varijante je stabilan hash (isti događaj = ista rečenica, i posle restarta).
+  Najave dolaska robota (`robot_arrived`, `manual_arrival`, `robot_call_failed`, `robot_call_cancelled`).
+  Pozicije: `persona/roles.py` (isti spisak u frontend `roles.ts`). Bez LLM-a i bez cloud poziva.
+- **Aplikacija TitanSudija** (`robot_supervisor_v2/frontend/src/features/table-tennis/`): za telefon na
+  `/#/stoni-tenis` i kao tab „Stoni tenis” u Supervisoru (registracija u `main.tsx` i `App.tsx`). Setup (imena,
+  pozicija, persona, prvi servis, strana robota, režim), poziv Titana ili „već je kod stola”, sto odozgo gde dodir
+  polovine daje poen, predlog kamere sa potvrdom, poništi/ponovi/pauza, promena persone, kraj meča, pridruživanje
+  drugog telefona. Skor samo iz backend snapshot-a; bez veze dugmad su isključena. U mock režimu prikazuje tačan
+  tekst koji bi Titan izgovorio. Stil je ograničen na `.tt` (`table-tennis.css`), ostatak Supervisora nije diran.
+- **Testovi:** `tests/table_tennis/persona/test_commentator.py` (tačan rezultat u svakoj najavi, iste brojke u obe
+  persone, nema korporativnih šala u regularnoj, imena kao podaci, nepoznata pozicija, najave robota). Frontend:
+  `tsc -b` i eslint čisti; tok proveren u headless pregledaču na veličini telefona.
+- **Preostalo:** pravi govor (`persona/speech.py`, `LiveKitSpeechOutput`) preko Soniox TTS-a i merenje latencije;
+  redosled pozdrav/gest/govor sa osobom 3; opcioni LLM komentar sa template fallback-om. Ništa nije testirano na A2.
