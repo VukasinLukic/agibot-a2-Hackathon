@@ -161,7 +161,7 @@ def _env_overrides(data: dict, env: Mapping[str, str]) -> dict:
         "TT_ADAPTER_NAVIGATOR": ["adapters", "navigator"],
     }
     for var, path in mapping.items():
-        if env.get(var):
+        if var in env:
             put(path, env[var])
     return data
 
