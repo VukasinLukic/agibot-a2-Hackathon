@@ -70,11 +70,13 @@ def test_every_point_line_states_exact_score_first(runtime, persona, points):
 
 def test_both_personas_give_identical_scores(runtime, tmp_path):
     d_reg, _, _ = play(runtime, "regular", GAME)
+    regular = d_reg.snapshot()
+    runtime[0].stop()  # one runtime at a time: the screen slot has a single owner
     rt2, ids2 = make_runtime(str(tmp_path / "second"))
     try:
         d_cor, _, _ = play((rt2, ids2), "corporate", GAME)
-        assert d_reg.snapshot()["score_by_player"] == d_cor.snapshot()["score_by_player"]
-        assert d_reg.snapshot()["winner_id"] == d_cor.snapshot()["winner_id"]
+        assert regular["score_by_player"] == d_cor.snapshot()["score_by_player"]
+        assert regular["winner_id"] == d_cor.snapshot()["winner_id"]
     finally:
         rt2.stop()
 
