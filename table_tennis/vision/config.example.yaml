@@ -20,3 +20,12 @@ tracker:
 # BlurBall checkpoint stays outside git. null keeps the OpenCV tracker.
 # Weights: https://cloud.cs.uni-tuebingen.de/index.php/s/6Z8TpM3sXRKHzGC
 model_path: null
+
+# Candidates -> BallNet -> MHT. The .npz stays outside git; null keeps the
+# HSV/BlurBall path. Exclusive with model_path.
+ballnet_path: null
+ballnet:
+  # Frames wider than this are downscaled first. Tuned at 960.
+  work_width_px: 960
+  # Align the two previous frames to the current one (camera on the robot).
+  compensate_motion: true

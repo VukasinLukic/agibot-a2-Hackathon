@@ -98,6 +98,41 @@ Zvuk, ako je uključen, javlja zaključak preko `RallyJudge.hear`. Predlog tada 
 
 `benchmark.evaluate` meri finalni skup odvojeno od tuning snimaka. Bar je 50 razmena sa stvarnog A2 stola, oznake `net`, `occlusion`, `fast_ball` i `stop`, precision bar 95% i coverage jednostavnih razmena bar 80%. Sintetički snimak taj bar ne otvara. Ispunjen bar ne uključuje `AUTOMATIC_ENABLED`.
 
+## BallNet put
+
+Kad je `ballnet_path` postavljen, `BallTracker` ne zove HSV ni BlurBall (`model_path` i `ballnet_path` se isključuju). Kadar ide kroz `pipeline.BallNetPipeline`:
+
+1. `candidates.py`: kadar širi od `ballnet.work_width_px` (960) se smanjuje. Prethodna dva kadra se poravnaju na trenutni (LK tok na 320 px, affine RANSAC; `compensate_motion: false` to gasi). Kandidat je ono što je svetlije od oba poravnata kadra (prag 18). Površine i patch se skaliraju sa radnom širinom. ROI (sto plus pojas, ili `roi`) seče pretragu.
+2. `ballnet.py`: mala CNN nad patch-om 32 × 32 (B, G, R, diff), ceo kadar u jednom batch-u. `ballnet.onnx` ide kroz OpenCV DNN (oko 2 ms za 40 kandidata na laptopu), `.npz` (`c0w … l1b`) kroz čist numpy (oko 11 ms). Isti izlaz, razlika ispod 1e-6. Torch se ne uvozi.
+3. `mht.py`: više hipoteza (mht3). Skor traga: logit, neto brzina, kazna za jedan pogodak, ivicu i sitan okvir; histereza `thr_new`/`thr_conf`. Samo potvrđen trag ide u `predicted`. Pikseli važe na 960 × 540, vreme u kadrovima od 30 fps (iz `capture_monotonic_ns`). Parametri su u `TrackerParams`; `thr_new` se bira ponovo za svaku novu težinu.
+
+Izlaz je isti `TrackSample`, u pikselima originalnog kadra. `confidence` je skor mreže za taj kandidat. `coast` nije duži od `missing_frames - 1`.
+
+Offline prolaz kroz snimak, sa CSV-om, overlay-em i vremenom po koraku:
+
+```powershell
+python -m table_tennis.vision.run_video snimak.mov --ballnet C:\tezine\ballnet.npz --overlay table_tennis\var\vision\snimak.mp4
+```
+
+CSV bez `--csv` ide u `table_tennis/var/vision/` (van gita).
+
+Merenje na `IMG_5844.MOV` (telefon iz ruke, 30 fps, 505 kadrova sa lopticom ručno označeno). Mreža učena na jednoj polovini snimka, merena na drugoj:
+
+| | stari HSV tracker | BallNet + MHT |
+|---|---|---|
+| loptica u letu nađena | 0 % | 88–96 % |
+| izlaz na pogrešnom objektu | – | 2–6 po polovini |
+| izlaz kad loptice nema | – | 6–19 od ~200 kadrova |
+| vreme po kadru (laptop CPU, 960 px) | 238 ms | 19 ms |
+
+Jedan snimak, jedna kamera i jedna loptica. Na A2 fisheye kadru brojevi nisu dokazani: snimiti, označiti i doučiti (`table_tennis/var/vision/train/`).
+
+## Odskok i udarac
+
+`rally_events.RallyEventDetector` čita `TrackSample` redom. Odskok je oštar obrt brzine po y (dole pa gore), udarac je obrt brzine po x. Treba mu tri uzastopna posmatranja, pa događaj kasni jedan kadar. Sa kalibracijom odskok mora pasti na sto (± 60 mm) i dobija polovinu (`end_a` / `end_b`); odskok u ruci ili na podu se odbacuje. Na neviđenim polovinama snimka nađeno je 23 od 26 označenih odskoka. Udarac je često zaklonjen reketom: nedostatak udarca znači „ne znam”.
+
+To je dokaz za predlog, ne poen. `TrackSample.proves_bounce` ostaje False, a `RallyJudge` ga još ne koristi.
+
 ## Granice
 
 - Vision ne pomera robota, ne bira servera i ne piše skor.
