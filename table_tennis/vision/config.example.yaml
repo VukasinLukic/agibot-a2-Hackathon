@@ -1,8 +1,8 @@
 # Laptop-safe defaults. Ball color is unset until a real ball is chosen.
 # hsv_lower / hsv_upper use OpenCV HSV: H 0-179, S 0-255, V 0-255.
 
-camera_id: a2-interactive-main
-origin: a2_h264
+camera_id: CHEST_LEFT_FISHEYE
+origin: a2_fisheye
 
 ball:
   hsv_lower: null
