@@ -3,6 +3,9 @@
 - Plan: `docs/table_tennis_plan/03_NAVIGATION.md`; audit: `06_REUSE_AUDIT.md`.
 - `README.md`: faza 1 iz koda (model, poza, gestovi, vlasnik misije) i lista
   stavki koje čekaju termin sa mentorom. Waypoint i map_id se ne izmišljaju.
+- `score_display.py`: jedan slot `emoticon_ct_message`, uzet pri kreiranju a ne u
+  trenutku poena. Novija revizija pobedi pre reprodukcije. Skor ostaje dok se
+  namerno ne pusti podrazumevano lice. `accepted` (upisan kadar) nije `shown`.
 - `fake.py`: radni fake ekran, gest i navigator (dry-run, sve se beleži u FakeOutputLog).
 - `call_service.py`: idempotentan poziv, single flight (`robot_busy`), persistencija,
   posle restarta nedovršen poziv postaje `failed` (ishod nepoznat).
