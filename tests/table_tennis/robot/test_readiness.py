@@ -14,7 +14,7 @@ if str(REPO_ROOT) not in sys.path:
 from table_tennis.contracts import RobotCallRequest
 from table_tennis.robot.a2_adapters import A2RobotNavigator, RealTransportMissing
 from table_tennis.robot.fake import FakeRobotNavigator
-from table_tennis.robot.readiness import NavFacts, assess
+from table_tennis.robot.readiness import NavFacts, assess, facts_from_reply
 
 
 def test_free_walk_ready_robot_is_ready() -> None:
@@ -116,7 +116,12 @@ def test_real_mode_calls_transport_only_when_a_method_runs() -> None:
         seen.append(action)
         return {"ok": True}
 
-    nav = A2RobotNavigator(dry_run=False, transport=transport)
+    nav = A2RobotNavigator(
+        dry_run=False,
+        transport=transport,
+        facts=NavFacts(),
+        points=[{"point_id": 3, "name": "referee"}],
+    )
     assert seen == []
     call_id = "33333333-3333-4333-8333-333333333333"
     held = nav.request_call(
@@ -163,6 +168,61 @@ def test_fake_call_still_navigates_when_preflight_is_ready() -> None:
     call = nav.request_call(_request(), "66666666-6666-4666-8666-666666666666")
     assert call.state == "requested"
     assert nav.native_calls == ["WOULD navigate to table-1/referee-spot"]
+
+
+def test_real_mode_does_not_treat_a_blank_snapshot_as_ready() -> None:
+    seen: list[str] = []
+
+    def transport(action: str, args: dict) -> dict:
+        seen.append(action)
+        return {"ok": True}
+
+    nav = A2RobotNavigator(dry_run=False, transport=transport)
+    call = nav.request_call(_request(), "99999999-9999-4999-8999-999999999999")
+    assert call.state == "failed"
+    assert call.reason == "not_enabled"
+    assert seen == ["nav.facts"]
+    status = nav.get_status()
+    assert status.ready is False
+    assert status.availability == "offline"
+    assert status.reason != "A2 navigator scaffold is not connected"
+
+
+def test_unknown_waypoint_name_is_not_sent() -> None:
+    seen: list[str] = []
+
+    def transport(action: str, args: dict) -> dict:
+        seen.append(action)
+        return {"points": [{"point_id": 4, "name": "other-spot"}]}
+
+    nav = A2RobotNavigator(dry_run=False, transport=transport, facts=NavFacts(), mission=None)
+    # Route is not held when mission is absent only if route_clear. Use a confirmed session.
+    from table_tennis.robot.mission import MissionSession
+
+    session = MissionSession()
+    session.confirm_route("operator")
+    nav.mission = session
+    call = nav.request_call(_request(), "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+    assert call.state == "failed"
+    assert call.reason == "waypoint_not_on_map"
+    assert seen == ["nav.points"]
+
+
+def test_facts_from_reply_does_not_invent_a_ready_robot() -> None:
+    verdict = assess(facts_from_reply({"ok": True}))
+    assert verdict.state == "failed"
+    ready = assess(
+        facts_from_reply(
+            {
+                "work_enabled": True,
+                "mc_action": "McAction_RL_LOCOMOTION_DEFAULT",
+                "localization_running": True,
+                "map_id": 7,
+                "pose_age_ms": 12,
+            }
+        )
+    )
+    assert ready.state == "ready"
 
 
 def test_a2_call_does_not_send_when_preflight_fails() -> None:

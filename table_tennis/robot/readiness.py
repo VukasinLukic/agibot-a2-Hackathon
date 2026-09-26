@@ -47,6 +47,25 @@ class NavReadiness:
     reason: Optional[str] = None
 
 
+def facts_from_reply(reply: object) -> NavFacts:
+    """Preflight snapshot from a transport. A missing field is not a ready robot."""
+
+    data = reply if isinstance(reply, dict) else {}
+    pose = data.get("pose_age_ms") if "pose_age_ms" in data else None
+    if pose is not None:
+        pose = int(pose)
+    return NavFacts(
+        emergency_stop=bool(data.get("emergency_stop")),
+        call_active=bool(data.get("call_active")),
+        work_enabled=bool(data.get("work_enabled")),
+        collision=bool(data.get("collision")),
+        mc_action=str(data.get("mc_action") or ""),
+        localization_running=bool(data.get("localization_running")),
+        map_id=data.get("map_id"),
+        pose_age_ms=pose,
+    )
+
+
 def _map_missing(map_id: Optional[str | int]) -> bool:
     if map_id is None:
         return True
