@@ -45,14 +45,31 @@ class ScreenSlotBusy(RuntimeError):
     """A second screen worker must not play the same slot."""
 
 
+class SlotLease:
+    """One reusable head-screen slot. A private lease is one simulated robot."""
+
+    def __init__(self) -> None:
+        self._owner: Optional["ScoreboardSession"] = None
+        self._guard = threading.Lock()
+
+    def acquire(self, session: "ScoreboardSession") -> None:
+        with self._guard:
+            if self._owner is not None and self._owner is not session:
+                raise ScreenSlotBusy(f"screen slot {SLOT_ID} is already held")
+            self._owner = session
+
+    def release(self, session: "ScoreboardSession") -> None:
+        with self._guard:
+            if self._owner is session:
+                self._owner = None
+
+
 class ScoreboardSession:
     """Latest revision wins. The default face returns only on release."""
 
-    _guard = threading.Lock()
-    _owner: Optional["ScoreboardSession"] = None
-
-    def __init__(self, play: Callable[[ScreenFrame], None]):
+    def __init__(self, play: Callable[[ScreenFrame], None], lease: Optional[SlotLease] = None):
         self._play = play
+        self._lease = lease or SlotLease()
         self.slot_id = SLOT_ID
         self.provision_count = 0
         self.face = "default"
@@ -64,13 +81,11 @@ class ScoreboardSession:
         self._shown: dict[str, int] = {}
         self._playing = False
         self._released = False
+        self._leased = False
         self._lock = threading.Lock()
-        with ScoreboardSession._guard:
-            if ScoreboardSession._owner is not None:
-                raise ScreenSlotBusy(f"screen slot {SLOT_ID} is already held")
-            ScoreboardSession._owner = self
-            self._leased = True
-            self.provision_count = 1
+        self._lease.acquire(self)
+        self._leased = True
+        self.provision_count = 1
 
     @property
     def leased(self) -> bool:
@@ -154,9 +169,7 @@ class ScoreboardSession:
             self.held = None
             self.restores += 1
             self._released = True
-            with ScoreboardSession._guard:
-                if ScoreboardSession._owner is self:
-                    ScoreboardSession._owner = None
+            self._lease.release(self)
             return True
 
     def _reset_match(self, match_id: str) -> None:

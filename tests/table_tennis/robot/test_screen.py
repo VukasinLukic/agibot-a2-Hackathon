@@ -18,7 +18,7 @@ from table_tennis.contracts import (
 from table_tennis.core.fake_log import FakeOutputLog
 from table_tennis.robot.a2_adapters import A2ScoreDisplay
 from table_tennis.robot.fake import FakeScoreDisplay
-from table_tennis.robot.score_display import ScreenSlotBusy, ScoreboardSession
+from table_tennis.robot.score_display import ScreenSlotBusy, ScoreboardSession, SlotLease
 
 MATCH_A = "00000000-0000-4000-8000-0000000000a1"
 MATCH_B = "00000000-0000-4000-8000-0000000000b2"
@@ -142,10 +142,13 @@ def test_default_face_returns_only_on_release() -> None:
 
 
 def test_second_worker_cannot_take_the_same_slot() -> None:
-    holder = ScoreboardSession(lambda frame: None)
+    lease = SlotLease()
+    holder = ScoreboardSession(lambda frame: None, lease=lease)
     try:
         with pytest.raises(ScreenSlotBusy):
-            ScoreboardSession(lambda frame: None)
+            ScoreboardSession(lambda frame: None, lease=lease)
+        other = ScoreboardSession(lambda frame: None)
+        other.release()
     finally:
         holder.release()
 

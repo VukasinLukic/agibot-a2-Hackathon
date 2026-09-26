@@ -12,8 +12,11 @@
 - `a2_adapters.py`: scaffold sa oznakama `REAL:` gde ide postojeći A2 kod
   (screen_manip, gestures/motion_player, nav_missions/a2_nav). `dry_run=False`
   odbija rad bez eksplicitnog transporta.
-- Mapiranje gesta: `winner_id -> robot_side_by_player -> "point left/right"`.
-  Kamera-levo i robot-levo nisu ista stvar.
+- `gesture_output.py`: jedan kratak gest između poena. `winner_id` ide kroz
+  `robot_side_by_player` tek pri reprodukciji, pa zamena strana važi. `accepted`
+  nije `completed`. Undo briše samo red. Započet gest se ne vraća unazad.
+  Tokom hoda i aktivne razmene gest se ne pušta. Po dolasku jedan `wave`.
+  `handshake` nije hvatanje. `nod thanks` je zahvalnost na kraju meča.
 - `accepted` nije `completed`; prihvaćen HTTP poziv nije dolazak; programski cancel nije E-stop.
 - Import `robot_services` samo lenjo, unutar real adaptera. Mock nikad ne konstruiše real adapter.
 - Poziv prvo pita `readiness.assess`. Ako presuda nije `ready`, stanje poziva je
