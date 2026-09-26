@@ -19,6 +19,7 @@ import argparse
 import json
 import logging
 import os
+import queue
 import threading
 import time
 import urllib.error
@@ -32,6 +33,8 @@ from table_tennis.vision.events import MatchVisionProducer, RallyJudge
 
 _API = "/api/table-tennis"
 _LOG = logging.getLogger(__name__)
+_GET_EVERY_S = 0.25
+_STREAM_SILENT_S = 20.0
 
 
 class BackendUnavailable(Exception):
@@ -64,16 +67,27 @@ def post_command(base_url: str, token: str, match_id: str, command: dict[str, An
 def deliver_command(send: Callable[[dict[str, Any]], dict[str, Any]], command: dict[str, Any]) -> dict[str, Any]:
     """Post a proposal twice at most, both times with the same ``command_id``. Other commands are tried once."""
     try:
-        return send(command)
+        reply = send(command)
     except BackendUnavailable:
         if command.get("type") != "point.propose":
             _LOG.warning("command %s was not delivered", command.get("type"))
             return {"status": 0, "body": {}}
         try:
-            return send(command)
+            reply = send(command)
         except BackendUnavailable:
             _LOG.warning("proposal %s was not delivered", command.get("command_id"))
             return {"status": 0, "body": {}}
+        _log_reply(command, reply)
+        return reply
+    _log_reply(command, reply)
+    return reply
+
+
+def _log_reply(command: dict[str, Any], reply: dict[str, Any]) -> None:
+    status = reply.get("status")
+    if status in (200, 409):
+        return
+    _LOG.warning("command %s rejected (%s): %s", command.get("type"), status, reply.get("body"))
 
 
 def run_match(
@@ -88,36 +102,70 @@ def run_match(
     *,
     dry_run: bool = False,
     on_frame: Callable[[Any, Any], None] | None = None,
+    follow_latest: bool = False,
 ) -> MatchVisionProducer:
     """Read frames and post ``camera.ready.set`` and at most one proposal."""
     producer = MatchVisionProducer(frames, tracker, judge, capture, sound)
-    held: dict[str, MatchSnapshot | None] = {"snapshot": None}
-    feed = _SnapshotFeed(base_url, token, match_id)
+    held: dict[str, Any] = {"snapshot": None, "feed": _SnapshotFeed(base_url, token, match_id), "match": match_id, "checked": time.monotonic()}
 
     def sink(command: dict[str, Any]) -> dict[str, Any]:
         if dry_run:
             _LOG.info("dry-run would send %s", command.get("type"))
             return {"status": 200, "body": {}}
-        return deliver_command(lambda body: post_command(base_url, token, match_id, body), command)
+        return deliver_command(lambda body: post_command(base_url, token, held["match"], body), command)
 
     def context() -> MatchSnapshot | None:
-        latest = feed.latest
-        if latest is not None:
-            held["snapshot"] = latest
-            return latest
+        _follow(held, base_url, token, follow_latest)
+        feed = held["feed"]
+        current = feed.latest
+        if current is not None and feed.alive():
+            held["snapshot"] = current
+            return _for_judge(current, dry_run)
+        last = held["snapshot"]
+        now = time.monotonic()
+        if now - held.get("fetched", 0.0) < _GET_EVERY_S:
+            return _for_judge(last, dry_run) if last is not None else None
+        held["fetched"] = now
         try:
-            snapshot = fetch_snapshot(base_url, token, match_id)
+            snapshot = fetch_snapshot(base_url, token, held["match"])
         except (BackendUnavailable, RuntimeError) as error:
             _LOG.warning("snapshot unavailable (%s); keeping the last one", error)
-            return held["snapshot"]
+            return _for_judge(last, dry_run) if last is not None else None
         held["snapshot"] = snapshot
-        return snapshot
+        return _for_judge(snapshot, dry_run)
 
     try:
         producer.run(sink, context, on_frame)
     finally:
-        feed.close()
+        held["feed"].close()
     return producer
+
+
+def _follow(held: dict[str, Any], base_url: str, token: str, follow_latest: bool) -> None:
+    if not follow_latest or time.monotonic() - held["checked"] < 5.0:
+        return
+    held["checked"] = time.monotonic()
+    try:
+        match_id = latest_match_id(base_url, token)
+    except (BackendUnavailable, RuntimeError):
+        return
+    if match_id == held["match"]:
+        return
+    current = held["snapshot"]
+    if current is not None and current.status in ("rally", "pending_decision"):
+        return
+    _LOG.info("latest match is now %s", match_id)
+    held["feed"].close()
+    held["match"] = match_id
+    held["feed"] = _SnapshotFeed(base_url, token, match_id)
+    held["snapshot"] = None
+
+
+def _for_judge(snapshot: MatchSnapshot, dry_run: bool) -> MatchSnapshot:
+    """Dry-run never posts ready, so the judge must not wait for the backend to say the camera is up."""
+    if not dry_run:
+        return snapshot
+    return snapshot.model_copy(update={"ready": snapshot.ready.model_copy(update={"camera_ready": True})})
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -177,7 +225,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 judge,
                 capture,
                 dry_run=args.dry_run,
-                on_frame=_observe(pace, record),
+                follow_latest=args.match_id == "latest",
+                on_frame=_observe(pace, record, calibration),
             )
         finally:
             if record is not None:
@@ -185,8 +234,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     return 0
 
 
-def _observe(pace: _Pace, record: _ClipSink | None) -> Callable[[Any, Any], None]:
+def _observe(pace: _Pace, record: _ClipSink | None, calibration: Any) -> Callable[[Any, Any], None]:
+    checked = False
+
     def on_frame(frame: Any, sample: Any) -> None:
+        nonlocal checked
+        if not checked:
+            checked = True
+            if frame.width != calibration.width or frame.height != calibration.height:
+                _LOG.warning(
+                    "calibration is %sx%s but the camera frame is %sx%s",
+                    calibration.width,
+                    calibration.height,
+                    frame.width,
+                    frame.height,
+                )
         if record is not None:
             record.write(frame)
         pace.note(sample)
@@ -209,6 +271,7 @@ class _SnapshotFeed:
 
     def __init__(self, base_url: str, token: str, match_id: str) -> None:
         self.latest: MatchSnapshot | None = None
+        self._seen = 0.0
         self._stop = threading.Event()
         self._thread = threading.Thread(
             target=self._run,
@@ -221,11 +284,15 @@ class _SnapshotFeed:
     def close(self) -> None:
         self._stop.set()
 
+    def alive(self) -> bool:
+        """The server sends a heartbeat every 15 s, so silence past that means the stream stalled."""
+        return time.monotonic() - self._seen < _STREAM_SILENT_S
+
     def _run(self, base_url: str, token: str, match_id: str) -> None:
         url = _match_url(base_url, match_id) + "/events"
         request = urllib.request.Request(
             url,
-            headers={"Authorization": f"Bearer {token}", "Accept": "text/event-stream"},
+            headers={"Authorization": f"Bearer {token}", "Accept": "text/event-stream", "X-TT-Actor": "vision"},
         )
         while not self._stop.is_set():
             try:
@@ -243,6 +310,7 @@ class _SnapshotFeed:
             raw = response.readline()
             if not raw:
                 return
+            self._seen = time.monotonic()
             line = raw.decode("utf-8", errors="replace").rstrip("\r\n")
             if line == "":
                 self._take(event, "\n".join(data))
@@ -269,26 +337,56 @@ class _SnapshotFeed:
 
 
 class _ClipSink:
+    """Writes frames on a side thread. A full queue drops the frame instead of stalling the camera."""
+
     def __init__(self, target: str) -> None:
         self._target = target
-        self._writer: Any = None
+        self._queue: queue.Queue[tuple[int, Any] | None] = queue.Queue(maxsize=8)
+        self._thread = threading.Thread(target=self._loop, name="vision-record", daemon=True)
+        self._thread.start()
 
     def write(self, frame: Any) -> None:
-        if self._writer is None:
-            from table_tennis.vision.capture import ClipWriter
-
-            path = _record_path(self._target)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            self._writer = ClipWriter(path, frame.width, frame.height, 33_333_333)
-            self._writer.__enter__()
-            _LOG.info("recording %s", path)
-        self._writer.write_frame(_as_bgr(frame))
+        try:
+            self._queue.put_nowait((frame.capture_monotonic_ns, _as_bgr(frame)))
+        except queue.Full:
+            return
 
     def close(self) -> None:
-        writer = self._writer
-        self._writer = None
-        if writer is not None:
-            writer.__exit__(None, None, None)
+        while self._thread.is_alive():
+            try:
+                self._queue.put(None, timeout=0.5)
+                break
+            except queue.Full:
+                continue
+        self._thread.join(timeout=5)
+
+    def _loop(self) -> None:
+        from table_tennis.vision.capture import ClipWriter
+
+        first = self._queue.get()
+        if first is None:
+            return
+        second = self._queue.get()
+        period = 33_333_333
+        if second is not None and second[0] > first[0]:
+            period = second[0] - first[0]
+        writer: Any = None
+        try:
+            path = _record_path(self._target)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            writer = ClipWriter(path, first[1].width, first[1].height, period)
+            writer.__enter__()
+            _LOG.info("recording %s", path)
+            writer.write_frame(first[1])
+            item = second
+            while item is not None:
+                writer.write_frame(item[1])
+                item = self._queue.get()
+        except (OSError, ValueError) as error:
+            _LOG.warning("recording stopped: %s", error)
+        finally:
+            if writer is not None:
+                writer.__exit__(None, None, None)
 
 
 class _Pace:
@@ -403,7 +501,7 @@ def _request(
     method: str, url: str, token: str, payload: dict[str, Any] | None = None
 ) -> tuple[int, object]:
     data = None if payload is None else json.dumps(payload).encode("utf-8")
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json", "X-TT-Actor": "vision"}
     if data is not None:
         headers["Content-Type"] = "application/json"
     request = urllib.request.Request(url, data=data, headers=headers, method=method)

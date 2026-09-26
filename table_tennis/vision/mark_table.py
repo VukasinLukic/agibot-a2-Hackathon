@@ -73,7 +73,7 @@ def main(argv: list[str] | None = None) -> int:
                 clicks.clear()
                 continue
             write_calibration(args.output, result)
-            print(args.output)
+            print(f"{args.output} calibration_id={result.calibration_id} {result.width}x{result.height}")
             cv2.destroyAllWindows()
             return 0
     return 1
