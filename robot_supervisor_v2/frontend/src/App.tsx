@@ -16,6 +16,7 @@ import { TeleoperationTab } from '@/components/tabs/TeleoperationTab';
 import { PeopleFacesTab } from '@/components/tabs/PeopleFacesTab';
 import { LidarCostmapTab } from '@/components/tabs/LidarCostmapTab';
 import { NavigationMissionsTab } from '@/components/tabs/NavigationMissionsTab';
+import { TableTennisPage } from '@/features/table-tennis/TableTennisPage';
 import type {
   Service,
   TeleoperationRuntimeStatus,
@@ -32,7 +33,7 @@ const CAMERA_BRIDGE_SERVICE_PREFIX = 'camera-bridge';
 const VISION_CONTROLLER_SERVICE_NAME = 'vision-controller';
 const RECORDING_SERVICE_NAMES = ['video-recording-service'] as const;
 
-type AppTab = 'conversation-services' | 'speech' | 'rag' | 'quiz-survey' | 'teleoperation' | 'people' | 'lidar' | 'navigation' | 'commands' | 'services';
+type AppTab = 'conversation-services' | 'speech' | 'rag' | 'quiz-survey' | 'teleoperation' | 'people' | 'lidar' | 'navigation' | 'table-tennis' | 'commands' | 'services';
 
 function getServiceDisplayName(service: Service) {
   if (service.name === 'teleimager-server') return 'camera stream to VR';
@@ -770,6 +771,16 @@ function AppContent() {
               </button>
               <button
                 type="button"
+                onClick={() => handleTabChange('table-tennis')}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  activeTab === 'table-tennis' ? 'bg-rose-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+                aria-pressed={activeTab === 'table-tennis'}
+              >
+                Stoni tenis
+              </button>
+              <button
+                type="button"
                 onClick={() => handleTabChange('commands')}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
                   activeTab === 'commands' ? 'bg-rose-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
@@ -938,6 +949,8 @@ function AppContent() {
           <LidarCostmapTab />
         ) : activeTab === 'navigation' ? (
           <NavigationMissionsTab />
+        ) : activeTab === 'table-tennis' ? (
+          <TableTennisPage />
         ) : activeTab === 'commands' ? (
           <CommandPresetsTab />
         ) : activeTab === 'services' ? (

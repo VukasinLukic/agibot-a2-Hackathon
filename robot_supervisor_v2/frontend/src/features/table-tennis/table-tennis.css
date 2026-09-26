@@ -1,0 +1,237 @@
+/*
+ * TitanSudija look: a table tennis table seen from above.
+ * Scoped under .tt so the Supervisor's own theme is untouched.
+ * Colours: ink (table/text), paper, lime (actions, ball, winner),
+ * Comtrade red (brand, corporate referee, destructive), grey (secondary text).
+ */
+.tt {
+  --tt-ink: #0e0f0c;
+  --tt-paper: #ffffff;
+  --tt-lime: #c6f432;
+  --tt-lime-press: #b0dc1f;
+  --tt-red: #c91932;
+  --tt-grey: #6b6f66;
+  --tt-line: #e3e5de;
+  --tt-display: 'Barlow Condensed', 'Bahnschrift', 'Roboto Condensed', 'Arial Narrow', sans-serif;
+  --tt-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  min-height: 100vh;
+  background: var(--tt-paper);
+  color: var(--tt-ink);
+  font-family: var(--tt-body);
+  color-scheme: light;
+}
+
+.tt-display {
+  font-family: var(--tt-display);
+  font-stretch: condensed;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.tt-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tt-grey);
+}
+
+/* ---------------------------------------------------------------- buttons */
+
+.tt-btn {
+  display: inline-flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.9rem;
+  border: 2px solid var(--tt-ink);
+  padding: 0 1.1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.1;
+  transition: transform 80ms ease, background-color 120ms ease;
+  cursor: pointer;
+  user-select: none;
+}
+.tt-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.tt-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.tt-btn-primary {
+  background: var(--tt-lime);
+  color: var(--tt-ink);
+}
+.tt-btn-primary:hover:not(:disabled) {
+  background: var(--tt-lime-press);
+}
+.tt-btn-secondary {
+  background: var(--tt-paper);
+  color: var(--tt-ink);
+}
+.tt-btn-secondary:hover:not(:disabled) {
+  background: #f3f4ef;
+}
+.tt-btn-danger {
+  background: var(--tt-paper);
+  color: var(--tt-red);
+  border-color: var(--tt-red);
+}
+
+.tt :focus-visible {
+  outline: 3px solid var(--tt-red);
+  outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------- form bits */
+
+.tt-input {
+  width: 100%;
+  min-height: 3.25rem;
+  border-radius: 0.9rem;
+  border: 2px solid var(--tt-line);
+  background: var(--tt-paper);
+  padding: 0 1rem;
+  font-size: 1.1rem;
+  color: var(--tt-ink);
+}
+.tt-input:focus {
+  border-color: var(--tt-ink);
+  outline: none;
+}
+
+.tt-seg {
+  display: flex;
+  border: 2px solid var(--tt-ink);
+  border-radius: 0.9rem;
+  overflow: hidden;
+}
+.tt-seg > button {
+  flex: 1;
+  min-height: 2.9rem;
+  padding: 0 0.6rem;
+  font-weight: 600;
+  background: var(--tt-paper);
+  color: var(--tt-ink);
+}
+.tt-seg > button + button {
+  border-left: 2px solid var(--tt-ink);
+}
+.tt-seg > button[aria-pressed='true'] {
+  background: var(--tt-ink);
+  color: var(--tt-paper);
+}
+
+/* ------------------------------------------------------------- the table */
+
+.tt-table {
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  border-radius: 1.1rem;
+  background: var(--tt-ink);
+  padding: 0.55rem;
+  box-shadow: 0 10px 30px -18px rgb(14 15 12 / 0.8);
+}
+/* white edge line of a real table */
+.tt-table::before {
+  content: '';
+  position: absolute;
+  inset: 0.55rem;
+  border: 2px solid rgb(255 255 255 / 0.9);
+  border-radius: 0.55rem;
+  pointer-events: none;
+}
+.tt-net {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(90deg, #fff 0 6px, rgb(255 255 255 / 0.45) 6px 9px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.tt-half {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 11.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  border-radius: 0.5rem;
+  padding: 1rem 1rem 0.9rem;
+  color: var(--tt-paper);
+  text-align: center;
+  transition: background-color 150ms ease;
+}
+button.tt-half:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.06);
+}
+button.tt-half:active:not(:disabled) {
+  background: rgb(198 244 50 / 0.18);
+}
+button.tt-half:disabled {
+  cursor: default;
+}
+.tt-half[data-winner='true'] {
+  background: var(--tt-lime);
+  color: var(--tt-ink);
+}
+.tt-score {
+  font-family: var(--tt-display);
+  font-stretch: condensed;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: clamp(5.5rem, 30vw, 8.5rem);
+  line-height: 0.85;
+}
+.tt-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.tt-ball {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 999px;
+  background: var(--tt-lime);
+  box-shadow: 0 0 0 3px rgb(198 244 50 / 0.25);
+}
+.tt-tap {
+  margin-top: 0.35rem;
+  border-radius: 999px;
+  border: 1.5px solid rgb(255 255 255 / 0.55);
+  padding: 0.2rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tt-score[data-bump='true'] {
+    animation: tt-bump 360ms ease-out;
+  }
+}
+@keyframes tt-bump {
+  0% {
+    transform: scale(1.12);
+    color: var(--tt-lime);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
