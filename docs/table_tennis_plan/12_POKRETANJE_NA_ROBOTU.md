@@ -95,6 +95,12 @@ npm install && npm run build      # izlaz ide u robot_supervisor_v2/dist, Superv
 
 ## 5. Konfiguracija
 
+Važna kapija: trenutni checkout još nema stvarne screen/gesture/navigation/LiveKit
+transport implementacije. Zato `mode: real` trenutno treba koristiti samo nakon što
+osoba 3/4 ubace i mentor pregleda te transport-e; u suprotnom će backend namerno odbiti
+start sa jasnom greškom. Prvi termin sa robotom počinje u mock/fake režimu i read-only
+proverama ispod.
+
 Na robotu, lokalni config van Git-a: `/agibot/humanoid-platform/table_tennis/config.local.yaml`
 ```yaml
 mode: real
@@ -111,6 +117,9 @@ robot:
   tables:
     table-1: [referee-spot]       # waypoint koji je mentor snimio pored stola
 ```
+
+Dok realni transporti nisu spojeni, za softversku probu na robotu koristi `mode: mock`
+sa fake adapterima. Ne postavljaj `mode: real` samo zato što je Titan uključen.
 
 U `/agibot/humanoid-platform/.env` (van Git-a) dodati:
 ```env
