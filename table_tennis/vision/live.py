@@ -7,6 +7,10 @@ microphone, so a missing conclusion cannot block a proposal.
     python -m table_tennis.vision.live --match-id latest --calibration table.json --device CHEST_LEFT_FISHEYE
     python -m table_tennis.vision.live --grab still.jpg --device CHEST_LEFT_FISHEYE
     python -m table_tennis.vision.live --match-id <uuid> --calibration table.json --clip clip.ttclip --dry-run
+    python -m table_tennis.vision.live --match-id latest --calibration table.json --clip snimak.mov --ballnet ballnet.onnx --show
+
+A .mov/.mp4 plays at its own speed so the operator can press serve in time.
+``--show`` opens a preview window (space pauses, q stops); the robot runs without it.
 
 A dead backend does not kill the process. The last snapshot is kept, a proposal
 is posted once more with the same ``command_id``, and exit sends
@@ -16,6 +20,7 @@ is posted once more with the same ``command_id``, and exit sends
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import logging
 import os
@@ -175,7 +180,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--token", default=os.environ.get("TT_VISION_TOKEN", ""))
     parser.add_argument("--calibration", type=Path)
     parser.add_argument("--config", type=Path)
-    parser.add_argument("--clip", type=Path, help="local TTCLIP; mutually exclusive with --device")
+    parser.add_argument("--clip", type=Path, help="TTCLIP or a .mov/.mp4 recording; mutually exclusive with --device")
+    parser.add_argument("--start", type=float, default=0.0, help="start a .mov/.mp4 this many seconds in")
+    parser.add_argument("--ballnet", help="BallNet .onnx or .npz (overrides ballnet_path from the config)")
+    parser.add_argument("--show", action="store_true", help="preview window: ball and table; space pauses, q stops")
     parser.add_argument("--device", help="raw chest fisheye alias, for example CHEST_LEFT_FISHEYE")
     parser.add_argument("--dry-run", action="store_true", help="log commands instead of posting them")
     parser.add_argument("--record", nargs="?", const="auto", help="write a TTCLIP under table_tennis/var")
@@ -190,6 +198,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     from table_tennis.vision.config import load_config, load_example_config
 
     config = load_config(args.config) if args.config else load_example_config()
+    if args.ballnet:
+        config = dataclasses.replace(config, ballnet_path=args.ballnet, model_path=None)
     capture = _open_capture(args, config.camera_id)
     with capture:
         if args.grab is not None:
@@ -215,6 +225,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         judge = RallyJudge(calibration)
         record = _ClipSink(args.record) if args.record else None
         pace = _Pace(capture, tracker)
+        window = None
+        if args.show:
+            from table_tennis.vision.preview import PreviewWindow
+
+            window = PreviewWindow(calibration)
         try:
             run_match(
                 match_id,
@@ -226,15 +241,19 @@ def main(argv: Sequence[str] | None = None) -> int:
                 capture,
                 dry_run=args.dry_run,
                 follow_latest=args.match_id == "latest",
-                on_frame=_observe(pace, record, calibration),
+                on_frame=_observe(pace, record, calibration, window),
             )
+        except KeyboardInterrupt:
+            _LOG.info("stopped")
         finally:
             if record is not None:
                 record.close()
+            if window is not None:
+                window.close()
     return 0
 
 
-def _observe(pace: _Pace, record: _ClipSink | None, calibration: Any) -> Callable[[Any, Any], None]:
+def _observe(pace: _Pace, record: _ClipSink | None, calibration: Any, window: Any = None) -> Callable[[Any, Any], None]:
     checked = False
 
     def on_frame(frame: Any, sample: Any) -> None:
@@ -251,19 +270,32 @@ def _observe(pace: _Pace, record: _ClipSink | None, calibration: Any) -> Callabl
                 )
         if record is not None:
             record.write(frame)
+        if window is not None:
+            window.show(frame, sample)
         pace.note(sample)
 
     return on_frame
 
 
 def _open_capture(args: argparse.Namespace, camera_id: str) -> Any:
-    if args.clip is not None:
+    if args.clip is not None and is_ttclip(args.clip):
         from table_tennis.vision.capture import FileCapture
 
         return FileCapture(args.clip, camera_id)
+    if args.clip is not None:
+        from table_tennis.vision.video import VideoFileCapture
+
+        return VideoFileCapture(args.clip, camera_id, start_s=args.start)
     from table_tennis.vision.a2 import A2FisheyeCapture
 
     return A2FisheyeCapture(args.device)
+
+
+def is_ttclip(path: Path) -> bool:
+    from table_tennis.vision.capture import MAGIC
+
+    with Path(path).open("rb") as handle:
+        return handle.read(len(MAGIC)) == MAGIC
 
 
 class _SnapshotFeed:
