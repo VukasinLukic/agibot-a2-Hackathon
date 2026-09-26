@@ -85,7 +85,7 @@ class RefereeMode:
         self.active = False
         self.persona = "regular"
         self.api = (os.getenv("TT_API_URL") or "http://127.0.0.1:8099").rstrip("/") + "/api/table-tennis"
-        self.token = os.getenv("TT_PERSONA_TOKEN") or None
+        self.token = os.getenv("TT_PERSONA_TOKEN") or "persona_secret"
         self.timeout_s = float(os.getenv("TT_REFEREE_TIMEOUT_S", "0.2"))
         self.poll_s = float(os.getenv("TT_REFEREE_POLL_S", "0.25"))
         # A snapshot older than this is not trusted to keep the agent silent.

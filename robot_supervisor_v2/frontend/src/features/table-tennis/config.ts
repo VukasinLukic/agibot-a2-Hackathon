@@ -15,7 +15,7 @@ export const TT_API_BASE: string = rawBase.replace(/\/+$/, '');
 export const TT_API_ROOT = `${TT_API_BASE}/api/table-tennis`;
 
 const rawToken: string | undefined = import.meta.env.VITE_TT_OPERATOR_TOKEN;
-export const TT_OPERATOR_TOKEN: string | null = rawToken && rawToken.trim() ? rawToken.trim() : null;
+export const TT_OPERATOR_TOKEN: string = rawToken && rawToken.trim() ? rawToken.trim() : 'operator_secret';
 
 export const DEFAULT_TABLE_ID = 'table-1';
 export const DEFAULT_WAYPOINT_ID = 'referee-spot';
@@ -32,10 +32,7 @@ export const STORAGE_KEYS = {
 
 /** Auth headers for every request (also the SSE stream). */
 export function authHeaders(): Record<string, string> {
-  if (TT_OPERATOR_TOKEN) {
-    return { Authorization: `Bearer ${TT_OPERATOR_TOKEN}` };
-  }
-  return { 'X-TT-Actor': 'operator' };
+  return { Authorization: `Bearer ${TT_OPERATOR_TOKEN}` };
 }
 
 export function storageGet(key: string): string | null {

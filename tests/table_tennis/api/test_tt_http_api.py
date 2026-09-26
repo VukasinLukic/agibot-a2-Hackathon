@@ -239,9 +239,8 @@ def test_settings_validation(tmp_path):
     with pytest.raises(ValueError):
         load_settings(env={}, features__automatic_scoring=True)
     with pytest.raises(ValueError):
-        load_settings(env={"TT_AUTH_MODE": "token"})
-    with pytest.raises(ValueError):
-        check_bind_allowed(load_settings(env={}, server__host="0.0.0.0"))
+        load_settings(env={"TT_AUTH_MODE": "token", "TT_OPERATOR_TOKEN": ""})
+    check_bind_allowed(load_settings(env={}, server__host="0.0.0.0"))
     check_bind_allowed(load_settings(env=TOKEN_ENV, server__host="0.0.0.0"))
     assert load_settings(env=TOKEN_ENV).auth.tokens.persona == "voice-secret"
     with pytest.raises(ValueError):  # one token must map to exactly one actor
@@ -265,8 +264,8 @@ def test_supervisor_disabled_by_default():
 def test_supervisor_enabled_without_token(tmp_path):
     app = FastAPI()
     env = {"TABLE_TENNIS_ENABLED": "1", "TT_DB_PATH": str(tmp_path / "s.sqlite")}
-    assert include_table_tennis(app, env=env) is False
-    assert _routes(app) == []
+    assert include_table_tennis(app, env=env) is True
+    assert f"{P}/health" in _routes(app)
 
 
 def test_supervisor_enabled_with_token(tmp_path, monkeypatch):

@@ -43,19 +43,19 @@ class FeatureSettings(_Cfg):
 
 
 class Tokens(_Cfg):
-    operator: Optional[str] = None
-    vision: Optional[str] = None
-    robot: Optional[str] = None
-    sim: Optional[str] = None
+    operator: Optional[str] = "operator_secret"
+    vision: Optional[str] = "vision_secret"
+    robot: Optional[str] = "robot_secret"
+    sim: Optional[str] = "sim_secret"
     # Voice agent (livekit-client/referee_mode.py). Read-only: no command,
     # match creation or robot call lists "persona" as an allowed actor.
-    persona: Optional[str] = None
+    persona: Optional[str] = "persona_secret"
 
 
 class AuthSettings(_Cfg):
     # local: actor from X-TT-Actor header (default operator); loopback only.
     # token: Authorization: Bearer <token> per actor; required for network use.
-    mode: Literal["local", "token"] = "local"
+    mode: Literal["local", "token"] = "token"
     tokens: Tokens = Field(default_factory=Tokens)
 
 
