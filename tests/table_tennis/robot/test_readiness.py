@@ -84,9 +84,24 @@ def test_dry_run_construction_and_call_ignore_a_failing_transport() -> None:
         ),
         "22222222-2222-4222-8222-222222222222",
     )
-    assert call.state == "failed"
+    assert call.state == "requested"
     assert call.simulated is True
     assert nav.sent[0][0] == "nav.request"
+    assert nav.tick()[0].state == "validating"
+    assert nav.tick()[-1].state == "moving"
+
+
+def test_dry_run_a2_call_reaches_ready_and_reports_simulated_status() -> None:
+    nav = A2RobotNavigator(dry_run=True)
+    call = nav.request_call(_request(), "88888888-8888-4888-8888-888888888888")
+    for _ in range(4):
+        changed = nav.tick()
+    assert changed[-1].state == "ready"
+    status = nav.get_status()
+    assert status.ready is True
+    assert status.availability == "simulated"
+    assert status.simulated is True
+    assert nav.sent == [("nav.request", {"table_id": "table-1", "waypoint": "referee-spot"})]
 
 
 def test_real_mode_without_transport_fails_before_any_call() -> None:

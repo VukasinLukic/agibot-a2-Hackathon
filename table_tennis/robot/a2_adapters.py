@@ -25,6 +25,7 @@ from table_tennis.core.ports import Clock, SystemClock
 
 from .gesture_output import GESTURE_HINTS, GestureJob, GestureSession, MotionCoordinator
 from .readiness import NavFacts, assess
+from .fake import FakeRobotNavigator
 from .score_display import ScoreboardSession
 
 log = logging.getLogger("table_tennis.robot.a2")
@@ -153,8 +154,20 @@ class A2RobotNavigator(_A2Base):
         self.facts = facts or NavFacts()
         self.coordinator = coordinator
         self.calls: dict[str, RobotCall] = {}
+        self._simulator = (
+            FakeRobotNavigator(clock=self.clock, facts=self.facts) if self.dry_run else None
+        )
+        if self._simulator is not None:
+            self.calls = self._simulator.calls
 
     def request_call(self, request: RobotCallRequest, call_id: str) -> RobotCall:
+        if self._simulator is not None:
+            # Dry-run is a real lifecycle simulation: preflight can still
+            # reject a call, while a ready call advances to arrival on ticks.
+            call = self._simulator.request_call(request, call_id)
+            if call.state == "requested":
+                self._send("nav.request", {"table_id": request.table_id, "waypoint": request.named_waypoint_id})
+            return call
         # Facts stand in for a2_nav.preflight. A later real-mode reader fills them
         # from that client. Nothing is sent until the verdict is ready.
         verdict = assess(self.facts)
@@ -191,19 +204,28 @@ class A2RobotNavigator(_A2Base):
         return call
 
     def get_call(self, call_id: str) -> Optional[RobotCall]:
+        if self._simulator is not None:
+            return self._simulator.get_call(call_id)
         return self.calls.get(call_id)
 
     def get_status(self) -> RobotStatus:
+        if self._simulator is not None:
+            return self._simulator.get_status()
         return RobotStatus(
             availability="offline",
             navigation_state="idle",
             ready=False,
-            reason="A2 navigator scaffold (dry-run)",
+            reason="A2 navigator scaffold is not connected",
             simulated=self.dry_run,
         )
 
     def cancel(self, call_id: str) -> RobotCall:
-        # Cancel is a request. ``cancelled`` waits until the robot confirms.
+        if self._simulator is not None:
+            call = self._simulator.cancel(call_id)
+            if call.state == "cancel_requested":
+                self._send("nav.cancel", {"call_id": call_id})
+            return call
+        # REAL: Cancel is a request. ``cancelled`` waits until the robot confirms.
         # task_id 0 is not a mission id and is not sent.
         call = self.calls[call_id]
         if call.state in ROBOT_CALL_TERMINAL_STATES:
@@ -222,5 +244,7 @@ class A2RobotNavigator(_A2Base):
         return call
 
     def tick(self) -> list[RobotCall]:
+        if self._simulator is not None:
+            return self._simulator.tick()
         # REAL: poll task status with deadline + stale-pose watchdog.
         return []

@@ -50,6 +50,22 @@ def test_real_mode_without_transport_refuses(tmp_path):
     assert not (tmp_path / "p4.sqlite").exists(), "refusal happens before the DB is opened"
 
 
+def test_unstarted_runtime_stop_releases_real_screen_lease(tmp_path):
+    adapters = {"display": "a2", "gesture": "fake", "speech": "fake", "navigator": "fake"}
+    first = build_runtime(_settings(tmp_path, adapters=adapters), background=False)
+    first.stop()
+    second = build_runtime(
+        load_settings(
+            env={},
+            storage__db_path=str(tmp_path / "second.sqlite"),
+            outputs__fake_log_path="",
+            adapters=adapters,
+        ),
+        background=False,
+    )
+    second.stop()
+
+
 class _FlakySpeech:
     def __init__(self):
         self.fail = True
@@ -94,3 +110,17 @@ def test_camera_loss_pauses_cv_but_manual_score_stays(d):
     d.ok("point.award", {"rally_id": s["active_rally_id"], "winner_id": "p2"})
     assert d.score() == (0, 1)
     assert d.snapshot()["scoring_mode"] == "assisted", "no hidden mode change"
+
+
+def test_health_vision_follows_selected_match_camera_state(tmp_path):
+    rt = build_runtime(_settings(tmp_path), background=False)
+    with TestClient(create_app(runtime=rt)) as c:
+        d = InProcessDriver(rt)
+        _setup(d, scoring_mode="assisted", camera=True)
+        h = c.get(f"/api/table-tennis/health?match_id={d.match_id}").json()
+        assert h["capabilities"]["vision"]["available"] is True
+        d.ok("camera.ready.set", {"ready": False, "reason": "camera unplugged"}, actor="sim", expected_revision=None)
+        h = c.get(f"/api/table-tennis/health?match_id={d.match_id}").json()
+        assert h["capabilities"]["vision"]["available"] is False
+        assert "camera_ready=False" in h["capabilities"]["vision"]["detail"]
+    rt.stop()

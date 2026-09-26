@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { EventEnvelope, MatchSnapshot, PlayerId } from '../generated/contract';
 import type { UseMatchResult } from '../hooks/useMatch';
 import { REASON_LABEL, playerName } from '../labels';
@@ -54,6 +55,17 @@ export function MatchView({ snapshot, events, send, pendingIntent, locked }: Mat
   };
 
   const proposal = status === 'pending_decision' ? snapshot.active_proposal : null;
+  const [calibrationDraft, setCalibrationDraft] = useState(() => ({
+    matchId: snapshot.match_id,
+    value: snapshot.calibration_id ?? '',
+  }));
+  const calibrationValue = calibrationDraft.matchId === snapshot.match_id ? calibrationDraft.value : snapshot.calibration_id ?? '';
+
+  const setCalibration = () => {
+    const calibrationId = calibrationValue.trim();
+    if (!calibrationId) return;
+    void send('calibration', { type: 'calibration.set', payload: { calibration_id: calibrationId } });
+  };
 
   return (
     <div className="space-y-4">
@@ -154,6 +166,29 @@ export function MatchView({ snapshot, events, send, pendingIntent, locked }: Mat
             </button>
             {status !== 'between_rallies' && (
               <p className="text-xs text-[var(--tt-grey)]">Sudija se menja samo između poena.</p>
+            )}
+            {status === 'paused' && (
+              <div className="space-y-2 rounded-xl border border-[var(--tt-line)] p-3">
+                <label className="block space-y-2">
+                  <span className="text-sm font-semibold">Kalibracija kamere</span>
+                  <input
+                    aria-label="ID kalibracije"
+                    className="tt-input"
+                    placeholder="table-1-camera-a-v1"
+                    maxLength={120}
+                  value={calibrationValue}
+                  onChange={(e) => setCalibrationDraft({ matchId: snapshot.match_id, value: e.target.value })}
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={off || !calibrationValue.trim()}
+                  onClick={setCalibration}
+                  className="tt-btn tt-btn-secondary w-full"
+                >
+                  Postavi kalibraciju
+                </button>
+              </div>
             )}
             <button
               type="button"

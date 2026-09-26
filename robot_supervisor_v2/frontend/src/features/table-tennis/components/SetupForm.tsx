@@ -25,6 +25,8 @@ export function SetupForm({ busy, onCreate }: SetupFormProps) {
   const [persona, setPersona] = useState<Persona>('regular');
   const [firstServer, setFirstServer] = useState<PlayerId>('p1');
   const [leftOfRobot, setLeftOfRobot] = useState<PlayerId>('p1');
+  const [endAPlayer, setEndAPlayer] = useState<PlayerId>('p1');
+  const [calibrationId, setCalibrationId] = useState('');
   const [mode, setMode] = useState<ScoringMode>('manual');
   // One id per form: a retried submit is idempotent on the backend.
   const [commandId] = useState(newId);
@@ -49,6 +51,7 @@ export function SetupForm({ busy, onCreate }: SetupFormProps) {
   const submit = () => {
     if (!valid) return;
     const p1Left = leftOfRobot === 'p1';
+    const p1AtEndA = endAPlayer === 'p1';
     const withRoles = persona === 'corporate';
     onCreate({
       command_id: commandId,
@@ -61,7 +64,8 @@ export function SetupForm({ busy, onCreate }: SetupFormProps) {
       })),
       config: { first_server_id: firstServer, persona, scoring_mode: mode },
       robot_side_by_player: p1Left ? { p1: 'left', p2: 'right' } : { p1: 'right', p2: 'left' },
-      court_end_by_player: p1Left ? { p1: 'end_a', p2: 'end_b' } : { p1: 'end_b', p2: 'end_a' },
+      court_end_by_player: p1AtEndA ? { p1: 'end_a', p2: 'end_b' } : { p1: 'end_b', p2: 'end_a' },
+      calibration_id: calibrationId.trim() || null,
     });
   };
 
@@ -145,6 +149,23 @@ export function SetupForm({ busy, onCreate }: SetupFormProps) {
             <p className="text-xs text-[var(--tt-grey)]">Gledano iz ugla robota, da pokaže rukom na pravu stranu.</p>
           </div>
           <div className="space-y-2">
+            <p className="text-sm font-semibold">Na kraju stola end_a stoji</p>
+            <Segmented value={endAPlayer} onChange={setEndAPlayer} options={playerOptions} label="Na kraju stola end_a stoji" />
+            <p className="text-xs text-[var(--tt-grey)]">Kalibrisana kamera koristi end_a/end_b; to nije isto što i levo/desno od robota.</p>
+          </div>
+          <label className="block space-y-2">
+            <span className="text-sm font-semibold">ID kalibracije (opciono)</span>
+            <input
+              aria-label="ID kalibracije"
+              className="tt-input"
+              placeholder="npr. table-1-camera-a-v1"
+              maxLength={120}
+              value={calibrationId}
+              onChange={(e) => setCalibrationId(e.target.value)}
+            />
+            <span className="block text-xs text-[var(--tt-grey)]">Preuzmi tačan calibration_id iz vision JSON-a; možeš ga postaviti i u pauzi.</span>
+          </label>
+          <div className="space-y-2">
             <p className="text-sm font-semibold">Poene dodeljuje</p>
             <Segmented
               value={mode}
@@ -156,7 +177,9 @@ export function SetupForm({ busy, onCreate }: SetupFormProps) {
               ]}
             />
             <p className="text-xs text-[var(--tt-grey)]">
-              Sa kamerom Titan sam predlaže poen, a vi ga potvrđujete. Bez kamere poen dodeljujete dodirom.
+              {mode === 'assisted'
+                ? 'Sa kamerom Titan predlaže poen, a vi ga potvrđujete. Potrebni su camera_ready i calibration_id.'
+                : 'U režimu „Mi, dodirom“ predlozi kamere su namerno isključeni; ovaj izbor se ne menja posle kreiranja meča.'}
             </p>
           </div>
         </div>

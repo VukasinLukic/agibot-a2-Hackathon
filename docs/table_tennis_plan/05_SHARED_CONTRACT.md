@@ -41,7 +41,7 @@ Pydantic modeli u contracts su izvor istine. Iz njih se generišu JSON Schema/Op
 | Model | Obavezna polja i semantika |
 |---|---|
 | Player | id, display_name; opciono ručno uneta `role_label`, `role_rank` za zabavnu personu |
-| MatchConfig | target_points=11, win_by=2, best_of=1, first_server_id, scoring_mode=assisted, persona=regular |
+| MatchConfig | target_points=11, win_by=2, best_of=1, first_server_id, scoring_mode=assisted (API model default), persona=regular |
 | MatchSnapshot | schema_version, match_id, revision, status, players, score_by_player, first_server_id, server_id, winner_id, assignment_version, court_end_by_player, robot_side_by_player, calibration_id, active_rally_id, active_proposal_id, persona, scoring_mode, ready, updated_at |
 | PointProposal | proposal_id, rally_id, winner_id, confidence, reason, calibration_id, assignment_version, capture window, optional evidence_ref |
 | VisionObservation | frame_seq, capture_monotonic_ns, detected, x_px/y_px ili null, observation_kind=observed/predicted/missing, confidence, calibration_id |
@@ -55,6 +55,10 @@ Pydantic modeli u contracts su izvor istine. Iz njih se generišu JSON Schema/Op
 Confidence je [0,1], ali sirovi model score nije dokaz statističke kalibracije. Razlog je enum `missed_return`, `double_bounce`, `out_after_hit`, `service_fault`, `unknown`; automatski dozvoljeni razlozi biraju se tek nakon testiranja. Mrežica/let i rub ostaju ručna odluka u MVP-u. `evidence_ref` je lokalni identifikator klipa, ne neproverena putanja/URL za čitanje.
 
 `ready` sadrži odvojeno `robot_ready`, `camera_ready`, `calibration_ready`, `operator_ready`. Manual mode sme raditi bez kamere; mock mode jasno označava simulaciju. Assisted/automatic ne smeju prihvatati CV predloge iz nekalibrisane/stale kamere.
+
+UI za novi meč namerno bira bezbedni manual režim („Mi, dodirom“); operator mora pri
+kreiranju izabrati assisted ako želi CV predloge. `scoring_mode` je posle kreiranja
+nepromenljiv.
 
 ## 4. Primer potvrđenog stanja
 
@@ -166,7 +170,7 @@ Namenski feature router unutar Supervisora, uz standalone mock app koji ga koris
 
 | Endpoint | Uloga |
 |---|---|
-| GET /api/table-tennis/health | režim mock/real, capability status |
+| GET /api/table-tennis/health[?match_id=<id>] | režim mock/real, capability status; vision čita `camera_ready` i `calibration_ready` iz izabranog/najnovijeg meča |
 | POST /api/table-tennis/matches | CreateMatchRequest -> snapshot (201) |
 | GET /api/table-tennis/matches/{id} | autoritativni snapshot |
 | POST /api/table-tennis/matches/{id}/commands | CommandEnvelope -> CommandResult |
@@ -226,4 +230,3 @@ Na ~50 ili više ručno označenih razmena meriti precision automatskih odluka, 
 `new_match`, `manual_point`, `duplicate_command`, `left_right_swap`, `stale_proposal`, `pending_proposal`, `let`, `deuce_10_10`, `finish_12_10`, `undo_finish`, `reconnect`, `robot_busy`, `camera_missing`, `persona_change`.
 
 Sve fixture scenarije generisati legalnim komandama kroz engine, da snapshot, servis i revizije budu konzistentni. Statični primer iz ovog dokumenta je format, ne kompletan fixture log.
-

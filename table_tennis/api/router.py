@@ -64,7 +64,7 @@ def build_router(get_runtime: Callable[[], "object"]) -> APIRouter:
         return resolve_actor(request, rt().settings)
 
     @router.get("/health", response_model=HealthResponse)
-    def health(request: Request) -> HealthResponse:
+    def health(request: Request, match_id: Optional[str] = Query(default=None)) -> HealthResponse:
         runtime = rt()
         actor_of(request)
         sim = runtime.settings.simulated
@@ -83,10 +83,29 @@ def build_router(get_runtime: Callable[[], "object"]) -> APIRouter:
                     detail += f"; last_error={st['last_error']}"
             return CapabilityStatus(available=available, simulated=bool(i.get("simulated", sim)), detail=detail)
 
+        # Vision availability is match state, not a claim that an OpenCV
+        # process exists. Prefer an explicitly selected match; otherwise use
+        # the latest persisted match so the standalone health check follows
+        # the active demo. A missing match stays unavailable and is explicit.
+        vision_match_id = match_id or runtime.service.latest_match_id()
+        vision = CapabilityStatus(available=False, simulated=sim, detail="no match selected; camera is not ready")
+        if vision_match_id:
+            snapshot = runtime.service.get_snapshot(vision_match_id)
+            ready = snapshot.ready.camera_ready
+            calibration = snapshot.ready.calibration_ready
+            vision = CapabilityStatus(
+                available=ready,
+                simulated=sim,
+                detail=(
+                    f"match={vision_match_id}; camera_ready={ready}; "
+                    f"calibration_ready={calibration}"
+                ),
+            )
+
         return HealthResponse(
             mode=runtime.settings.mode,
             simulated=sim,
-            automatic_scoring_enabled=False,
+            automatic_scoring_enabled=runtime.settings.features.automatic_scoring,
             auth_mode=runtime.settings.auth.mode,
             capabilities={
                 "engine": CapabilityStatus(available=True, simulated=False),
@@ -95,7 +114,7 @@ def build_router(get_runtime: Callable[[], "object"]) -> APIRouter:
                 "screen": cap("screen", "display"),
                 "gesture": cap("gesture", "gesture"),
                 "speech": cap("speech", "speech"),
-                "vision": CapabilityStatus(available=False, simulated=sim, detail="no camera; use fixture producer / sim"),
+                "vision": vision,
             },
         )
 

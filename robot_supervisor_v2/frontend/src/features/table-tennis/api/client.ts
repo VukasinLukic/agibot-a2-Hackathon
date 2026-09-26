@@ -96,7 +96,8 @@ async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, 
 const enc = encodeURIComponent;
 
 export const ttApi = {
-  health: (signal?: AbortSignal) => request<HealthResponse>('GET', '/health', undefined, signal),
+  health: (matchId?: string | null, signal?: AbortSignal) =>
+    request<HealthResponse>('GET', `/health${matchId ? `?match_id=${enc(matchId)}` : ''}`, undefined, signal),
   listMatches: (signal?: AbortSignal) => request<string[]>('GET', '/matches', undefined, signal),
   createMatch: (body: CreateMatchRequest) => request<MatchSnapshot>('POST', '/matches', body),
   getMatch: (matchId: string, signal?: AbortSignal) =>

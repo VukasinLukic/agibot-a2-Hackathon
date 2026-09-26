@@ -45,6 +45,17 @@ Python 3.10+.
 | Mock sa A2/LiveKit adapterima u dry-run režimu | `$env:TT_ADAPTER_DISPLAY="a2"; python -m table_tennis.run_demo` (Linux: `TT_ADAPTER_DISPLAY=a2 python -m ...`) |
 | Regeneracija fixtures | `python -m table_tennis.sim.fixtures` (provera: `--check`) |
 
+Za kompletne backend + vision testove instaliraj i dodatke za kameru:
+
+```powershell
+pip install -r table_tennis\requirements-vision.txt
+python -m pytest tests/table_tennis -q
+```
+
+`requirements-dev.txt` je dovoljan za core/API/robot/persona testove; tri vision test
+modula se bez NumPy automatski preskaču. Za stvarnu proveru vision algoritama instaliraj
+NumPy/OpenCV iz `requirements-vision.txt`.
+
 API dokumentacija dok backend radi: http://127.0.0.1:8099/docs
 
 Zauzet port se prijavljuje porukom i izlaznim kodom 2. Reset stanja: zaustavi
@@ -85,11 +96,13 @@ ponavlja stare govore i gestove (pending -> `skipped_restart`, u toku ->
   422 `automatic_scoring_disabled`; `features.automatic_scoring: true` -> greška pri startu.
 - `rally.arm` traži `robot_ready` (poziv robota ili `robot.ready.set` sa
   `reason: "manual_arrival"`).
+- UI novi meč podrazumevano kreira u manual režimu; za CV predloge izaberi assisted
+  u setupu, jer se `scoring_mode` posle kreiranja ne menja.
 - Jedan proces je jedini writer. Više uvicorn worker-a nad istom bazom nije podržano.
 
 ## Rute
 
-`GET /health`, `GET|POST /matches`, `GET /matches/{id}`,
+`GET /health[?match_id=<id>]`, `GET|POST /matches`, `GET /matches/{id}`,
 `POST /matches/{id}/commands`, `GET /matches/{id}/events` (SSE),
 `POST /robot/calls`, `GET /robot/calls/{id}`, `POST /robot/calls/{id}/cancel`,
 `GET /robot/status`, `GET /debug/outputs` (samo mock).
@@ -98,6 +111,11 @@ SSE: prvo `event: snapshot` (cursor + snapshot), zatim `event: match_event`
 (`id` = event_id) i posle svakog commit-a novi `snapshot`. Reconnect:
 `?last_event_id=` ili `Last-Event-ID` header; nepoznat ID -> `resync: true`.
 Heartbeat `: heartbeat` svakih 15 s. Postojeći Supervisor `/api/events` nije menjan.
+
+Health vision capability je vezana za `camera_ready`/`calibration_ready` iz izabranog
+meča (ili najnovijeg meča ako `match_id` nije prosleđen); ne predstavlja dokaz da je
+fizička kamera povezana. `automatic_scoring_enabled` je konfiguracioni feature flag i
+ostaje isključen dok tim ne dostavi benchmark.
 
 ## Supervisor integracija (isključena podrazumevano)
 
