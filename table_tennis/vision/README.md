@@ -94,6 +94,19 @@ https://cloud.cs.uni-tuebingen.de/index.php/s/6Z8TpM3sXRKHzGC
 
 Živi proces je `python -m table_tennis.vision.live`. On drži poslednji snapshot sa SSE toka `/events` (dok tok nije stigao, jednom pita `GET`), i šalje komande na `POST /api/table-tennis/matches/{id}/commands` sa `TT_VISION_TOKEN`. Telo ne imenuje actora. `--match-id latest` uzima poslednji meč. `--dry-run` samo loguje komande. `--record` piše TTCLIP u `table_tennis/var/`. `--grab still.jpg` sačuva prvi kadar i stane; uglove onda bira `python -m table_tennis.vision.mark_table still.jpg -o table.json`. Pad backenda ne gasi proces: predlog se pošalje još jednom sa istim `command_id`, a izlaz šalje `camera.ready.set false`. Na svakih 5 s ispisuje fps i p50/p95.
 
+### Test na laptopu, sa snimkom
+
+`--clip` prima i `.mov`/`.mp4` (`video.VideoFileCapture`, OpenCV). Snimak ide brzinom snimanja, da operater stigne da pritisne „Servis”; `--start` preskače početak. `--show` otvara prozor sa stolom i lopticom (space = pauza, q = kraj). Kadar i sat su iz fajla, pa to nije dokaz za A2 fisheye. Na robotu se ništa ne menja (`--device`, bez `--show`).
+
+Na snimku moraju da se vide sva četiri ugla stola. `calibrate` radi direktno nad snimkom, smanjuje prozor na ekran, prima i ukucane tačke i pored `table.json` upisuje `table.png` sa A/B i mrežom:
+
+```powershell
+python -m table_tennis.vision.calibrate --clip snimak.mov --at 3 --out table.json
+python -m table_tennis.vision.live --match-id latest --token vision_secret --calibration table.json --clip snimak.mov --ballnet C:	ezineallnet.onnx --show
+```
+
+U aplikaciji: meč u režimu „Kamera, uz potvrdu”, ispisani `calibration_id`, pa „Servis” pre svakog poena. Robot bez ekrana: `calibrate --device CHEST_LEFT_FISHEYE --points "x,y x,y x,y x,y x,y x,y" --out table.json`.
+
 Zvuk, ako je prosleđen, mora prvo da zaključi. Predlog ide samo kad zvuk i slika imaju istog pobednika i isti razlog. Kontakt čiji je `last_contact_ns` pre početka ove razmene se ignoriše. Demo ostavlja zvuk isključen. Detalj signala je u `sound/README.md`. Fixture sa poljima komande: `fixtures/missed_return.json`.
 
 ## Benchmark
