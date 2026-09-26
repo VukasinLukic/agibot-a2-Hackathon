@@ -54,6 +54,19 @@ Ekran u kodu drži `robot_services/screen_manip` (jedan MP4 slot). Tuđi flash
 (agent, sat, kviz) može da ga prepiše. Zvuk drži AIMA `agent` dok se namerno
 ne preda našem bridge-u. Ko ih drži u konkretnom terminu nije utvrđeno.
 
+## Faza 2 u kodu
+
+Ekran više nije samo dve linije teksta. `score_display.py` drži jedan slot
+`emoticon_ct_message` od kreiranja sesije, ne u trenutku poena. Jedan worker
+pusti samo najnoviju reviziju; starija čekanja se odbace pre reprodukcije.
+Duplikat se ne pušta ponovo. Undo briše nepuštene kadrove. Novi meč
+(`status=setup`) resetuje lokalni watermark. Upis kadra (`accepted`) i
+prikaz (`shown`) su odvojeni. Podrazumevano lice se vraća samo na `release`.
+Drugi worker na isti slot se odbija.
+
+Fizička provera da li se skor vidi sa stola, i ko u sali drži taj slot dok
+agent pali sat ili kviz, i dalje čekaju termin. Ovaj kod ne zove ekran robota.
+
 ## Čeka termin sa mentorom
 
 Ne raditi ove stavke dok nema robota. Ne upisivati privremena imena kao prava.

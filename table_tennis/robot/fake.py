@@ -16,32 +16,39 @@ from table_tennis.core.fake_log import FakeOutputLog
 from table_tennis.core.ports import Clock, SystemClock
 
 from .readiness import NavFacts, assess
-from .scoreboard import scoreboard_lines
+from .score_display import ScoreboardSession
 
 # --------------------------------------------------------------------------- display
 
 
 class FakeScoreDisplay:
-    """Keeps the latest snapshot per match; stale revisions are ignored."""
+    """Dry-run scoreboard. One slot, latest revision, default face only on close."""
 
     def __init__(self, log: FakeOutputLog):
         self.log = log
-        self.latest: Optional[MatchSnapshot] = None
-        self._watermark: dict[str, int] = {}
+        self.session = ScoreboardSession(self._play)
         self.renders = 0
         self.closed = False
 
-    def render(self, snapshot: MatchSnapshot) -> None:
-        mark = self._watermark.get(snapshot.match_id, -1)
-        if snapshot.revision < mark:
-            return  # latest revision wins
-        self._watermark[snapshot.match_id] = snapshot.revision
-        self.latest = snapshot
+    @property
+    def latest(self) -> Optional[MatchSnapshot]:
+        return self.session.held
+
+    def _play(self, frame) -> None:
         self.renders += 1
-        top, bottom = scoreboard_lines(snapshot)
-        self.log.record("display", f"{top} | {bottom}", match_id=snapshot.match_id, revision=snapshot.revision)
+        self.log.record(
+            "display",
+            f"{frame.primary} | {frame.secondary}",
+            match_id=frame.match_id,
+            revision=frame.revision,
+        )
+
+    def render(self, snapshot: MatchSnapshot) -> None:
+        self.session.render(snapshot)
 
     def close(self) -> None:
+        if self.session.release():
+            self.log.record("display", "DEFAULT FACE")
         self.closed = True
 
 
