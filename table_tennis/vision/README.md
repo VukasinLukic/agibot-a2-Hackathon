@@ -94,6 +94,24 @@ https://cloud.cs.uni-tuebingen.de/index.php/s/6Z8TpM3sXRKHzGC
 
 Živi proces je `python -m table_tennis.vision.live`. On čita snapshot i šalje komande na `POST /api/table-tennis/matches/{id}/commands` sa `TT_VISION_TOKEN`. Telo ne imenuje actora.
 
+Kad backend ne odgovara, `live` ne pada: koristi poslednji dobar snapshot, ponovo pita posle 1 s, a predlog šalje još jednom sa istim `command_id`. Pri izlasku (kraj snimka, Ctrl+C, nestanak kamere) šalje `camera.ready.set false`. Pogrešan `--match-id` ili token zaustavlja proces odmah.
+
+### Test na laptopu, sa snimkom
+
+`--clip` prima TTCLIP ili `.mov`/`.mp4` (`video.VideoFileCapture`, OpenCV). Snimak ide brzinom snimanja, da operater stigne da pritisne „Servis”. Kadar i sat su iz fajla, pa to nije dokaz za A2 fisheye. Na robotu se ništa ne menja: `--device CHEST_LEFT_FISHEYE`.
+
+Kalibracija se pravi na kadru iz istog izvora i iste rezolucije koje čita `live`. Na snimku sa telefona mora da se vide sva četiri ugla stola.
+
+```powershell
+# 1. klikovi na kadru (u = vrati, Enter = sačuvaj); pored table.json ide table.png sa A/B i mrežom
+python -m table_tennis.vision.calibrate --clip snimak.mov --at 3 --out table.json
+# 2. u aplikaciji: meč u režimu „Kamera, uz potvrdu”, ispisani calibration_id, pa „Servis” pre svakog poena
+# 3. vizija; --show otvara prozor (space = pauza, q = kraj)
+python -m table_tennis.vision.live --match-id latest --token vision_secret --calibration table.json --clip snimak.mov --ballnet C:\tezine\ballnet.onnx --show
+```
+
+Robot bez ekrana: `calibrate --device CHEST_LEFT_FISHEYE --save-frame kadar.png`, očitati piksele na laptopu (ili `calibrate --image kadar.png` sa klikovima), pa `calibrate --device CHEST_LEFT_FISHEYE --points "x,y x,y x,y x,y x,y x,y" --out table.json` na robotu.
+
 Zvuk, ako je prosleđen, mora prvo da zaključi. Predlog ide samo kad zvuk i slika imaju istog pobednika i razlog `missed_return`. Kontakt čiji je `last_contact_ns` pre početka ove razmene se ignoriše. Detalj signala je u `sound/README.md`. Fixture sa poljima komande: `fixtures/missed_return.json`.
 
 ## Benchmark
