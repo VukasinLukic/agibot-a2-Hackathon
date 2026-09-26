@@ -119,6 +119,8 @@ def test_health_vision_follows_selected_match_camera_state(tmp_path):
         _setup(d, scoring_mode="assisted", camera=True)
         h = c.get(f"/api/table-tennis/health?match_id={d.match_id}").json()
         assert h["capabilities"]["vision"]["available"] is True
+        assert h["capabilities"]["vision"]["simulated"] is True
+        assert h["capabilities"]["vision"]["detail"].startswith("SIMULATED camera")
         d.ok("camera.ready.set", {"ready": False, "reason": "camera unplugged"}, actor="sim", expected_revision=None)
         h = c.get(f"/api/table-tennis/health?match_id={d.match_id}").json()
         assert h["capabilities"]["vision"]["available"] is False

@@ -1,6 +1,7 @@
 # A2 table tennis referee: example config (no secrets here).
 # Copy to table_tennis/config.local.yaml (gitignored) and pass --config.
-# Tokens come from env vars: TT_OPERATOR_TOKEN, TT_VISION_TOKEN, TT_ROBOT_TOKEN, TT_SIM_TOKEN.
+# Tokens come from env vars: TT_OPERATOR_TOKEN, TT_VISION_TOKEN, TT_ROBOT_TOKEN, TT_SIM_TOKEN,
+# TT_PERSONA_TOKEN (voice agent, read-only).
 
 mode: mock            # mock (default) | real (refuses to start until real adapters exist)
 

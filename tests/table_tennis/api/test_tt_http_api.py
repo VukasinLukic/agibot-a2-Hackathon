@@ -14,9 +14,11 @@ from table_tennis.config import check_bind_allowed, load_settings
 from table_tennis import run_demo
 
 P = "/api/table-tennis"
-TOKEN_ENV = {"TT_AUTH_MODE": "token", "TT_OPERATOR_TOKEN": "op-secret", "TT_VISION_TOKEN": "cv-secret"}
+TOKEN_ENV = {"TT_AUTH_MODE": "token", "TT_OPERATOR_TOKEN": "op-secret", "TT_VISION_TOKEN": "cv-secret",
+             "TT_PERSONA_TOKEN": "voice-secret"}
 OP = {"Authorization": "Bearer op-secret"}
 CV = {"Authorization": "Bearer cv-secret"}
+VOICE = {"Authorization": "Bearer voice-secret"}
 
 
 def cid():
@@ -208,6 +210,29 @@ def test_token_mode(tc):
     assert r.json()["snapshot"]["active_proposal_id"] == prop["proposal_id"]
 
 
+def test_persona_token_is_read_only(tc):
+    """The voice agent (referee_mode.py) reads the match with TT_PERSONA_TOKEN but can never write."""
+    snap = to_rally(tc, OP)
+    mid, rid = snap["match_id"], snap["active_rally_id"]
+
+    assert tc.get(f"{P}/health", headers=VOICE).status_code == 200
+    r = tc.get(f"{P}/matches", headers=VOICE)
+    assert r.status_code == 200 and mid in r.json()
+    r = tc.get(f"{P}/matches/{mid}", headers=VOICE)
+    assert r.status_code == 200 and r.json()["status"] == "rally"
+
+    # no command, no match creation, no robot call
+    award = {"rally_id": rid, "winner_id": "p1", "reason": "unknown"}
+    r = tc.post(f"{P}/matches/{mid}/commands", json=cmd("point.award", award, rev=snap["revision"]), headers=VOICE)
+    assert r.status_code == 403
+    r = tc.post(f"{P}/matches/{mid}/commands", json=cmd("match.pause", rev=snap["revision"]), headers=VOICE)
+    assert r.status_code == 403
+    assert tc.post(f"{P}/matches", json=create_body(), headers=VOICE).status_code == 403
+    call = {"command_id": cid(), "table_id": "table-1", "named_waypoint_id": "referee-spot"}
+    assert tc.post(f"{P}/robot/calls", json=call, headers=VOICE).status_code == 403
+    assert tc.get(f"{P}/matches/{mid}", headers=OP).json()["revision"] == snap["revision"]
+
+
 # ---------------------------------------------------------------- settings
 
 def test_settings_validation(tmp_path):
@@ -218,6 +243,9 @@ def test_settings_validation(tmp_path):
     with pytest.raises(ValueError):
         check_bind_allowed(load_settings(env={}, server__host="0.0.0.0"))
     check_bind_allowed(load_settings(env=TOKEN_ENV, server__host="0.0.0.0"))
+    assert load_settings(env=TOKEN_ENV).auth.tokens.persona == "voice-secret"
+    with pytest.raises(ValueError):  # one token must map to exactly one actor
+        load_settings(env={**TOKEN_ENV, "TT_PERSONA_TOKEN": "op-secret"})
     check_bind_allowed(load_settings(env={}))
 
 

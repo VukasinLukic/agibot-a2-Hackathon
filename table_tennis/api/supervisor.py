@@ -44,7 +44,7 @@ def include_table_tennis(app, env: Optional[Mapping[str, str]] = None) -> bool:
     if settings.auth.mode != "token":
         log.error(
             "table tennis feature NOT mounted: the Supervisor is network-facing; set TT_AUTH_MODE=token "
-            "and TT_OPERATOR_TOKEN (plus TT_VISION_TOKEN / TT_ROBOT_TOKEN as needed)"
+            "and TT_OPERATOR_TOKEN (plus TT_VISION_TOKEN / TT_ROBOT_TOKEN / TT_PERSONA_TOKEN as needed)"
         )
         return False
 

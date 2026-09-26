@@ -34,8 +34,8 @@ pokaže levo/desno ka igraču koji je dobio poen.
 - [ ] Ceo demo odigran lokalno u mock režimu (sekcija 2).
 - [ ] Zabeležen SHA commita koji ide na robot: `git log --oneline -1`.
 - [ ] Mentor je odobrio: način deploy-a, port/Supervisor režim, kameru, ARM, isključenje auto-razgovora.
-- [ ] Tokeni (`TT_OPERATOR_TOKEN`, `TT_VISION_TOKEN`, `TT_ROBOT_TOKEN`) generisani i preneti privatno, nikad u Git:
-      `python -c "import secrets;print(secrets.token_urlsafe(24))"` (po jedan za svaki).
+- [ ] Tokeni (`TT_OPERATOR_TOKEN`, `TT_VISION_TOKEN`, `TT_ROBOT_TOKEN`, `TT_PERSONA_TOKEN`) generisani i preneti privatno, nikad u Git:
+      `python -c "import secrets;print(secrets.token_urlsafe(24))"` (po jedan za svaki, svi različiti).
 
 ## 2. Generalna proba na laptopu (bez robota)
 
@@ -120,7 +120,11 @@ TT_AUTH_MODE=token
 TT_OPERATOR_TOKEN=<privatno>
 TT_VISION_TOKEN=<privatno>
 TT_ROBOT_TOKEN=<privatno>
+TT_PERSONA_TOKEN=<privatno>   # glasovni agent, samo čitanje meča
 ```
+
+Isti `TT_PERSONA_TOKEN` mora da vidi i voice-agent (`livekit-client/referee_mode.py`); bez njega agent dobija 401 i
+ostaje bez podataka o meču.
 
 Persona i ime: `robot_name: TitanSudija` u lokalnom `livekit_config/prompt_config.yaml` (runtime fajl, nije u Git-u).
 

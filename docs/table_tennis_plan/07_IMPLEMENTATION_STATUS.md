@@ -133,6 +133,9 @@ TT_ADAPTER_SPEECH=livekit TT_SPEECH_LIVE=1 TT_SUPERVISOR_URL=http://127.0.0.1:80
   prave adaptere). `/health` i dalje piše `dry-run` za govor; stvarno slanje se vidi u logu (`SPEECH sent`).
 - `TT_LLM_JOKES=1` koristi `AZURE_OPENAI_*` iz `.env`; bez toga idu samo ručno pisane šale.
 - Agent čita backend na `TT_API_URL` (podrazumevano `http://127.0.0.1:8099`).
+- U token režimu agent šalje `TT_PERSONA_TOKEN` (backend ga zna kao aktera `persona`, koji sme samo da čita).
+- Stanje meča agent osvežava u pozadini (`TT_REFEREE_POLL_S`, 0,25 s; timeout `TT_REFEREE_TIMEOUT_S`, 0,2 s),
+  pa provera „da li poen traje” pre svakog odgovora ne čeka mrežu.
 - Izmeriti: vreme od dodira „+ poen” do glasa (Supervisor otvara LiveKit sobu po rečenici).
 
 - **Preostalo:** redosled pozdrav/gest/govor sa osobom 3; gašenje automatskog razgovora na detekciju osobe

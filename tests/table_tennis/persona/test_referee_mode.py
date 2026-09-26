@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -63,6 +64,7 @@ def test_silent_only_during_rally(monkeypatch):
     status["value"] = "between_rallies"
     mode._cache = (0.0, None)
     assert not mode.should_stay_silent()
+    mode.set(False, None)
 
 
 def test_unreachable_backend_never_blocks(monkeypatch):
@@ -75,3 +77,42 @@ def test_unreachable_backend_never_blocks(monkeypatch):
     monkeypatch.setattr(mode, "_get", boom)
     assert mode.current_match() is None
     assert not mode.should_stay_silent()
+    mode.set(False, None)
+
+
+def test_silence_check_reads_the_cache_not_the_network(monkeypatch):
+    """With the poller running, a hung backend never delays a reply."""
+    mode = RefereeMode()
+
+    def slow_get(path):
+        time.sleep(0.5)
+        raise OSError("hung")
+
+    monkeypatch.setattr(mode, "_get", slow_get)
+    mode.set(True, "regular")
+    try:
+        mode._cache = (time.monotonic(), dict(SNAP, status="rally"))
+        started = time.monotonic()
+        assert mode.should_stay_silent()
+        # a stale snapshot is ignored instead of refetched inline
+        mode._cache = (time.monotonic() - mode.stale_s - 1, dict(SNAP, status="rally"))
+        assert not mode.should_stay_silent()
+        assert time.monotonic() - started < 0.05
+    finally:
+        mode.set(False, None)
+    poller = mode._poller
+    assert poller is not None
+    poller.join(timeout=2)
+    assert not poller.is_alive()
+
+
+def test_quick_off_on_keeps_a_poller(monkeypatch):
+    mode = RefereeMode()
+    monkeypatch.setattr(mode, "_get", lambda path: [] if path == "/matches" else None)
+    mode.set(True, "regular")
+    mode.set(False, None)
+    mode.set(True, "regular")
+    try:
+        assert mode._poller is not None and mode._poller.is_alive() and not mode._stop.is_set()
+    finally:
+        mode.set(False, None)
