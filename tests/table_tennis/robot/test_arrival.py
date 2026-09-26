@@ -103,7 +103,10 @@ def test_a2_cancel_is_a_request_and_ignores_task_zero() -> None:
 
     nav = A2RobotNavigator(dry_run=False, transport=transport)
     call_id = "55555555-5555-4555-8555-555555555555"
-    call = nav.request_call(_request(), call_id)
+    held = nav.request_call(_request(), call_id)
+    assert held.reason == "route_not_confirmed"
+    assert seen == []
+    call = nav.confirm_route(call_id, "operator")
     assert call.state == "requested"
     assert call.native_task_id is None
     assert call.reason == "goal accepted; arrival not confirmed"

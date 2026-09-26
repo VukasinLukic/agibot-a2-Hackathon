@@ -120,6 +120,21 @@ class RobotCallService:
     def status(self) -> RobotStatus:
         return self.navigator.get_status()
 
+    def confirm_route(self, call_id: str, actor: str) -> RobotCall:
+        """Operator confirms the path is free. The fake navigator has nothing to hold."""
+        if actor != "operator":
+            raise ForbiddenError("forbidden_actor", f"actor {actor!r} may not clear a robot route")
+        with self._lock:
+            row = self.store.robot_call(call_id)
+            if row is None:
+                raise NotFoundError("call_not_found", f"robot call {call_id} does not exist")
+            confirm = getattr(self.navigator, "confirm_route", None)
+            if confirm is None:
+                return self.get(call_id)
+            call = confirm(call_id, actor)
+            self._persist(call, row["command_id"], row["payload_hash"])
+            return call
+
     def cancel(self, call_id: str, command_id: str, actor: str) -> RobotCall:
         if actor != "operator":
             raise ForbiddenError("forbidden_actor", f"actor {actor!r} may not cancel robot calls")
