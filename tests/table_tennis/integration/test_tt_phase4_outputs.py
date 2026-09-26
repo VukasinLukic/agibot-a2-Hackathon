@@ -13,7 +13,7 @@ from table_tennis.sim.scenarios import _proposal, _setup
 
 
 def _settings(tmp_path, **kw):
-    return load_settings(env={}, storage__db_path=str(tmp_path / "p4.sqlite"), outputs__fake_log_path="", **kw)
+    return load_settings(env={"TT_AUTH_MODE": "local"}, storage__db_path=str(tmp_path / "p4.sqlite"), outputs__fake_log_path="", **kw)
 
 
 def test_dry_run_a2_adapters_selected_by_config(tmp_path):

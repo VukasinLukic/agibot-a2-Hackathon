@@ -44,7 +44,10 @@ def cmd(type_, payload=None, rev=None, command_id=None):
 
 
 def make_client(tmp_path, env=None):
-    settings = load_settings(env=env or {}, storage__db_path=str(tmp_path / "tt.sqlite"), outputs__fake_log_path="")
+    e = {"TT_AUTH_MODE": "local"}
+    if env is not None:
+        e = dict(env)
+    settings = load_settings(env=e, storage__db_path=str(tmp_path / "tt.sqlite"), outputs__fake_log_path="")
     app = create_app(settings=settings, runtime=build_runtime(settings, background=False))
     return TestClient(app)
 

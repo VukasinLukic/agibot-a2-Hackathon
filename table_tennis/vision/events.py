@@ -2,9 +2,10 @@
 
 A proposal is only a clear missed return: the ball was seen on both halves of
 the table, then the track went missing on the far half. Predicted samples and
-a missing sample by themselves are not a winner. The command is
+a missing sample by themselves are not a winner. When sound has been heard,
+it must name the same winner or the rally stays silent. The command is
 ``point.propose`` from ``stub.build_proposal``. This module does not score
-and does not choose the server.
+and does not choose the server. ``AUTOMATIC_ENABLED`` is not changed here.
 
 ``MatchVisionProducer`` is the only live producer. Do not run it in the same
 process as ``FixtureVisionProducer``.
@@ -33,6 +34,8 @@ class RallyJudge:
         self._rally_id: str | None = None
         self._command: dict[str, Any] | None = None
         self._closed = False
+        self._sound_consulted = False
+        self._sound: dict[str, Any] | None = None
 
     def add(self, sample: TrackSample, rally_id: str | None = None) -> None:
         if sample.proves_bounce:
@@ -42,8 +45,14 @@ class RallyJudge:
             self._samples.clear()
             self._command = None
             self._closed = False
+            self._clear_sound()
             self._rally_id = rally_id
         self._samples.append(sample)
+
+    def hear(self, proposal: dict[str, Any] | None) -> None:
+        """Remember the sound conclusion for this rally. Sound does not send it."""
+        self._sound_consulted = True
+        self._sound = proposal
 
     def proposal_command(self, snapshot: Any) -> dict[str, Any] | None:
         """Return one validated point.propose, or nothing. A later call does not send a second decision."""
@@ -52,10 +61,15 @@ class RallyJudge:
         self._follow_rally(getattr(snapshot, "active_rally_id", None))
         if self._closed or self._command is not None:
             return None
+        if not _snapshot_ready(snapshot):
+            return None
         found = self._missed_return(snapshot)
         if found is None:
             return None
         winner_id, start_seq, end_seq = found
+        if self._sound_consulted and not _sound_agrees(self._sound, winner_id):
+            self._closed = True
+            return None
         from table_tennis.vision.stub import FROM_CONTEXT, build_proposal, propose_command
 
         proposal = build_proposal(
@@ -95,6 +109,11 @@ class RallyJudge:
         self._samples.clear()
         self._command = None
         self._closed = False
+        self._clear_sound()
+
+    def _clear_sound(self) -> None:
+        self._sound_consulted = False
+        self._sound = None
 
     def _missed_return(self, snapshot: Any) -> tuple[str, int, int] | None:
         if snapshot.active_rally_id is None or snapshot.active_proposal_id is not None:
@@ -148,6 +167,7 @@ class MatchVisionProducer:
         tracker: Any,
         judge: RallyJudge,
         capture: Any = None,
+        sound: Callable[[], dict[str, Any] | None] | None = None,
         *,
         new_id: Callable[[], str] | None = None,
     ) -> None:
@@ -157,6 +177,7 @@ class MatchVisionProducer:
         self._tracker = tracker
         self._judge = judge
         self._capture = capture
+        self._sound = sound
         self._new_id = new_id or (lambda: str(uuid.uuid4()))
         self._closed = False
         self._camera_ready = False
@@ -173,11 +194,26 @@ class MatchVisionProducer:
             self._judge.add(sample, getattr(snapshot, "active_rally_id", None))
             if getattr(snapshot, "scoring_mode", "assisted") != "assisted":
                 continue
+            if self._sound is not None:
+                heard = self._sound()
+                if heard is not None:
+                    self._judge.hear(heard)
             command = self._judge.proposal_command(snapshot)
             if command is None:
                 continue
-            sink(command)
+            reply = sink(command)
             self.sent.append(command)
+            if _is_conflict(reply):
+                self._judge.on_conflict(snapshot)
+        if self._sound is not None and self._judge.transport_retry() is None and not self._closed:
+            snapshot = context_provider()
+            self._judge.hear(None)
+            command = self._judge.proposal_command(snapshot)
+            if command is not None:
+                reply = sink(command)
+                self.sent.append(command)
+                if _is_conflict(reply):
+                    self._judge.on_conflict(snapshot)
         if self._camera_lost():
             self._set_camera(sink, False, "camera_missing")
 
@@ -202,6 +238,23 @@ class MatchVisionProducer:
         sink(command)
         self.sent.append(command)
         self._camera_ready = ready
+
+
+def _snapshot_ready(snapshot: Any) -> bool:
+    ready = getattr(snapshot, "ready", None)
+    return bool(getattr(ready, "camera_ready", False) and getattr(ready, "calibration_ready", False))
+
+
+def _sound_agrees(proposal: dict[str, Any] | None, winner_id: str) -> bool:
+    if not isinstance(proposal, dict):
+        return False
+    return proposal.get("winner_id") == winner_id and proposal.get("reason") == "missed_return"
+
+
+def _is_conflict(reply: Any) -> bool:
+    if isinstance(reply, dict):
+        return reply.get("status") == 409
+    return getattr(reply, "status", None) == 409
 
 
 def _other_player(ends: Any, receiver_end: str) -> str:

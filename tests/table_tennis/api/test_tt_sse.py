@@ -184,7 +184,7 @@ def _free_port() -> int:
 @pytest.fixture
 def server(tmp_path):
     settings = load_settings(
-        env={},
+        env={"TT_AUTH_MODE": "local"},
         storage__db_path=str(tmp_path / "sse.sqlite"),
         outputs__fake_log_path="",
         server__sse_heartbeat_s=0.5,
