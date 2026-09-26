@@ -16,7 +16,7 @@ from table_tennis.core.fake_log import FakeOutputLog
 from table_tennis.core.ports import Clock, SystemClock
 
 from .arrival import ArrivalFacts, assess_arrival
-from .gesture_output import GestureJob, GestureSession, MotionCoordinator
+from .gesture_output import UNPLAYED, GestureJob, GestureNotPlayed, GestureSession, MotionCoordinator
 from .readiness import NavFacts, assess
 from .score_display import ScoreboardSession
 
@@ -103,7 +103,9 @@ class FakeGestureOutput:
         return None
 
     def present_point(self, event: Any, snapshot: MatchSnapshot) -> None:
-        self.session.present(event, snapshot)
+        ack = self.session.present(event, snapshot)
+        if ack.reason in UNPLAYED:
+            raise GestureNotPlayed(ack.reason or "not_played")
 
     def cancel_pending(self, match_id: str) -> None:
         self.cancelled.append(match_id)

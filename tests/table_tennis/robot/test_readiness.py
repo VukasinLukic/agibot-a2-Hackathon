@@ -118,14 +118,18 @@ def test_real_mode_calls_transport_only_when_a_method_runs() -> None:
 
     nav = A2RobotNavigator(dry_run=False, transport=transport)
     assert seen == []
-    nav.request_call(
+    call_id = "33333333-3333-4333-8333-333333333333"
+    held = nav.request_call(
         RobotCallRequest(
             command_id="11111111-1111-4111-8111-111111111111",
             table_id="table-1",
             named_waypoint_id="referee",
         ),
-        "33333333-3333-4333-8333-333333333333",
+        call_id,
     )
+    assert held.reason == "route_not_confirmed"
+    assert seen == []
+    nav.confirm_route(call_id, "operator")
     assert seen == ["nav.request"]
 
 
