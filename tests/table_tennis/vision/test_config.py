@@ -25,6 +25,7 @@ class ExampleConfigTests(unittest.TestCase):
         self.assertEqual(config.max_diameter_px, 48)
         self.assertIsNone(config.roi)
         self.assertEqual(config.missing_frames, 8)
+        self.assertIsNone(config.model_path)
 
     def test_accepts_explicit_hsv_and_roi(self) -> None:
         text = """

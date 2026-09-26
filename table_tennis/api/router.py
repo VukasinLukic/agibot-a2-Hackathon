@@ -204,6 +204,12 @@ def build_router(get_runtime: Callable[[], "object"]) -> APIRouter:
         actor_of(request)
         return rt().robot.get(call_id)
 
+    @router.post("/robot/calls/{call_id}/route", response_model=RobotCall, status_code=202)
+    def robot_call_route(call_id: str, request: Request) -> RobotCall:
+        """Operator confirms the path is free. Until then a real navigator sends nothing."""
+        actor = actor_of(request)
+        return rt().robot.confirm_route(call_id, actor)
+
     @router.post("/robot/calls/{call_id}/cancel", response_model=RobotCall, status_code=202)
     def robot_call_cancel(call_id: str, request: Request, body: RobotCancelRequest) -> RobotCall:
         actor = actor_of(request)

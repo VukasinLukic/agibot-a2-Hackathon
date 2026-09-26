@@ -38,6 +38,7 @@ class VisionConfig:
     max_diameter_px: int
     roi: Roi | None
     missing_frames: int
+    model_path: str | None = None
 
     @classmethod
     def from_mapping(cls, data: dict[str, object]) -> VisionConfig:
@@ -60,6 +61,7 @@ class VisionConfig:
             missing_frames=_require_positive_int(
                 _require_mapping(data, "tracker"), "missing_frames"
             ),
+            model_path=_optional_model_path(data.get("model_path", None)),
         )
 
 
@@ -115,6 +117,14 @@ def _optional_hsv(
     if not 0 <= hue <= 179 or not 0 <= saturation <= 255 or not 0 <= value_channel <= 255:
         raise ValueError(f"{key} is outside OpenCV HSV bounds")
     return hue, saturation, value_channel
+
+
+def _optional_model_path(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value.strip() or value != value.strip():
+        raise ValueError("model_path must be null or a path")
+    return value
 
 
 def _require_roi(value: object) -> Roi:

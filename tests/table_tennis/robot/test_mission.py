@@ -104,7 +104,7 @@ def test_unconfirmed_route_does_not_send_navigation() -> None:
         mission=MissionSession(),
     )
     call = nav.request_call(_request(), "22222222-2222-4222-8222-222222222222")
-    assert call.state == "failed"
+    assert call.state == "requested"
     assert call.reason == "route_not_confirmed"
     assert seen == []
 

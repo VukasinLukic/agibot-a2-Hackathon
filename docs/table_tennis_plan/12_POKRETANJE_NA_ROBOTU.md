@@ -141,10 +141,28 @@ TT_OPERATOR_TOKEN=<privatno>
 TT_VISION_TOKEN=<privatno>
 TT_ROBOT_TOKEN=<privatno>
 TT_PERSONA_TOKEN=<privatno>   # glasovni agent, samo čitanje meča
+
+# Glas i sudijski režim (osoba 4)
+TT_ADAPTER_SPEECH=livekit            # rečenice idu na Supervisor /api/conversation/command
+TT_SPEECH_LIVE=1                     # glas uživo i u mode: mock (ekran/gest/navigacija ostaju simulirani)
+TT_SUPERVISOR_URL=http://127.0.0.1:8070
+TT_LLM_JOKES=1                       # lične šale; koristi postojeće AZURE_OPENAI_* iz istog .env
+TT_API_URL=http://127.0.0.1:8070     # gde voice-agent čita meč (feature radi u Supervisoru, ne na :8099)
 ```
 
-Isti `TT_PERSONA_TOKEN` mora da vidi i voice-agent (`livekit-client/referee_mode.py`); bez njega agent dobija 401 i
-ostaje bez podataka o meču.
+Supervisor i voice-agent oba čitaju ovaj isti `.env` (`/agibot/humanoid-platform/.env`), pa se sve upisuje
+samo jednom. Tokeni imaju podrazumevane vrednosti (`operator_secret`, `persona_secret`, ...), pa rade i bez
+upisivanja; ako se `TT_PERSONA_TOKEN` promeni, mora biti isti za Supervisor i voice-agent. Bez `TT_API_URL`
+agent traži backend na :8099, gde na robotu ništa ne sluša. Posle izmene `.env` restartovati i Supervisor i
+voice-agent.
+
+Provera ličnih šala (jedan stvarni LLM poziv, ispiše šale ili razlog zašto ne radi):
+```bash
+python -m table_tennis.persona.joke_bank --check
+```
+
+Aplikacija podrazumevano šalje `operator_secret`. Ako se `TT_OPERATOR_TOKEN` promeni, aplikacija sama
+traži novi kod (ekran „Pristupni kod”) i pamti ga na tom telefonu.
 
 Persona i ime: `robot_name: TitanSudija` u lokalnom `livekit_config/prompt_config.yaml` (runtime fajl, nije u Git-u).
 

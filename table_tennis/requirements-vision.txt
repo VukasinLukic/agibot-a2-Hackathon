@@ -3,3 +3,6 @@
 -r requirements-dev.txt
 numpy>=1.24
 opencv-python>=4.8
+# BlurBall is optional and is not imported by the tests.
+# pip install torch
+# model_path points at the checkpoint. It is not committed.
