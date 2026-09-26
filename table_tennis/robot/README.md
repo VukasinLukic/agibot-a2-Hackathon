@@ -62,7 +62,12 @@ pusti samo najnoviju reviziju; starija čekanja se odbace pre reprodukcije.
 Duplikat se ne pušta ponovo. Undo briše nepuštene kadrove. Novi meč
 (`status=setup`) resetuje lokalni watermark. Upis kadra (`accepted`) i
 prikaz (`shown`) su odvojeni. Podrazumevano lice se vraća samo na `release`.
-Drugi worker na isti slot se odbija.
+Drugi pravi worker na isti slot se odbija. `FakeScoreDisplay` namerno ne zauzima
+globalni fizički slot, jer ne dira hardver i testovi mogu imati više runtime-a.
+
+`A2RobotNavigator` u mock/dry-run režimu koristi isti simulator kao fake navigator:
+preflight može odbiti poziv, a spreman poziv ide kroz `requested -> ready` uz
+`simulated: true`. To samo proverava lifecycle; nije dokaz da je A2 transport povezan.
 
 Fizička provera da li se skor vidi sa stola, i ko u sali drži taj slot dok
 agent pali sat ili kviz, i dalje čekaju termin. Ovaj kod ne zove ekran robota.

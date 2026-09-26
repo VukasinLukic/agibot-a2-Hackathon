@@ -2,7 +2,9 @@
 
 Ovaj paket omogućava četiri paralelna toka razvoja od prvog sata. Prvo jedna osoba pokreće zajednički scaffold pomoću Claude Code prompta; zatim svi granaju isti provereni commit. Svako može razvijati svoj modul bez robota, kamere ili tuđeg nedovršenog servisa.
 
-Dokumenti predstavljaju plan i instrukcije za buduću implementaciju. Predloženi paketi, endpointi, testovi i CLI komande još nisu implementirani ovim paketom. Postojeći kod i stanje potvrđeni su lokalnim pregledom; fizički robot nije testiran.
+Dokumenti su plan, ugovor i stanje implementacije. Backend, simulator, mock adapteri,
+vision moduli i React feature postoje u repozitorijumu i provereni su lokalnim testovima;
+fizički robot i kamera u sali nisu testirani.
 
 ## Redosled čitanja
 
@@ -15,7 +17,9 @@ Dokumenti predstavljaju plan i instrukcije za buduću implementaciju. Predložen
 ## Repozitorijum i četiri grane
 
 Pregledana lokacija: `C:\Users\Tea\OneDrive\Dokumenti\a2-hackathon`.
-Zatečeno: `main`, commit `519ce20`, origin `https://github.com/teodorajovanovac/a2-hackathon`. Folder `Dokumenti/` već je bio nepraćen i pripada korisniku.
+Integracioni snapshot za ovaj dokument je commit `644d9ac` na granama `main`/`backend`;
+radna kopija može biti dirty dok se priprema sledeći integracioni commit. Fizički A2
+ostaje van opsega dok mentor ne odobri termin.
 
 Ovo nije ranija Downloads kopija sa originom `leksaas/a2-hackathon` i granom `a2-hackathon-team2`. Plan pretpostavlja da novi timski fork koristi `main` za integraciju. Organizatorski main se ne menja. Ako organizatori zahtevaju predaju na team granu, integrator predaje finalni provereni commit tamo kao odvojen završni korak.
 

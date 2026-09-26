@@ -167,6 +167,17 @@ def test_fake_screen_transliterates_and_names_the_server() -> None:
             screen.session.release()
 
 
+def test_fake_screens_do_not_compete_for_the_physical_slot() -> None:
+    first = FakeScoreDisplay(FakeOutputLog())
+    second = FakeScoreDisplay(FakeOutputLog())
+    try:
+        assert first.session.leased
+        assert second.session.leased
+    finally:
+        first.close()
+        second.close()
+
+
 def test_dry_run_show_is_not_a_face_reset() -> None:
     screen = A2ScoreDisplay(dry_run=True)
     try:

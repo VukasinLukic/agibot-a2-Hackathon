@@ -26,7 +26,9 @@ class FakeScoreDisplay:
 
     def __init__(self, log: FakeOutputLog):
         self.log = log
-        self.session = ScoreboardSession(self._play)
+        # Simulate queue/revision semantics without claiming the single
+        # physical A2 face slot. Multiple mock runtimes may coexist.
+        self.session = ScoreboardSession(self._play, exclusive=False)
         self.renders = 0
         self.closed = False
 

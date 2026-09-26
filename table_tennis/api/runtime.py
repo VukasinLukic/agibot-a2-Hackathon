@@ -65,10 +65,11 @@ class Runtime:
 
     def stop(self) -> None:
         with self._lock:
-            if not self.started:
-                return
             if self.ticker:
                 self.ticker.stop()
+                self.ticker = None
+            # Adapters are acquired while building the runtime, before
+            # start(). Always release them, even if startup never happened.
             self.dispatcher.shutdown()
             self.store.close()
             self.started = False
@@ -116,7 +117,7 @@ def build_adapters(settings: Settings, fake_log: FakeOutputLog, clock: Clock) ->
             navigator = A2RobotNavigator(clock=clock, dry_run=dry_run)
         info["robot_navigation"] = {"adapter": a.navigator, "dry_run": a.navigator != "fake" and dry_run, "simulated": not real}
     except (RealTransportMissing, RuntimeError) as exc:
-        raise RealModeNotAvailable(f"mode=real: {exc}") from exc
+        raise RealModeNotAvailable(f"mode={settings.mode}: {exc}") from exc
     return display, speech, gesture, navigator, info
 
 
