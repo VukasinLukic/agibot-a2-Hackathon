@@ -2,8 +2,10 @@
 
 The subscription itself is ``Ros2VideoCapture`` in
 ``robot_services.vision.detection.ros2_capture``. This module only refuses the
-H.264 topics, stamps a sequence, and drops a repeated picture. It does not
-open ROS until a real reader is requested.
+H.264 topics. When the reader has ``read_if_new``, a new frame is the ROS
+counter and the stamp is the image header. A reader that only has ``read``
+still drops a repeated picture by comparing bytes. ROS stays closed until a
+real reader is requested.
 """
 
 from __future__ import annotations
@@ -19,6 +21,9 @@ from table_tennis.vision.frame import ORIGIN_A2_FISHEYE, Frame
 FISHEYE_ALIASES = ("CHEST_LEFT_FISHEYE", "CHEST_RIGHT_FISHEYE")
 # One empty read is a hiccup. The camera is missing only after this many in a row.
 _READ_FAILURES = 3
+# The same picture for this long means the camera stopped, even if read() still returns it.
+_STALL_NS = 1_000_000_000
+_DEFAULT_STEP_NS = 33_333_333
 
 
 def require_raw_fisheye(device: str) -> str:
@@ -67,6 +72,8 @@ class A2FisheyeCapture:
         self._seq = 0
         self._previous: bytes | None = None
         self._last_ns = -1
+        self._step_ns = 0
+        self._last_new_ns = -1
 
     def __enter__(self) -> A2FisheyeCapture:
         if self._reader is None:
@@ -94,6 +101,10 @@ class A2FisheyeCapture:
         reader = self._reader
         if reader is None:
             raise RuntimeError("capture is not open")
+        newer = getattr(reader, "read_if_new", None)
+        if callable(newer):
+            yield from self._iter_newest(newer)
+            return
         missed_reads = 0
         while True:
             ok, image = reader.read()
@@ -106,11 +117,16 @@ class A2FisheyeCapture:
                 continue
             missed_reads = 0
             payload = _sample_bytes(image)
+            stamp = self._now_ns()
             if payload == self._previous:
                 self.stats.duplicate_frames += 1
+                if self._last_new_ns >= 0 and stamp - self._last_new_ns >= _STALL_NS:
+                    self.camera_missing = True
+                    self.stats.frames_dropped += 1
+                    return
+                time.sleep(0.005)
                 continue
             height, width = _shape(image)
-            stamp = self._now_ns()
             if stamp <= self._last_ns:
                 stamp = self._last_ns + 1
             frame = Frame(
@@ -125,6 +141,46 @@ class A2FisheyeCapture:
             self._seq += 1
             self._previous = payload
             self._last_ns = stamp
+            self._last_new_ns = stamp
+            self._width = width
+            self._height = height
+            self.stats.frames_emitted += 1
+            yield frame
+
+    def _iter_newest(self, read_if_new: Callable[..., tuple[Any, ...]]) -> Iterator[Frame]:
+        """Wait for the next ROS frame. Three seconds without one means the camera stopped."""
+        last_seq = -1
+        missed = 0
+        while True:
+            ok, image, seq, stamp = read_if_new(last_seq, 1.0)
+            if not ok or image is None:
+                missed += 1
+                if missed >= _READ_FAILURES:
+                    self.camera_missing = True
+                    self.stats.frames_dropped += 1
+                    return
+                continue
+            missed = 0
+            last_seq = int(seq)
+            when = int(stamp) if isinstance(stamp, int) and stamp > 0 else self._now_ns()
+            if when <= self._last_ns:
+                # A repeated stamp, or a clock switch. One period keeps the speed sane.
+                when = self._last_ns + (self._step_ns or _DEFAULT_STEP_NS)
+            elif self._last_ns > 0:
+                self._step_ns = when - self._last_ns
+            height, width = _shape(image)
+            frame = Frame(
+                frame_seq=self._seq,
+                capture_monotonic_ns=when,
+                width=width,
+                height=height,
+                image=image,
+                camera_id=self.topic,
+                origin=ORIGIN_A2_FISHEYE,
+            )
+            self._seq += 1
+            self._last_ns = when
+            self._last_new_ns = when
             self._width = width
             self._height = height
             self.stats.frames_emitted += 1

@@ -5,7 +5,7 @@ Praćenje loptice i jedan predlog poena po razmeni. Paket ne piše rezultat i ne
 Šalje se samo:
 
 - `camera.ready.set` (actor `vision`)
-- `point.propose` sa razlogom `missed_return`
+- `point.propose` sa razlogom `service_fault`, `out_after_hit`, `double_bounce` ili `missed_return`
 
 `confidence` je skor modela, ne kalibrisana verovatnoća. Predikcija i nestanak loptice sami nisu poen. `benchmark.AUTOMATIC_ENABLED` ostaje false.
 
@@ -90,29 +90,11 @@ https://cloud.cs.uni-tuebingen.de/index.php/s/6Z8TpM3sXRKHzGC
 
 `RallyJudge` predlaže samo jasan promašen povratak: lopta je viđena na obe polovine, van pojasa mreže (8% dužine), pa track pređe u `missing`. Pobednik je igrač koji nije na prijemnoj strani (`court_end_by_player`). Isti pikseli prate strane stola, ne sliku levo/desno.
 
-`MatchVisionProducer` prvo šalje `camera.ready.set`, pa najviše jedan `point.propose` po rally-ju, i samo dok je `scoring_mode` jednak `assisted`. Predlog traži odskok na prijemnoj polovini (`RallyEventDetector`): lopta koja samo preleti polovinu nije poen. `confidence` je najslabiji skor viđene loptice u toj razmeni. Rally, `calibration_id` i `assignment_version` dolaze iz trenutnog snapshot-a. Isti `command_id` ostaje pri ponovnom slanju. Posle 409 predlog se baca i ne šalje se ponovo sa novim `expected_revision`.
+`MatchVisionProducer` prvo šalje `camera.ready.set`, pa najviše jedan `point.propose` po rally-ju, i samo dok je `scoring_mode` jednak `assisted`. Polovina se računa iz odskoka, ne iz položaja u vazduhu. Servis čeka odskok na strani servera pa na strani primaoca. `service_fault` se predlaže samo kad loptica ostane na strani servera. U igri odskok na svojoj polovini posle odskoka kod protivnika znači skriven povratak, ne aut. Strana mreže i kraj stola za lopticu u vazduhu čitaju se iz slike, ne iz homografije. Kraj razmene: loš servis (`service_fault`), lopta posle udarca ne padne na protivničku polovinu (`out_after_hit`), drugi odskok na istoj polovini bez udarca (`double_bounce`), ili odskok na protivničkoj polovini pa nestanak preko tog kraja (`missed_return`). Nestanak mora da traje pola sekunde i ne sme biti iznad sredine stola. Zaklon iznad sredine stola ne gasi razmenu ako se loptica vrati u roku od dve sekunde. Nestanak blizu ili preko kraja gasi je, pa kasniji odskoci nisu novi poen. `confidence` je najslabiji skor viđene loptice u toj razmeni. Rally, `calibration_id` i `assignment_version` dolaze iz trenutnog snapshot-a. Isti `command_id` ostaje pri ponovnom slanju. Posle 409 predlog se baca i ne šalje se ponovo sa novim `expected_revision`.
 
-Živi proces je `python -m table_tennis.vision.live`. On čita snapshot i šalje komande na `POST /api/table-tennis/matches/{id}/commands` sa `TT_VISION_TOKEN`. Telo ne imenuje actora.
+Živi proces je `python -m table_tennis.vision.live`. On drži poslednji snapshot sa SSE toka `/events` (dok tok nije stigao, jednom pita `GET`), i šalje komande na `POST /api/table-tennis/matches/{id}/commands` sa `TT_VISION_TOKEN`. Telo ne imenuje actora. `--match-id latest` uzima poslednji meč. `--dry-run` samo loguje komande. `--record` piše TTCLIP u `table_tennis/var/`. `--grab still.jpg` sačuva prvi kadar i stane; uglove onda bira `python -m table_tennis.vision.mark_table still.jpg -o table.json`. Pad backenda ne gasi proces: predlog se pošalje još jednom sa istim `command_id`, a izlaz šalje `camera.ready.set false`. Na svakih 5 s ispisuje fps i p50/p95.
 
-Kad backend ne odgovara, `live` ne pada: koristi poslednji dobar snapshot, ponovo pita posle 1 s, a predlog šalje još jednom sa istim `command_id`. Pri izlasku (kraj snimka, Ctrl+C, nestanak kamere) šalje `camera.ready.set false`. Pogrešan `--match-id` ili token zaustavlja proces odmah.
-
-### Test na laptopu, sa snimkom
-
-`--clip` prima TTCLIP ili `.mov`/`.mp4` (`video.VideoFileCapture`, OpenCV). Snimak ide brzinom snimanja, da operater stigne da pritisne „Servis”. Kadar i sat su iz fajla, pa to nije dokaz za A2 fisheye. Na robotu se ništa ne menja: `--device CHEST_LEFT_FISHEYE`.
-
-Kalibracija se pravi na kadru iz istog izvora i iste rezolucije koje čita `live`. Na snimku sa telefona mora da se vide sva četiri ugla stola.
-
-```powershell
-# 1. klikovi na kadru (u = vrati, Enter = sačuvaj); pored table.json ide table.png sa A/B i mrežom
-python -m table_tennis.vision.calibrate --clip snimak.mov --at 3 --out table.json
-# 2. u aplikaciji: meč u režimu „Kamera, uz potvrdu”, ispisani calibration_id, pa „Servis” pre svakog poena
-# 3. vizija; --show otvara prozor (space = pauza, q = kraj)
-python -m table_tennis.vision.live --match-id latest --token vision_secret --calibration table.json --clip snimak.mov --ballnet C:\tezine\ballnet.onnx --show
-```
-
-Robot bez ekrana: `calibrate --device CHEST_LEFT_FISHEYE --save-frame kadar.png`, očitati piksele na laptopu (ili `calibrate --image kadar.png` sa klikovima), pa `calibrate --device CHEST_LEFT_FISHEYE --points "x,y x,y x,y x,y x,y x,y" --out table.json` na robotu.
-
-Zvuk, ako je prosleđen, mora prvo da zaključi. Predlog ide samo kad zvuk i slika imaju istog pobednika i razlog `missed_return`. Kontakt čiji je `last_contact_ns` pre početka ove razmene se ignoriše. Detalj signala je u `sound/README.md`. Fixture sa poljima komande: `fixtures/missed_return.json`.
+Zvuk, ako je prosleđen, mora prvo da zaključi. Predlog ide samo kad zvuk i slika imaju istog pobednika i isti razlog. Kontakt čiji je `last_contact_ns` pre početka ove razmene se ignoriše. Demo ostavlja zvuk isključen. Detalj signala je u `sound/README.md`. Fixture sa poljima komande: `fixtures/missed_return.json`.
 
 ## Benchmark
 

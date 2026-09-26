@@ -76,8 +76,15 @@ class MissionSession:
         self.steps.append("preflight")
         verdict = assess(facts)
         if verdict.state != "ready":
+            # The confirmation was used. The next walk needs a new one.
+            self.route_clear = False
             self.steps.append(f"refused:{verdict.reason}")
             return verdict.reason or "not_ready"
+        # A previous walk must not donate its deadline or its task id.
+        self.started_at = None
+        self.last_progress_at = None
+        self.last_progress_mark = None
+        self.task_id = None
         self.steps.append("arm_walk_hold")
         self.pose_open = True
         self.steps.append("pose_lease_open")

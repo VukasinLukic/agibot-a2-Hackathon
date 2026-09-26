@@ -56,14 +56,29 @@ def _sample(
     )
 
 
+_PERIOD = 33_333_333
+_GONE = 500_000_000
+
+
+def _at(seq: int, x: float, y: float, cal: str, confidence: float = 0.8) -> TrackSample:
+    return TrackSample(seq, seq * _PERIOD, True, x, y, "observed", confidence, cal)
+
+
 def _crossing(cal: str) -> list[TrackSample]:
-    """Seen on end A, then a bounce on end B (down, then up)."""
-    return [
-        _sample(2, "observed", 50, 24, cal),
-        _sample(4, "observed", 50, 50, cal),
-        _sample(5, "observed", 50, 58, cal),
-        _sample(6, "observed", 50, 52, cal),
+    """Legal serve (bounce on end A, then end B), then the ball leaves past end B and stays gone."""
+    played = [
+        *_bounce(1, 22, 30, 24, cal),
+        *_bounce(4, 50, 58, 52, cal),
+        _at(7, 50, 72, cal),
     ]
+    played.append(
+        TrackSample(8, played[-1].capture_monotonic_ns + _GONE, False, None, None, "missing", 0.0, cal)
+    )
+    return played
+
+
+def _bounce(seq: int, y0: float, y1: float, y2: float, cal: str, confidence: float = 0.8) -> list[TrackSample]:
+    return [_at(seq, 50, y0, cal, confidence), _at(seq + 1, 50, y1, cal, confidence), _at(seq + 2, 50, y2, cal, confidence)]
 
 
 def _snapshot(calibration_id: str, *, p1_end: str = "end_a", p2_end: str = "end_b", rally: str | None = RALLY, proposal: str | None = None, revision: int = 4):
@@ -137,9 +152,11 @@ class EventTests(unittest.TestCase):
 
     def test_crossing_then_missing_proposes_the_other_end(self) -> None:
         cal = self.calibration.calibration_id or ""
-        self._feed_crossing()
+        played = _crossing(cal)
+        for sample in played[:-1]:
+            self.judge.add(sample)
         self.assertIsNone(self.judge.proposal_command(_snapshot(cal)))
-        self.judge.add(_sample(7, "missing", None, None, cal))
+        self.judge.add(played[-1])
         command = self.judge.proposal_command(_snapshot(cal))
         self.assertIsNotNone(command)
         assert command is not None
@@ -157,7 +174,6 @@ class EventTests(unittest.TestCase):
     def test_same_pixels_follow_the_ends_not_image_x(self) -> None:
         cal = self.calibration.calibration_id or ""
         self._feed_crossing()
-        self.judge.add(_sample(7, "missing", None, None, cal))
         command = self.judge.proposal_command(_snapshot(cal, p1_end="end_b", p2_end="end_a"))
         assert command is not None
         self.assertEqual(command["payload"]["winner_id"], "p2")
@@ -165,7 +181,6 @@ class EventTests(unittest.TestCase):
     def test_stale_calibration_and_conflict_do_not_rewrite_the_command(self) -> None:
         cal = self.calibration.calibration_id or ""
         self._feed_crossing()
-        self.judge.add(_sample(7, "missing", None, None, cal))
         self.assertIsNone(self.judge.proposal_command(_snapshot("table-other-v2")))
         command = self.judge.proposal_command(_snapshot(cal))
         assert command is not None
@@ -182,7 +197,6 @@ class EventTests(unittest.TestCase):
         self.assertIsNone(self.judge.proposal_command(_snapshot(cal)))
         for sample in _crossing(cal):
             self.judge.add(sample, rally_id=other)
-        self.judge.add(_sample(7, "missing", None, None, cal), rally_id=other)
         command = self.judge.proposal_command(_snapshot(cal, rally=other))
         assert command is not None
         self.assertEqual(command["payload"]["rally_id"], other)
@@ -191,14 +205,13 @@ class EventTests(unittest.TestCase):
     def test_manual_scoring_stays_silent(self) -> None:
         cal = self.calibration.calibration_id or ""
         self._feed_crossing()
-        self.judge.add(_sample(7, "missing", None, None, cal))
         snapshot = _snapshot(cal)
         manual = snapshot.model_copy(update={"scoring_mode": "manual"})
         self.assertIsNone(self.judge.proposal_command(manual))
 
     def test_live_producer_sets_camera_ready_before_a_proposal(self) -> None:
         cal = self.calibration.calibration_id or ""
-        samples = _crossing(cal) + [_sample(7, "missing", None, None, cal)]
+        samples = _crossing(cal)
         sent: list[dict] = []
         producer = MatchVisionProducer(
             [object()] * len(samples),
@@ -216,7 +229,23 @@ class EventTests(unittest.TestCase):
             quiet.append,
             lambda: manual,
         )
-        self.assertEqual([item["type"] for item in quiet], ["camera.ready.set"])
+        self.assertEqual([item["type"] for item in quiet], ["camera.ready.set", "camera.ready.set"])
+        self.assertFalse(quiet[1]["payload"]["ready"])
+        self.assertEqual(quiet[1]["payload"]["reason"], "vision_stopped")
+
+    def test_ready_is_not_sent_again_right_after_the_first_one(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        samples = _crossing(cal)
+        dark = _snapshot(cal).model_copy(update={"ready": {"calibration_ready": True, "camera_ready": False}})
+        sent: list[dict] = []
+        MatchVisionProducer(
+            [object()] * len(samples),
+            _ScriptedTracker(samples),
+            RallyJudge(self.calibration, new_id=_Ids()),
+            new_id=_Ids(),
+        ).run(sent.append, lambda: dark)
+        ready = [item["payload"]["ready"] for item in sent if item["type"] == "camera.ready.set"]
+        self.assertEqual(ready, [True, False])
 
     def test_a_missing_camera_drops_the_ready_flag(self) -> None:
         sent: list[dict] = []
@@ -231,9 +260,10 @@ class EventTests(unittest.TestCase):
         self.assertFalse(AUTOMATIC_ENABLED)
         cal = self.calibration.calibration_id or ""
         self._feed_crossing()
-        self.judge.add(_sample(7, "missing", None, None, cal))
         self.judge.hear({"winner_id": "p2", "reason": "missed_return"})
-        self.assertIsNone(self.judge.proposal_command(_snapshot(cal)))
+        with self.assertLogs("table_tennis.vision.events", level="INFO") as logged:
+            self.assertIsNone(self.judge.proposal_command(_snapshot(cal)))
+        self.assertEqual(logged.output, ["INFO:table_tennis.vision.events:no proposal: sound does not agree"])
         self.assertIsNone(self.judge.proposal_command(_snapshot(cal)))
 
         agreed = RallyJudge(self.calibration, new_id=_Ids())
@@ -249,7 +279,7 @@ class EventTests(unittest.TestCase):
             sent.append(command)
             return {"status": 409}
 
-        played = _crossing(cal) + [_sample(7, "missing", None, None, cal)]
+        played = _crossing(cal)
         producer = MatchVisionProducer(
             [object()] * len(played),
             _ScriptedTracker(played),
@@ -278,38 +308,176 @@ class EventTests(unittest.TestCase):
 
     def test_sound_that_has_not_concluded_blocks_the_proposal(self) -> None:
         cal = self.calibration.calibration_id or ""
-        samples = _crossing(cal) + [_sample(7, "missing", None, None, cal)]
+        samples = _crossing(cal)
         sent: list[dict] = []
-        MatchVisionProducer(
-            [object()] * len(samples),
-            _ScriptedTracker(samples),
-            RallyJudge(self.calibration, new_id=_Ids()),
-            sound=lambda: None,
-            new_id=_Ids(),
-        ).run(sent.append, lambda: _snapshot(cal))
-        self.assertEqual([item["type"] for item in sent], ["camera.ready.set"])
+        with self.assertLogs("table_tennis.vision.events", level="INFO") as logged:
+            MatchVisionProducer(
+                [object()] * len(samples),
+                _ScriptedTracker(samples),
+                RallyJudge(self.calibration, new_id=_Ids()),
+                sound=lambda: None,
+                new_id=_Ids(),
+            ).run(sent.append, lambda: _snapshot(cal))
+        self.assertEqual(
+            [line for line in logged.output if "sound has not concluded" in line],
+            ["INFO:table_tennis.vision.events:no proposal: sound has not concluded"],
+        )
+        self.assertEqual(sent[0]["type"], "camera.ready.set")
+        self.assertTrue(sent[0]["payload"]["ready"])
+        self.assertEqual(sent[-1]["payload"]["reason"], "vision_stopped")
+        self.assertFalse(any(item["type"] == "point.propose" for item in sent))
 
     def test_a_contact_from_before_the_rally_is_ignored(self) -> None:
         cal = self.calibration.calibration_id or ""
         self._feed_crossing()
-        self.judge.add(_sample(7, "missing", None, None, cal))
         self.judge.hear({"winner_id": "p1", "reason": "missed_return", "last_contact_ns": 0})
-        self.assertIsNone(self.judge.proposal_command(_snapshot(cal)))
-        self.judge.hear({"winner_id": "p1", "reason": "missed_return", "last_contact_ns": 7_000_000})
+        with self.assertLogs("table_tennis.vision.events", level="INFO") as logged:
+            self.assertIsNone(self.judge.proposal_command(_snapshot(cal)))
+        self.assertIn("sound contact is from before the rally", logged.output[0])
+        self.judge.hear({"winner_id": "p1", "reason": "missed_return", "last_contact_ns": 10**12})
         command = self.judge.proposal_command(_snapshot(cal))
         assert command is not None
         self.assertEqual(command["payload"]["winner_id"], "p1")
 
     def test_confidence_is_the_weakest_observation(self) -> None:
         cal = self.calibration.calibration_id or ""
-        self.judge.add(_sample(2, "observed", 50, 24, cal, confidence=0.9))
-        self.judge.add(_sample(4, "observed", 50, 50, cal, confidence=0.4))
-        self.judge.add(_sample(5, "observed", 50, 58, cal, confidence=0.8))
-        self.judge.add(_sample(6, "observed", 50, 52, cal, confidence=0.7))
-        self.judge.add(_sample(7, "missing", None, None, cal))
+        played = [
+            *_bounce(1, 22, 30, 24, cal, confidence=0.9),
+            *_bounce(4, 50, 58, 52, cal, confidence=0.4),
+            _at(7, 50, 72, cal, confidence=0.7),
+        ]
+        played.append(TrackSample(8, played[-1].capture_monotonic_ns + _GONE, False, None, None, "missing", 0.0, cal))
+        for sample in played:
+            self.judge.add(sample)
         command = self.judge.proposal_command(_snapshot(cal))
         assert command is not None
         self.assertEqual(command["payload"]["confidence"], 0.4)
+
+    def _play(self, samples: list[TrackSample]) -> dict | None:
+        for sample in samples:
+            self.judge.add(sample)
+        return self.judge.proposal_command(_snapshot(self.calibration.calibration_id or ""))
+
+    def test_a_second_bounce_on_the_same_half_is_a_double_bounce(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        played = [
+            *_bounce(1, 22, 30, 24, cal),
+            *_bounce(4, 50, 58, 52, cal),
+            *_bounce(8, 50, 58, 52, cal),
+        ]
+        command = self._play(played)
+        assert command is not None
+        self.assertEqual(command["payload"]["reason"], "double_bounce")
+        self.assertEqual(command["payload"]["winner_id"], "p1")
+
+    def test_a_serve_that_bounces_on_the_receiver_first_is_not_called(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        played = [*_bounce(1, 50, 58, 52, cal), _at(4, 50, 72, cal)]
+        played.append(TrackSample(5, played[-1].capture_monotonic_ns + _GONE, False, None, None, "missing", 0.0, cal))
+        self.assertIsNone(self._play(played))
+
+    def test_a_serve_that_stays_on_the_server_side_is_a_fault(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        played = [*_bounce(1, 22, 30, 24, cal), _at(4, 50, 8, cal)]
+        played.append(TrackSample(5, played[-1].capture_monotonic_ns + _GONE, False, None, None, "missing", 0.0, cal))
+        command = self._play(played)
+        assert command is not None
+        self.assertEqual(command["payload"]["reason"], "service_fault")
+        self.assertEqual(command["payload"]["winner_id"], "p2")
+
+    def test_an_occlusion_does_not_cancel_the_later_point(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        played = [*_bounce(1, 22, 30, 24, cal), *_bounce(4, 50, 58, 52, cal), _at(8, 50, 40, cal)]
+        played.append(TrackSample(9, played[-1].capture_monotonic_ns + _GONE, False, None, None, "missing", 0.0, cal))
+        played.append(_at(10, 50, 72, cal))
+        played.append(TrackSample(11, played[-1].capture_monotonic_ns + _GONE, False, None, None, "missing", 0.0, cal))
+        command = self._play(played)
+        assert command is not None
+        self.assertEqual(command["payload"]["reason"], "missed_return")
+        self.assertEqual(command["payload"]["winner_id"], "p1")
+
+    def test_bounces_after_the_ball_left_are_not_a_new_point(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        played = [*_bounce(1, 50, 58, 52, cal), _at(4, 50, 72, cal)]
+        played.append(TrackSample(5, played[-1].capture_monotonic_ns + _GONE, False, None, None, "missing", 0.0, cal))
+        played.extend(_bounce(30, 50, 58, 52, cal))
+        played.extend(_bounce(34, 50, 58, 52, cal))
+        self.assertIsNone(self._play(played))
+
+    def test_a_ball_gone_near_an_end_closes_the_rally(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        played = [*_bounce(1, 22, 30, 24, cal), *_bounce(4, 50, 58, 52, cal), _at(8, 50, 60, cal)]
+        played.append(TrackSample(9, played[-1].capture_monotonic_ns + _GONE, False, None, None, "missing", 0.0, cal))
+        played.extend(_bounce(30, 50, 58, 52, cal))
+        played.extend(_bounce(34, 50, 58, 52, cal))
+        self.assertIsNone(self._play(played))
+
+    def test_a_long_gap_over_the_middle_closes_the_rally(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        played = [*_bounce(1, 22, 30, 24, cal), *_bounce(4, 50, 58, 52, cal), _at(8, 50, 40, cal)]
+        played.append(TrackSample(9, played[-1].capture_monotonic_ns + _GONE, False, None, None, "missing", 0.0, cal))
+        late = played[-2].capture_monotonic_ns + 3_000_000_000
+        for index, y in enumerate((50, 58, 52, 50, 58, 52)):
+            played.append(TrackSample(20 + index, late + index * _PERIOD, True, 50.0, float(y), "observed", 0.8, cal))
+        self.assertIsNone(self._play(played))
+
+    def test_frame_by_frame_gives_the_same_point_as_all_at_once(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        played = [
+            *_bounce(1, 22, 30, 24, cal),
+            *_bounce(4, 50, 58, 52, cal),
+            _at(8, 50, 48, cal),
+            _at(9, 30, 46, cal),
+            _at(10, 55, 40, cal),
+            _at(11, 58, 24, cal),
+            _at(12, 60, 8, cal),
+        ]
+        played.append(TrackSample(13, played[-1].capture_monotonic_ns + _GONE, False, None, None, "missing", 0.0, cal))
+        command = None
+        for sample in played:
+            self.judge.add(sample)
+            command = command or self.judge.proposal_command(_snapshot(cal))
+        assert command is not None
+        self.assertEqual(command["payload"]["reason"], "out_after_hit")
+        self.assertEqual(command["payload"]["winner_id"], "p1")
+
+    def test_a_hidden_return_is_not_an_out(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        played = [*_bounce(1, 22, 30, 24, cal), *_bounce(4, 50, 58, 52, cal), *_bounce(8, 22, 30, 24, cal), _at(11, 50, 8, cal)]
+        played.append(TrackSample(12, played[-1].capture_monotonic_ns + _GONE, False, None, None, "missing", 0.0, cal))
+        command = self._play(played)
+        assert command is not None
+        self.assertEqual(command["payload"]["reason"], "missed_return")
+        self.assertEqual(command["payload"]["winner_id"], "p2")
+
+    def test_a_return_that_leaves_past_the_other_end_is_out(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        played = [
+            *_bounce(1, 22, 30, 24, cal),
+            *_bounce(4, 50, 58, 52, cal),
+            _at(8, 50, 48, cal),
+            _at(9, 30, 46, cal),
+            _at(10, 55, 40, cal),
+            _at(11, 58, 24, cal),
+            _at(12, 60, 8, cal),
+        ]
+        played.append(TrackSample(13, played[-1].capture_monotonic_ns + _GONE, False, None, None, "missing", 0.0, cal))
+        command = self._play(played)
+        assert command is not None
+        self.assertEqual(command["payload"]["reason"], "out_after_hit")
+        self.assertEqual(command["payload"]["winner_id"], "p1")
+
+    def test_disappearing_over_the_middle_is_not_a_point(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        played = [*_bounce(1, 22, 30, 24, cal), *_bounce(4, 50, 58, 52, cal), _at(8, 50, 40, cal)]
+        played.append(TrackSample(9, played[-1].capture_monotonic_ns + _GONE, False, None, None, "missing", 0.0, cal))
+        self.assertIsNone(self._play(played))
+
+    def test_a_short_gap_does_not_end_the_rally(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        played = _crossing(cal)
+        short = TrackSample(8, played[-2].capture_monotonic_ns + 100_000_000, False, None, None, "missing", 0.0, cal)
+        self.assertIsNone(self._play(played[:-1] + [short]))
 
     def test_valid_fixture_uses_the_contract_fields(self) -> None:
         payload = json.loads(FIXTURE.read_text(encoding="utf-8"))

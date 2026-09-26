@@ -97,7 +97,6 @@ class BenchmarkTests(unittest.TestCase):
         judge = RallyJudge(calibration)
         for sample in _crossing(cal):
             judge.add(sample)
-        judge.add(_sample(7, "missing", None, None, cal))
         command = judge.proposal_command(_snapshot(cal))
         self.assertIsNotNone(command)
         report = evaluate([_label(RALLY)], {RALLY: [command]})

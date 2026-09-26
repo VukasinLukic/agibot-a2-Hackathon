@@ -17,7 +17,7 @@ Uvoz paketa ne otvara mikrofon, ne učitava model i ne šalje komandu.
 
 ## Predlog poena
 
-`RallyJudge.hear` u `vision/events.py` pamti zaključak zvuka. Kad je zvuk uključen, predlog čeka taj zaključak: dok ga nema, slika ćuti. Predlog se šalje samo kad je `scoring_mode` jednak `assisted`, kamera i kalibracija spremne, i kad zvuk i slika imaju istog pobednika i razlog `missed_return`. `last_contact_ns` pre početka razmene se ignoriše. Ako se ne slože, nema predloga. Odgovor 409 baca predlog. `benchmark.AUTOMATIC_ENABLED` ostaje false.
+`RallyJudge.hear` u `vision/events.py` pamti zaključak zvuka. Kad je zvuk uključen, predlog čeka taj zaključak: dok ga nema, slika ćuti. Predlog se šalje samo kad je `scoring_mode` jednak `assisted`, kamera i kalibracija spremne, i kad zvuk i slika imaju istog pobednika i isti razlog. Zvuk zaključuje samo `missed_return`, pa ostali razlozi slike ne prolaze dok je zvuk uključen. Demo ostavlja zvuk isključen. `last_contact_ns` pre početka razmene se ignoriše. Ako se ne slože, nema predloga. Odgovor 409 baca predlog. `benchmark.AUTOMATIC_ENABLED` ostaje false.
 
 Dozvoljeni razlozi ugovora su `missed_return`, `double_bounce`, `out_after_hit`, `service_fault`, `unknown`. Ovaj folder ne dodaje novi razlog i ne uvodi novog actora. `point.propose` i dalje smeju samo `vision` i `sim`.
 
