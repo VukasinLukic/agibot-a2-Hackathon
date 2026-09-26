@@ -5,6 +5,9 @@ the table, then the track went missing on the far half. Predicted samples and
 a missing sample by themselves are not a winner. The command is
 ``point.propose`` from ``stub.build_proposal``. This module does not score
 and does not choose the server.
+
+``MatchVisionProducer`` is the only live producer. Do not run it in the same
+process as ``FixtureVisionProducer``.
 """
 
 from __future__ import annotations
@@ -31,13 +34,21 @@ class RallyJudge:
         self._command: dict[str, Any] | None = None
         self._closed = False
 
-    def add(self, sample: TrackSample) -> None:
+    def add(self, sample: TrackSample, rally_id: str | None = None) -> None:
         if sample.proves_bounce:
             raise ValueError("a track sample cannot prove a bounce")
+        sample.as_observation()
+        if rally_id is not None and rally_id != self._rally_id:
+            self._samples.clear()
+            self._command = None
+            self._closed = False
+            self._rally_id = rally_id
         self._samples.append(sample)
 
     def proposal_command(self, snapshot: Any) -> dict[str, Any] | None:
         """Return one validated point.propose, or nothing. A later call does not send a second decision."""
+        if getattr(snapshot, "scoring_mode", "assisted") != "assisted":
+            return None
         self._follow_rally(getattr(snapshot, "active_rally_id", None))
         if self._closed or self._command is not None:
             return None
@@ -122,6 +133,75 @@ class RallyJudge:
         if projected.y_mm > middle + band:
             return "end_b"
         return None
+
+
+class MatchVisionProducer:
+    """Live producer: camera.ready.set, then at most one point.propose per rally.
+
+    Frames come from an iterator. When ``capture.camera_missing`` is true the
+    ready flag goes false and proposals stop. Manual scoring stays silent.
+    """
+
+    def __init__(
+        self,
+        frames: Any,
+        tracker: Any,
+        judge: RallyJudge,
+        capture: Any = None,
+        *,
+        new_id: Callable[[], str] | None = None,
+    ) -> None:
+        if not getattr(tracker, "table_limited", False):
+            raise ValueError("live vision searches only inside the calibrated table")
+        self._frames = frames
+        self._tracker = tracker
+        self._judge = judge
+        self._capture = capture
+        self._new_id = new_id or (lambda: str(uuid.uuid4()))
+        self._closed = False
+        self._camera_ready = False
+        self.sent: list[dict[str, Any]] = []
+
+    def run(self, sink: Callable[[dict[str, Any]], Any], context_provider: Callable[[], Any]) -> None:
+        self._set_camera(sink, True, "raw fisheye receiving")
+        for frame in self._frames:
+            if self._closed or self._camera_lost():
+                self._set_camera(sink, False, "camera_missing")
+                return
+            snapshot = context_provider()
+            sample = self._tracker.update(frame)
+            self._judge.add(sample, getattr(snapshot, "active_rally_id", None))
+            if getattr(snapshot, "scoring_mode", "assisted") != "assisted":
+                continue
+            command = self._judge.proposal_command(snapshot)
+            if command is None:
+                continue
+            sink(command)
+            self.sent.append(command)
+        if self._camera_lost():
+            self._set_camera(sink, False, "camera_missing")
+
+    def close(self) -> None:
+        self._closed = True
+
+    def _camera_lost(self) -> bool:
+        return self._capture is not None and bool(getattr(self._capture, "camera_missing", False))
+
+    def _set_camera(self, sink: Callable[[dict[str, Any]], Any], ready: bool, reason: str) -> None:
+        if self._camera_ready == ready and self.sent:
+            return
+        from table_tennis.contracts import parse_command
+
+        command = {
+            "command_id": self._new_id(),
+            "expected_revision": None,
+            "type": "camera.ready.set",
+            "payload": {"ready": ready, "reason": reason},
+        }
+        parse_command(command)
+        sink(command)
+        self.sent.append(command)
+        self._camera_ready = ready
 
 
 def _other_player(ends: Any, receiver_end: str) -> str:

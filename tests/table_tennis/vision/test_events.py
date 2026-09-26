@@ -13,7 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 from table_tennis.contracts import MatchSnapshot
 from table_tennis.core.ports import SequentialIdGenerator
 from table_tennis.vision.calibration import CalibrationGate
-from table_tennis.vision.events import RallyJudge
+from table_tennis.vision.events import MatchVisionProducer, RallyJudge
 from table_tennis.vision.frame import ORIGIN_A2_FISHEYE, Frame
 from table_tennis.vision.image import BgrImage
 from table_tennis.vision.track import TrackSample
@@ -69,6 +69,21 @@ def _snapshot(calibration_id: str, *, p1_end: str = "end_a", p2_end: str = "end_
             "updated_at": datetime(2026, 9, 26, 12, 0, tzinfo=timezone.utc),
         }
     )
+
+
+class _LostCamera:
+    camera_missing = True
+
+
+class _ScriptedTracker:
+    table_limited = True
+
+    def __init__(self, samples: list[TrackSample]) -> None:
+        self._samples = iter(samples)
+
+    def update(self, frame: object) -> TrackSample:
+        del frame
+        return next(self._samples)
 
 
 class _Ids:
@@ -136,6 +151,62 @@ class EventTests(unittest.TestCase):
         self.judge.on_conflict(_snapshot(cal, revision=5))
         self.assertIsNone(self.judge.transport_retry())
         self.assertIsNone(self.judge.proposal_command(_snapshot(cal, revision=5)))
+
+    def test_a_new_rally_keeps_the_samples_added_for_it(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        other = "00000000-0000-4000-8000-0000000000c1"
+        self.judge.add(_sample(1, "observed", 50, 24, cal), rally_id=RALLY)
+        self.assertIsNone(self.judge.proposal_command(_snapshot(cal)))
+        self.judge.add(_sample(2, "observed", 50, 24, cal), rally_id=other)
+        self.judge.add(_sample(4, "observed", 50, 56, cal), rally_id=other)
+        self.judge.add(_sample(5, "missing", None, None, cal), rally_id=other)
+        command = self.judge.proposal_command(_snapshot(cal, rally=other))
+        assert command is not None
+        self.assertEqual(command["payload"]["rally_id"], other)
+        self.assertEqual(command["payload"]["winner_id"], "p1")
+
+    def test_manual_scoring_stays_silent(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        self._feed_crossing()
+        self.judge.add(_sample(5, "missing", None, None, cal))
+        snapshot = _snapshot(cal)
+        manual = snapshot.model_copy(update={"scoring_mode": "manual"})
+        self.assertIsNone(self.judge.proposal_command(manual))
+
+    def test_live_producer_sets_camera_ready_before_a_proposal(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        samples = [
+            _sample(2, "observed", 50, 24, cal),
+            _sample(4, "observed", 50, 56, cal),
+            _sample(5, "missing", None, None, cal),
+        ]
+        sent: list[dict] = []
+        producer = MatchVisionProducer(
+            [object(), object(), object()],
+            _ScriptedTracker(samples),
+            self.judge,
+            new_id=_Ids(),
+        )
+        producer.run(sent.append, lambda: _snapshot(cal))
+        self.assertEqual(sent[0]["type"], "camera.ready.set")
+        self.assertTrue(sent[0]["payload"]["ready"])
+        self.assertEqual(sent[1]["type"], "point.propose")
+        manual = _snapshot(cal).model_copy(update={"scoring_mode": "manual"})
+        quiet: list[dict] = []
+        MatchVisionProducer([object()], _ScriptedTracker(samples[:1]), RallyJudge(self.calibration, new_id=_Ids())).run(
+            quiet.append,
+            lambda: manual,
+        )
+        self.assertEqual([item["type"] for item in quiet], ["camera.ready.set"])
+
+    def test_a_missing_camera_drops_the_ready_flag(self) -> None:
+        sent: list[dict] = []
+        MatchVisionProducer([], _ScriptedTracker([]), self.judge, capture=_LostCamera()).run(
+            sent.append,
+            lambda: _snapshot(self.calibration.calibration_id or ""),
+        )
+        self.assertEqual([item["payload"]["ready"] for item in sent], [True, False])
+        self.assertEqual(sent[1]["payload"]["reason"], "camera_missing")
 
     def test_valid_fixture_uses_the_contract_fields(self) -> None:
         payload = json.loads(FIXTURE.read_text(encoding="utf-8"))

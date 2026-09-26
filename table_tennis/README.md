@@ -63,7 +63,7 @@ ponavlja stare govore i gestove (pending -> `skipped_restart`, u toku ->
 | `storage/` | osoba 2 | `sqlite_store.py`: komanda + događaji + snapshot + outbox u jednoj transakciji |
 | `api/` | osoba 2 | router `/api/table-tennis`, SSE, auth, standalone app, Supervisor hook |
 | `sim/` | osoba 2 | scenariji, drajveri (in-process/HTTP), CLI, fixtures |
-| `vision/` | osoba 1 | `stub.py`: FixtureVisionProducer šalje validiran `point.propose` |
+| `vision/` | osoba 1 | kadar, kalibracija, tracker, `MatchVisionProducer`; `stub.py` ostaje fixture put |
 | `robot/` | osoba 3 | `fake.py`, `call_service.py`, `scoreboard.py`, `a2_adapters.py` (dry-run scaffold) |
 | `persona/` | osoba 4 | `templates.py`, `commentator.py`, `speech.py` |
 | `robot_supervisor_v2/frontend/src/features/table-tennis/` | osoba 4 | `generated/contract.ts` (generisano, ne menjati ručno) |
