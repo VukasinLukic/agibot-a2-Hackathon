@@ -60,7 +60,19 @@ _CLOSED_FACTS = NavFacts(
     pose_age_ms=None,
 )
 
-_CANCELLED_TASK_STATES = frozenset({"CANCELED", "CANCELLED", "SUCCESS", "FAILED", "FAILURE", "IDLE"})
+_STOPPED_TASK_STATES = frozenset({"CANCELED", "CANCELLED", "SUCCESS", "FAILED", "FAILURE", "IDLE", "TIMEOUT"})
+_STATE_PREFIXES = ("PncServiceState_", "CommonState_")
+
+
+def _task_state(raw: Any) -> Optional[str]:
+    """``PncServiceState_SUCCESS`` from the robot and ``SUCCESS`` mean the same state."""
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    for prefix in _STATE_PREFIXES:
+        if text.startswith(prefix):
+            text = text[len(prefix):]
+    return text.upper() or None
 
 
 def _target_id(raw: Any) -> Optional[str]:
@@ -202,6 +214,8 @@ class A2RobotNavigator(_A2Base):
         self.mission = mission if mission is not None or self.dry_run else MissionSession()
         self.calls: dict[str, RobotCall] = {}
         self._requests: dict[str, RobotCallRequest] = {}
+        # Calls whose goal reached the robot. Only these can still be walking.
+        self._sent: set[str] = set()
         self._simulator = (
             FakeRobotNavigator(clock=self.clock, facts=self.facts) if self.dry_run else None
         )
@@ -298,6 +312,7 @@ class A2RobotNavigator(_A2Base):
                 "target_id": _wire_target(target),
             },
         )
+        self._sent.add(call_id)
         # An accepted RPC is not arrival. task_id 0 does not identify a mission.
         task_id = _native_task_id(reply)
         if self.mission is not None:
@@ -365,18 +380,24 @@ class A2RobotNavigator(_A2Base):
         call = self.calls[call_id]
         if call.state in ROBOT_CALL_TERMINAL_STATES:
             return call
-        task_id = call.native_task_id
-        if task_id and task_id != "0":
-            self._send("nav.cancel", {"call_id": call_id, "native_task_id": task_id})
-        call = call.model_copy(
-            update={
-                "state": "cancel_requested",
-                "updated_at": self.clock.now(),
-                "reason": "cancel requested",
-            }
-        )
-        self.calls[call_id] = call
-        return call
+        self._requests.pop(call_id, None)
+        self._cancel_native(call)
+        return self._store(self._copy(call, "cancel_requested", "cancel requested"))
+
+    def confirm_arrival(self, call_id: str, actor: str) -> RobotCall:
+        """Operator saw the robot stop at the spot. Only an ``arrived`` call can end this way."""
+        call = self.calls[call_id]
+        if self._simulator is not None:
+            return self._simulator.confirm_arrival(call_id, actor)
+        if actor != "operator" or call.state != "arrived":
+            return call
+        return self._store(self._copy(call, "ready", "operator_confirmed_arrival"))
+
+    def abandon(self, call: RobotCall) -> None:
+        """A previous process left this call open. Stop its task; do not resume it."""
+        if self._simulator is not None:
+            return
+        self._cancel_native(call)
 
     def tick(self) -> list[RobotCall]:
         if self._simulator is not None:
@@ -399,10 +420,12 @@ class A2RobotNavigator(_A2Base):
         if call.state == "cancel_requested":
             return self._advance_cancel(call)
         reply = self._status(call)
-        if bool(reply.get("emergency_stop")) and self.mission is not None and self.mission.active:
-            self.mission.poll(
-                self._observation(reply),
-            )
+        if bool(reply.get("emergency_stop")):
+            # The planner can keep this task RUNNING through an E-stop. Cancel it so
+            # the robot does not resume the old goal after recovery. Walk is not restored.
+            if self.mission is not None and self.mission.active:
+                self.mission.finish(cancel_task=True, estop=True)
+            self._cancel_native(call)
             return self._copy(call, "failed", "emergency_stop")
         if call.state == "arrived" or (self.mission is not None and not self.mission.active and call.state != "requested"):
             return self._advance_arrival(call, reply)
@@ -418,19 +441,26 @@ class A2RobotNavigator(_A2Base):
         return self._copy(call, "moving", verdict.reason)
 
     def _advance_cancel(self, call: RobotCall) -> RobotCall:
-        task_id = call.native_task_id
-        if task_id:
+        if call.call_id in self._sent:
             reply = self._status(call)
             if bool(reply.get("emergency_stop")):
                 if self.mission is not None and self.mission.active:
                     self.mission.finish(cancel_task=True, estop=True)
                 return self._copy(call, "failed", "emergency_stop")
-            state = str(reply.get("task_state") or "")
-            if state not in _CANCELLED_TASK_STATES:
+            if not self._robot_stopped(call, reply):
                 return call
         if self.mission is not None and self.mission.active:
             self.mission.finish(cancel_task=False, estop=False)
         return self._copy(call, "cancelled", "cancel confirmed")
+
+    def _robot_stopped(self, call: RobotCall, reply: dict) -> bool:
+        """With a task id, that task must be stopped. Without one, the planner must say it is not running."""
+        if call.native_task_id:
+            if _native_task_id(reply) not in (None, call.native_task_id):
+                return False
+            return _task_state(reply.get("task_state")) in _STOPPED_TASK_STATES
+        # No id to follow: only an explicit "not running" confirms the stop.
+        return "global_running" in reply and reply.get("global_running") is False
 
     def _advance_arrival(self, call: RobotCall, reply: dict) -> RobotCall:
         if not call.native_task_id:
@@ -456,15 +486,16 @@ class A2RobotNavigator(_A2Base):
             now_s=self.clock.monotonic(),
             pose_age_ms=reply.get("pose_age_ms") if "pose_age_ms" in reply else None,
             task_id=_native_task_id(reply),
-            task_state=reply.get("task_state") if "task_state" in reply else None,
+            task_state=_task_state(reply.get("task_state")),
             global_running=bool(reply.get("global_running")),
             progress_mark=None if "progress_mark" not in reply else reply.get("progress_mark"),
             emergency_stop=bool(reply.get("emergency_stop")),
         )
 
     def _cancel_native(self, call: RobotCall) -> None:
-        task_id = call.native_task_id
-        if task_id and task_id != "0":
+        # task_id 0 is not a mission id and is never sent as a cancel target.
+        task_id = _native_task_id({"task_id": call.native_task_id})
+        if task_id:
             self._send("nav.cancel", {"call_id": call.call_id, "native_task_id": task_id})
 
     def _copy(self, call: RobotCall, state: RobotCallState, reason: str) -> RobotCall:

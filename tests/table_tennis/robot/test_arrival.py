@@ -119,9 +119,10 @@ def test_a2_cancel_is_a_request_and_ignores_task_zero() -> None:
     cancelled = nav.cancel(call_id)
     assert cancelled.state == "cancel_requested"
     assert [action for action, _ in seen] == ["nav.request"]
-    done = nav.tick()
-    assert done[-1].state == "cancelled"
-    assert [action for action, _ in seen] == ["nav.request"]
+    # No id to cancel and no "not running" from the planner: the stop is not confirmed.
+    assert nav.tick() == []
+    assert nav.get_call(call_id).state == "cancel_requested"
+    assert "nav.cancel" not in [action for action, _ in seen]
 
 
 def test_real_status_reaches_ready_only_with_matching_telemetry() -> None:

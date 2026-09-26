@@ -240,6 +240,18 @@ class FakeRobotNavigator:
             self.native_calls.append(f"WOULD cancel task for call {call_id}")
             return call
 
+    def confirm_arrival(self, call_id: str, actor: str) -> RobotCall:
+        with self._lock:
+            call = self.calls[call_id]
+            if actor != "operator" or call.state != "arrived":
+                return call
+            call = call.model_copy(
+                update={"state": "ready", "updated_at": self.clock.now(), "reason": "operator_confirmed_arrival"}
+            )
+            self.calls[call_id] = call
+        self._note_motion(call)
+        return call
+
     def tick(self) -> list[RobotCall]:
         changed = []
         with self._lock:
