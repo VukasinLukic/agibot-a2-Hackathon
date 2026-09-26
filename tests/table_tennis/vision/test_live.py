@@ -18,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from table_tennis.vision.live import fetch_snapshot, post_command
+from table_tennis.vision.live import BackendUnavailable, deliver_command, fetch_snapshot, post_command
 
 MATCH = "00000000-0000-4000-8000-0000000000a1"
 
@@ -107,6 +107,23 @@ class LiveClientTests(unittest.TestCase):
         self.assertEqual(posted["auth"], "Bearer vision-token")
         self.assertEqual(posted["path"], f"/api/table-tennis/matches/{MATCH}/commands")
         self.assertEqual(posted["type"], "point.propose")
+
+    def test_a_closed_port_is_unavailable(self) -> None:
+        with self.assertRaises(BackendUnavailable):
+            fetch_snapshot("http://127.0.0.1:1", "vision-token", MATCH)
+
+    def test_a_proposal_is_posted_twice_with_the_same_id(self) -> None:
+        seen: list[str] = []
+
+        def send(command: dict[str, object]) -> dict[str, object]:
+            seen.append(str(command["command_id"]))
+            if len(seen) == 1:
+                raise BackendUnavailable("down")
+            return {"status": 200, "body": {}}
+
+        reply = deliver_command(send, {"type": "point.propose", "command_id": "same"})
+        self.assertEqual(reply["status"], 200)
+        self.assertEqual(seen, ["same", "same"])
 
 
 if __name__ == "__main__":

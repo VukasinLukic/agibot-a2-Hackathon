@@ -61,7 +61,7 @@ class BallNetPipeline:
         image = _bgr_array(frame)
         source, tracker = self._ready(frame.width, frame.height)
         if self._work != (frame.width, frame.height):
-            image = cv2.resize(image, self._work, interpolation=cv2.INTER_AREA)
+            image = cv2.resize(image, self._work, interpolation=_resize_interpolation(frame.width, frame.height, self._work))
         candidates = source.step(image)
         found = time.perf_counter()
         patches = source.patches(candidates) if candidates else None
@@ -97,6 +97,14 @@ class BallNetPipeline:
         self._tracker = Tracker(self._tracker_params.for_frame(work_w, work_h, REF_WIDTH))
         self._origin_ns = None
         return self._source, self._tracker
+
+
+def _resize_interpolation(width: int, height: int, work: tuple[int, int]) -> int:
+    """``INTER_AREA`` only when the scale is a whole number. Otherwise it is much slower."""
+    work_w, work_h = work
+    if work_w > 0 and work_h > 0 and width % work_w == 0 and height % work_h == 0:
+        return cv2.INTER_AREA
+    return cv2.INTER_LINEAR
 
 
 def _work_roi(roi: Roi | None, scale: tuple[float, float]) -> tuple[int, int, int, int] | None:

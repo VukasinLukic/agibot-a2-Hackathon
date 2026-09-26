@@ -135,6 +135,18 @@ def _ros_image_rows(msg: object) -> np.ndarray:
     return data
 
 
+def _header_stamp_ns(msg: object) -> Optional[int]:
+    header = getattr(msg, "header", None)
+    stamp = getattr(header, "stamp", None)
+    if stamp is None:
+        return None
+    sec = int(getattr(stamp, "sec", 0) or 0)
+    nanosec = int(getattr(stamp, "nanosec", 0) or 0)
+    if sec == 0 and nanosec == 0:
+        return None
+    return sec * 1_000_000_000 + nanosec
+
+
 def ros_image_to_bgr(msg: object) -> np.ndarray:
     import cv2
 
@@ -196,8 +208,10 @@ class Ros2VideoCapture:
         self._is_h264 = is_h264_topic(self._topic)
         self._target_size = A2_ROS2_PREFERRED_SIZE.get(str(device).strip().upper())
         self._decoder = None
-        self._frame_lock = threading.Lock()
+        self._frame_lock = threading.Condition()
         self._latest_frame: Optional[np.ndarray] = None
+        self._frame_seq = 0
+        self._stamp_ns = 0
         self._opened = False
         self._stop_event = threading.Event()
 
@@ -260,7 +274,7 @@ class Ros2VideoCapture:
         except Exception:
             LOG.exception("Failed to decode ROS 2 image from %s", self._topic)
             return
-        self._store_frame(frame)
+        self._store_frame(frame, _header_stamp_ns(msg))
 
     def _on_compressed_video(self, msg: object) -> None:
         # Deliberately trivial: queue the bytes and return immediately. Decoding
@@ -269,7 +283,7 @@ class Ros2VideoCapture:
         if self._decoder is not None:
             self._decoder.submit(msg.data)
 
-    def _store_frame(self, frame: np.ndarray) -> None:
+    def _store_frame(self, frame: np.ndarray, stamp_ns: Optional[int] = None) -> None:
         if self._target_size is not None:
             width, height = self._target_size
             if frame.shape[1] != width or frame.shape[0] != height:
@@ -278,6 +292,9 @@ class Ros2VideoCapture:
                 frame = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
         with self._frame_lock:
             self._latest_frame = frame
+            self._frame_seq += 1
+            self._stamp_ns = stamp_ns if stamp_ns is not None else time.monotonic_ns()
+            self._frame_lock.notify_all()
 
     def _spin_loop(self) -> None:
         import rclpy
@@ -298,6 +315,30 @@ class Ros2VideoCapture:
             return False, None
         return True, frame.copy()
 
+    def read_if_new(self, after_seq: int, timeout_s: float):
+        """Block until a frame newer than ``after_seq``.
+
+        ``read`` stays a non-blocking copy for the person detector. Table-tennis
+        capture uses this so it does not spin on the same picture or compare bytes.
+        Returns ``(ok, frame, seq, stamp_ns)``. ``stamp_ns`` is the image header
+        when the message has one.
+        """
+        deadline = time.monotonic() + timeout_s
+        with self._frame_lock:
+            while self._frame_seq <= after_seq:
+                if self._stop_event.is_set():
+                    return False, None, self._frame_seq, self._stamp_ns
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return False, None, self._frame_seq, self._stamp_ns
+                self._frame_lock.wait(remaining)
+            frame = self._latest_frame
+            seq = self._frame_seq
+            stamp = self._stamp_ns
+        if frame is None:
+            return False, None, seq, stamp
+        return True, frame.copy(), seq, stamp
+
     def set(self, _prop, _value) -> bool:
         return False
 
@@ -317,6 +358,8 @@ class Ros2VideoCapture:
 
     def release(self) -> None:
         self._stop_event.set()
+        with self._frame_lock:
+            self._frame_lock.notify_all()
         if self._spin_thread.is_alive():
             self._spin_thread.join(timeout=2.0)
         # Stop the GStreamer pipeline only after the spin thread is done, so the
