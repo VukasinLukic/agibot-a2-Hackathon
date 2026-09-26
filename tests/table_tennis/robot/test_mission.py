@@ -32,6 +32,9 @@ def test_walk_hold_comes_after_preflight_and_a_clear_route() -> None:
     assert session.confirm_route("operator") is True
     assert session.begin(NavFacts(emergency_stop=True)) == "emergency_stop"
     assert "arm_walk_hold" not in session.steps
+    assert session.route_clear is False
+    assert session.begin(NavFacts()) == "route_not_confirmed"
+    assert session.confirm_route("operator") is True
     assert session.begin(NavFacts()) == "started"
     assert session.steps == [
         "refused_without_route_confirmation",
@@ -39,6 +42,8 @@ def test_walk_hold_comes_after_preflight_and_a_clear_route() -> None:
         "route_confirmed",
         "preflight",
         "refused:emergency_stop",
+        "refused_without_route_confirmation",
+        "route_confirmed",
         "preflight",
         "arm_walk_hold",
         "pose_lease_open",
@@ -95,6 +100,22 @@ def test_no_progress_fails_the_mission() -> None:
     session.poll(MissionObservation(now_s=0, task_id="3", progress_mark="0"))
     stuck = session.poll(MissionObservation(now_s=6, task_id="3", progress_mark="0"))
     assert stuck.reason == "no_progress"
+
+
+def test_a_second_walk_does_not_inherit_the_first_deadline_or_task() -> None:
+    session = MissionSession(mission_timeout_s=10)
+    session.confirm_route("operator")
+    assert session.begin(NavFacts()) == "started"
+    session.note_task("44")
+    session.poll(MissionObservation(now_s=0, task_id="44", pose_age_ms=0, progress_mark="a"))
+    session.finish(cancel_task=False, estop=False)
+    session.confirm_route("operator")
+    assert session.begin(NavFacts()) == "started"
+    assert session.note_task("0") is None
+    assert session.task_id is None
+    later = session.poll(MissionObservation(now_s=100, pose_age_ms=0, task_state="RUNNING"))
+    assert later.reason == "in_progress"
+    assert later.state == "moving"
 
 
 def test_success_without_a_task_id_is_not_arrival() -> None:

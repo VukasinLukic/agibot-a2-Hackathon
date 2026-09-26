@@ -136,7 +136,9 @@ class RobotCallService:
             if row is None:
                 raise NotFoundError("call_not_found", f"robot call {call_id} does not exist")
             confirm = getattr(self.navigator, "confirm_route", None)
-            if confirm is None:
+            # After a restart the navigator has no memory of the call. The stored
+            # row is already failed by startup. Do not start a walk from it.
+            if confirm is None or self.navigator.get_call(call_id) is None:
                 return self.get(call_id)
             call = confirm(call_id, actor)
             self._persist(call, row["command_id"], row["payload_hash"])

@@ -18,6 +18,8 @@ import threading
 from datetime import datetime, timezone
 from typing import Optional
 
+from table_tennis.robot.gesture_output import GestureNotPlayed
+
 from .ports import Clock, GestureOutput, ScoreDisplay, SpeechOutput, SystemClock
 from .service import RefereeService
 
@@ -197,6 +199,11 @@ class OutputDispatcher:
                 self.gesture.present_point(event, snap)
             self.store.outbox_mark(row["id"], "done")
             self._record(kind, "done")
+        except GestureNotPlayed as exc:
+            # Expected: the body was walking or a rally was live. The score stays,
+            # and this is not a broken gesture output.
+            self.store.outbox_mark(row["id"], "skipped_stale", str(exc)[:500])
+            self._record(kind, "skipped")
         except Exception as exc:
             self.last_error = f"{kind}: {exc}"
             self.store.outbox_mark(row["id"], "failed", str(exc)[:500])

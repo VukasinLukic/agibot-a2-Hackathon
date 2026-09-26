@@ -87,6 +87,34 @@ def test_restart_asks_the_navigator_to_stop_the_unfinished_call(d, rt):
     assert rt.robot._active_call() is None
 
 
+def test_route_after_the_navigator_forgets_the_call_returns_the_stored_one(d, rt):
+    from table_tennis.robot.a2_adapters import A2RobotNavigator
+    from table_tennis.robot.readiness import NavFacts
+
+    d.create(scoring_mode="manual")
+    cid = _call(d)
+    stored = rt.robot.get(cid)
+    fresh = A2RobotNavigator(dry_run=False, transport=lambda action, args: {"task_id": 5}, facts=NavFacts())
+    rt.robot.navigator = fresh
+    again = rt.robot.confirm_route(cid, "operator")
+    assert again.call_id == stored.call_id
+    assert again.state == stored.state
+    assert fresh.sent == []
+
+
+def test_gesture_skipped_while_walking_stays_healthy(d, rt):
+    d.create(scoring_mode="manual")
+    d.ok("match.start")
+    d.ok("robot.ready.set", {"ready": True, "reason": "manual_arrival"}, expected_revision=None)
+    _call(d)
+    d.point("p1")
+    rt.dispatcher.drain()
+    gesture = rt.dispatcher.output_status()["gesture"]
+    assert gesture["failed"] == 0
+    assert gesture["healthy"] is True
+    assert gesture["skipped"] >= 1
+
+
 def test_operator_unchanged_ready_is_still_noop(d, rt):
     d.create(scoring_mode="manual")
     d.ok("operator.ready.set", {"ready": False}, expected_revision=None)
