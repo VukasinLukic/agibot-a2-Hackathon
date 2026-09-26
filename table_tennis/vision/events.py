@@ -16,14 +16,19 @@ process as ``FixtureVisionProducer``.
 
 from __future__ import annotations
 
+import logging
+import time
 import uuid
 from collections.abc import Callable
 from typing import Any
 
 from table_tennis.vision.calibration import TableCalibration
-from table_tennis.vision.point_logic import conclude
+from table_tennis.vision.point_logic import PointFold
 from table_tennis.vision.rally_events import RallyEvent, RallyEventDetector
 from table_tennis.vision.track import TrackSample
+
+_LOG = logging.getLogger(__name__)
+_READY_RETRY_S = 3.0
 
 
 class RallyJudge:
@@ -42,6 +47,10 @@ class RallyJudge:
         self._sound: dict[str, Any] | None = None
         self._detector = RallyEventDetector(calibration.width, calibration)
         self._events: list[RallyEvent] = []
+        self._fold: PointFold | None = None
+        self._fold_key: tuple[str, str | None, str | None] | None = None
+        self._folded = (0, 0)
+        self._quiet: str | None = None
 
     def add(self, sample: TrackSample, rally_id: str | None = None) -> None:
         if sample.proves_bounce:
@@ -68,21 +77,26 @@ class RallyJudge:
     def proposal_command(self, snapshot: Any) -> dict[str, Any] | None:
         """Return one validated point.propose, or nothing. A later call does not send a second decision."""
         if getattr(snapshot, "scoring_mode", "assisted") != "assisted":
+            self._note("scoring mode is not assisted")
             return None
         self._follow_rally(getattr(snapshot, "active_rally_id", None))
         if self._closed or self._command is not None:
             return None
         if not _snapshot_ready(snapshot):
+            self._note("camera or calibration is not ready")
             return None
         found = self._conclusion(snapshot)
         if found is None:
             return None
         winner_id, reason, start_seq, end_seq = found
         if self._sound_required and not self._sound_consulted:
+            self._note("sound has not concluded")
             return None
         if _sound_stale(self._sound, self._rally_started_ns):
+            self._note("sound contact is from before the rally")
             return None
         if self._sound_consulted and not _sound_agrees(self._sound, winner_id, reason):
+            self._note("sound does not agree")
             self._closed = True
             return None
         from table_tennis.vision.stub import FROM_CONTEXT, build_proposal, propose_command
@@ -130,6 +144,10 @@ class RallyJudge:
         self._closed = False
         self._events.clear()
         self._detector.reset()
+        self._fold = None
+        self._fold_key = None
+        self._folded = (0, 0)
+        self._quiet = None
         self._clear_sound()
 
     def _clear_sound(self) -> None:
@@ -138,21 +156,32 @@ class RallyJudge:
 
     def _conclusion(self, snapshot: Any) -> tuple[str, str, int, int] | None:
         if getattr(snapshot, "status", "rally") != "rally":
+            self._note("match is not in a rally")
             return None
         if snapshot.active_rally_id is None or snapshot.active_proposal_id is not None:
+            self._note("rally is not open")
             return None
         if snapshot.calibration_id != self._calibration.calibration_id:
+            self._note("calibration does not match the snapshot")
             return None
-        found = conclude(
-            self._samples,
-            self._events,
-            server_id=str(getattr(snapshot, "server_id", "")),
-            ends=snapshot.court_end_by_player,
-            calibration=self._calibration,
-        )
+        ends = snapshot.court_end_by_player
+        key = (str(getattr(snapshot, "server_id", "")), getattr(ends, "p1", None), getattr(ends, "p2", None))
+        if self._fold is None or self._fold_key != key:
+            self._fold = PointFold(key[0], ends, self._calibration)
+            self._fold_key = key
+            self._folded = (0, 0)
+        self._fold.extend(self._samples[self._folded[0] :], self._events[self._folded[1] :])
+        self._folded = (len(self._samples), len(self._events))
+        found = self._fold.verdict()
         if found is None:
             return None
         return found.winner_id, found.reason, found.start_seq, found.end_seq
+
+    def _note(self, reason: str) -> None:
+        if reason == self._quiet:
+            return
+        self._quiet = reason
+        _LOG.info("no proposal: %s", reason)
 
 
 class MatchVisionProducer:
@@ -184,6 +213,7 @@ class MatchVisionProducer:
         self._new_id = new_id or (lambda: str(uuid.uuid4()))
         self._closed = False
         self._camera_ready = False
+        self._ready_check = 0.0
         self.sent: list[dict[str, Any]] = []
 
     def run(
@@ -202,6 +232,7 @@ class MatchVisionProducer:
                 snapshot = context_provider()
                 if snapshot is not None:
                     rally_id = getattr(snapshot, "active_rally_id", None)
+                self._match_camera(sink, snapshot)
                 sample = self._tracker.update(frame)
                 self._judge.add(sample, rally_id)
                 if on_frame is not None:
@@ -230,6 +261,20 @@ class MatchVisionProducer:
     def close(self) -> None:
         self._closed = True
 
+    def _match_camera(self, sink: Callable[[dict[str, Any]], Any], snapshot: Any) -> None:
+        """Send ready again when the backend still says the camera is down."""
+        if snapshot is None or self._camera_lost() or not self._camera_ready:
+            return
+        ready = getattr(getattr(snapshot, "ready", None), "camera_ready", True)
+        if ready:
+            return
+        now = time.monotonic()
+        if now - self._ready_check < _READY_RETRY_S:
+            return
+        self._ready_check = now
+        self._camera_ready = False
+        self._set_camera(sink, True, "raw fisheye receiving")
+
     def _camera_lost(self) -> bool:
         return self._capture is not None and bool(getattr(self._capture, "camera_missing", False))
 
@@ -245,6 +290,7 @@ class MatchVisionProducer:
             "payload": {"ready": ready, "reason": reason},
         }
         parse_command(command)
+        self._ready_check = time.monotonic()
         sink(command)
         self.sent.append(command)
         self._camera_ready = ready

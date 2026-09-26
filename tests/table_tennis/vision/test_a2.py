@@ -118,6 +118,27 @@ class A2FisheyeTests(unittest.TestCase):
         self.assertTrue(capture.camera_missing)
         self.assertEqual(reader.calls, 5)
 
+    def test_a_repeated_header_stamp_uses_the_read_clock(self) -> None:
+        class _SameStamp:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def read_if_new(self, after_seq: int, timeout_s: float):
+                del after_seq, timeout_s
+                self.calls += 1
+                if self.calls <= 2:
+                    return True, _image((self.calls, 0, 0)), self.calls, 5_000
+                return False, None, 2, 5_000
+
+            def release(self) -> None:
+                return None
+
+        with A2FisheyeCapture("CHEST_LEFT_FISHEYE", reader=_SameStamp(), now_ns=_Clock()) as capture:
+            frames = list(capture)
+        self.assertEqual(len(frames), 2)
+        self.assertEqual(frames[0].capture_monotonic_ns, 5_000)
+        self.assertGreater(frames[1].capture_monotonic_ns - frames[0].capture_monotonic_ns, 1)
+
     def test_one_empty_read_does_not_drop_the_camera(self) -> None:
         image = _image((7, 8, 9))
 

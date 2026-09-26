@@ -23,6 +23,7 @@ FISHEYE_ALIASES = ("CHEST_LEFT_FISHEYE", "CHEST_RIGHT_FISHEYE")
 _READ_FAILURES = 3
 # The same picture for this long means the camera stopped, even if read() still returns it.
 _STALL_NS = 1_000_000_000
+_DEFAULT_STEP_NS = 33_333_333
 
 
 def require_raw_fisheye(device: str) -> str:
@@ -71,6 +72,7 @@ class A2FisheyeCapture:
         self._seq = 0
         self._previous: bytes | None = None
         self._last_ns = -1
+        self._step_ns = 0
         self._last_new_ns = -1
 
     def __enter__(self) -> A2FisheyeCapture:
@@ -162,7 +164,10 @@ class A2FisheyeCapture:
             last_seq = int(seq)
             when = int(stamp) if isinstance(stamp, int) and stamp > 0 else self._now_ns()
             if when <= self._last_ns:
-                when = self._last_ns + 1
+                # A repeated stamp, or a clock switch. One period keeps the speed sane.
+                when = self._last_ns + (self._step_ns or _DEFAULT_STEP_NS)
+            elif self._last_ns > 0:
+                self._step_ns = when - self._last_ns
             height, width = _shape(image)
             frame = Frame(
                 frame_seq=self._seq,

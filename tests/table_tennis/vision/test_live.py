@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 import threading
+import time
 import unittest
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -18,7 +20,14 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from table_tennis.vision.live import BackendUnavailable, deliver_command, fetch_snapshot, post_command
+from table_tennis.vision.live import (
+    BackendUnavailable,
+    _ClipSink,
+    _SnapshotFeed,
+    deliver_command,
+    fetch_snapshot,
+    post_command,
+)
 
 MATCH = "00000000-0000-4000-8000-0000000000a1"
 
@@ -63,6 +72,7 @@ class LiveClientTests(unittest.TestCase):
                 length = int(self.headers.get("Content-Length", "0"))
                 command = json.loads(self.rfile.read(length).decode("utf-8"))
                 posted["auth"] = self.headers.get("Authorization")
+                posted["actor"] = self.headers.get("X-TT-Actor")
                 posted["path"] = self.path
                 posted["type"] = command["type"]
                 code = 409 if command["type"] == "point.propose" else 200
@@ -105,6 +115,7 @@ class LiveClientTests(unittest.TestCase):
         self.assertEqual(ready["status"], 200)
         self.assertEqual(refused["status"], 409)
         self.assertEqual(posted["auth"], "Bearer vision-token")
+        self.assertEqual(posted["actor"], "vision")
         self.assertEqual(posted["path"], f"/api/table-tennis/matches/{MATCH}/commands")
         self.assertEqual(posted["type"], "point.propose")
 
@@ -124,6 +135,37 @@ class LiveClientTests(unittest.TestCase):
         reply = deliver_command(send, {"type": "point.propose", "command_id": "same"})
         self.assertEqual(reply["status"], 200)
         self.assertEqual(seen, ["same", "same"])
+
+    def test_a_rejected_command_is_logged(self) -> None:
+        with self.assertLogs("table_tennis.vision.live", level="WARNING") as logged:
+            deliver_command(lambda _: {"status": 403, "body": {"detail": "actor"}}, {"type": "point.propose"})
+        self.assertIn("403", logged.output[0])
+
+    def test_a_failed_recording_does_not_hang_on_close(self) -> None:
+        from table_tennis.vision.image import BgrImage
+
+        class _Frame:
+            def __init__(self, index: int) -> None:
+                self.capture_monotonic_ns = index * 33_333_333
+                self.width = 2
+                self.height = 2
+                self.image = BgrImage(2, 2, bytes(12))
+
+        with tempfile.TemporaryDirectory() as folder:
+            sink = _ClipSink(folder)
+            for index in range(40):
+                sink.write(_Frame(index))
+            started = time.monotonic()
+            sink.close()
+        self.assertLess(time.monotonic() - started, 3.0)
+
+    def test_a_feed_that_never_connected_is_not_alive(self) -> None:
+        feed = _SnapshotFeed("http://127.0.0.1:1", "vision-token", MATCH)
+        try:
+            self.assertFalse(feed.alive())
+            self.assertIsNone(feed.latest)
+        finally:
+            feed.close()
 
 
 if __name__ == "__main__":
