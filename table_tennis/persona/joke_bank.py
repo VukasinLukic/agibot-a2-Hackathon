@@ -263,3 +263,54 @@ class JokeBank:
         finally:
             with self._lock:
                 self._pending.discard(mid)
+
+
+def _check() -> int:
+    """`python -m table_tennis.persona.joke_bank --check`: one real LLM call with sample players."""
+    import sys
+    import tempfile
+
+    from table_tennis.contracts import MatchSnapshot
+
+    os.environ.setdefault("TT_LLM_JOKES", "1")
+    from .commentator import _rank, favorite_player
+
+    with tempfile.TemporaryDirectory() as tmp:
+        os.environ["TT_JOKE_DIR"] = tmp
+        bank = JokeBank.from_env(favorite_of=favorite_player, rank_of=_rank)
+        if not bank.enabled:
+            print("NE RADI: Azure OpenAI nije podešen (AZURE_OPENAI_BASE / AZURE_OPENAI_API_KEY / deployment u .env).")
+            return 1
+        bank.background = False
+        snap = MatchSnapshot.model_validate({
+            "match_id": "00000000-0000-4000-8000-000000000001", "revision": 1, "status": "between_rallies",
+            "players": [
+                {"id": "p1", "display_name": "Jelena", "role_label": "Direktor", "role_rank": 6},
+                {"id": "p2", "display_name": "Stefan", "role_label": "Pripravnik", "role_rank": 1},
+            ],
+            "config": {}, "score_by_player": {"p1": 0, "p2": 0}, "first_server_id": "p1", "server_id": "p1",
+            "winner_id": None, "assignment_version": 1,
+            "court_end_by_player": {"p1": "end_a", "p2": "end_b"},
+            "robot_side_by_player": {"p1": "left", "p2": "right"},
+            "calibration_id": None, "active_rally_id": None, "active_proposal_id": None,
+            "persona": "corporate", "scoring_mode": "manual", "ready": {},
+            "updated_at": "2026-09-26T12:00:00Z",
+        })
+        bank.ensure(snap)
+        lines = bank._banks.get(snap.match_id)
+        if not lines:
+            print("NE RADI: LLM poziv nije uspeo ili nije vratio upotrebljive rečenice (vidi log iznad).")
+            return 1
+        sys.stdout.reconfigure(encoding="utf-8")
+        print("RADI: lične šale za Jelenu (Direktor) i Stefana (Pripravnik):")
+        for slot, items in lines.items():
+            for item in items:
+                print(f"  [{slot}] {item}")
+        return 0
+
+
+if __name__ == "__main__":
+    import sys
+
+    logging.basicConfig(level=logging.INFO)
+    sys.exit(_check() if "--check" in sys.argv else 2)

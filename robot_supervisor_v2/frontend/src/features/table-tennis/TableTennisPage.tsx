@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import './table-tennis.css';
-import { describeError, ttApi } from './api/client';
+import { ApiError, describeError, ttApi } from './api/client';
 import { STORAGE_KEYS, storageGet, storageSet } from './config';
 import type { CreateMatchRequest, HealthResponse } from './generated/contract';
 import { useMatch } from './hooks/useMatch';
@@ -19,6 +19,7 @@ import { RobotPanel } from './components/RobotPanel';
 import { Scoreboard } from './components/Scoreboard';
 import { SetupForm } from './components/SetupForm';
 import { SpeechLog } from './components/SpeechLog';
+import { TokenGate } from './components/TokenGate';
 
 const CONNECTION_TEXT = {
   connecting: 'Povezujem se sa sudijom…',
@@ -30,6 +31,8 @@ const CONNECTION_TEXT = {
 export function TableTennisPage() {
   const [matchId, setMatchId] = useState<string | null>(() => storageGet(STORAGE_KEYS.lastMatchId));
   const [health, setHealth] = useState<HealthResponse | null>(null);
+  // On the robot the backend runs with token auth: without a valid token the app asks for it.
+  const [needToken, setNeedToken] = useState(false);
   const [creating, setCreating] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const match = useMatch(matchId);
@@ -37,7 +40,13 @@ export function TableTennisPage() {
   const { snapshot, connection } = match;
 
   useEffect(() => {
-    ttApi.health(matchId).then(setHealth).catch(() => setHealth(null));
+    ttApi
+      .health(matchId)
+      .then(setHealth)
+      .catch((err: unknown) => {
+        setHealth(null);
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) setNeedToken(true);
+      });
   }, [matchId]);
 
   const openMatch = (id: string | null) => {
@@ -80,6 +89,10 @@ export function TableTennisPage() {
   const notFound = Boolean(matchId && match.loadError && !snapshot);
   const locked = connection !== 'live' || !snapshot;
   const inMatch = Boolean(matchId && snapshot && !notFound);
+
+  if (needToken) {
+    return <TokenGate />;
+  }
 
   return (
     <div className="tt">
