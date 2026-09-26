@@ -39,6 +39,9 @@ class VisionConfig:
     roi: Roi | None
     missing_frames: int
     model_path: str | None = None
+    ballnet_path: str | None = None
+    work_width_px: int = 960
+    compensate_motion: bool = True
 
     @classmethod
     def from_mapping(cls, data: dict[str, object]) -> VisionConfig:
@@ -48,6 +51,15 @@ class VisionConfig:
         max_diameter = _require_positive_int(ball_raw, "max_diameter_px")
         if min_diameter > max_diameter:
             raise ValueError("min_diameter_px cannot be greater than max_diameter_px")
+        model_path = _optional_path(data, "model_path")
+        ballnet_path = _optional_path(data, "ballnet_path")
+        if model_path is not None and ballnet_path is not None:
+            raise ValueError("model_path and ballnet_path are exclusive; choose one learned detector")
+        ballnet_raw = data.get("ballnet", None)
+        if ballnet_raw is None:
+            ballnet_raw = {}
+        if not isinstance(ballnet_raw, dict):
+            raise ValueError("ballnet must be a mapping")
         return cls(
             camera_id=_require_camera_id(data),
             origin=_require_origin(data),
@@ -61,7 +73,10 @@ class VisionConfig:
             missing_frames=_require_positive_int(
                 _require_mapping(data, "tracker"), "missing_frames"
             ),
-            model_path=_optional_model_path(data.get("model_path", None)),
+            model_path=model_path,
+            ballnet_path=ballnet_path,
+            work_width_px=_optional_work_width(ballnet_raw),
+            compensate_motion=_optional_bool(ballnet_raw, "compensate_motion", True),
         )
 
 
@@ -119,11 +134,26 @@ def _optional_hsv(
     return hue, saturation, value_channel
 
 
-def _optional_model_path(value: object) -> str | None:
+def _optional_path(data: dict[str, object], key: str) -> str | None:
+    value = data.get(key, None)
     if value is None:
         return None
     if not isinstance(value, str) or not value.strip() or value != value.strip():
-        raise ValueError("model_path must be null or a path")
+        raise ValueError(f"{key} must be null or a path")
+    return value
+
+
+def _optional_work_width(data: dict[str, object]) -> int:
+    value = data.get("work_width_px", 960)
+    if type(value) is not int or not 64 <= value <= 4096:
+        raise ValueError("work_width_px must be an int between 64 and 4096")
+    return value
+
+
+def _optional_bool(data: dict[str, object], key: str, default: bool) -> bool:
+    value = data.get(key, default)
+    if type(value) is not bool:
+        raise ValueError(f"{key} must be true or false")
     return value
 
 
