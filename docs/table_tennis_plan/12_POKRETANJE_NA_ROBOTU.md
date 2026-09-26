@@ -7,6 +7,17 @@ provereni sa mentorom. Ako neki deo nije gotov, preskoči njegov korak i koristi
 Svaki korak koji pokreće proces na robotu, menja Supervisor ili pravi fizički izlaz radi se **uz mentora**.
 Pravila bezbednosti: `10_TITANSUDIJA_ROBOT_CONTEXT.md`, sekcija 0.
 
+## Automatizacija (sekcije 1, 3-6 i 8)
+
+`python scripts/titansudija_deploy.py up` (ili `scripts/deploy_and_start.sh`) sa laptopa radi redom:
+lokalne provere, host key i PC2 provera, zapis trenutnog commita, sync koda (`--sync git|copy`, podrazumevano
+preskočeno), dopunu `.env` tokenima (samo nedostajući, uz backup), Supervisor health, `/api/table-tennis/health`,
+start govora, `PATCH /api/vision` enabled=false, ARM i `tt_vision` (samo uz `--vision-cmd`).
+Svaki korak koji menja robota traži potvrdu mentora; ARM, start Supervisora i testna rečenica traže i
+potvrdu E-stop-a i reč `MENTOR`. Supervisor se nikad ne restartuje iz skripte. `--dry-run` samo prikazuje,
+`status` je read-only, `down` gasi `tt_vision`, vraća vision i nudi DISARM.
+Tokeni: lokalno `table_tennis/var/robot_tokens.env` (van Git-a), nikad u ispisu ni komandnoj liniji.
+
 ## 0. Kako izgleda sistem kada radi
 
 ```
