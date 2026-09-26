@@ -4,19 +4,25 @@ HSV bounds, diameter and the missing-frame limit come from ``VisionConfig``.
 A short gap is ``predicted``. A longer gap is ``missing`` and drops the track.
 Neither kind is a bounce or a point. The learned locator, when it answers,
 is the blur center from BlurBall. It never writes the score.
+
+With ``ballnet_path`` the frame goes through ``pipeline.BallNetPipeline``
+(candidates -> BallNet -> MHT) instead, and HSV/BlurBall are not called.
 """
 
 from __future__ import annotations
 
 import csv
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from table_tennis.vision.calibration import TableCalibration
 from table_tennis.vision.config import Roi, VisionConfig
 from table_tennis.vision.frame import Frame
 from table_tennis.vision.image import BgrImage
+
+if TYPE_CHECKING:
+    from table_tennis.vision.pipeline import BallNetPipeline, PatchScorer
 
 MOTION_DELTA = 30
 _MEASUREMENT_VAR = 16.0
@@ -81,9 +87,19 @@ class BallTracker:
         config: VisionConfig,
         calibration: TableCalibration | None = None,
         model: object | None = None,
+        ballnet: PatchScorer | None = None,
     ) -> None:
-        self._model = model if model is not None else _optional_model(config.model_path)
-        if self._model is None and (
+        self._roi = _search_roi(config.roi, calibration)
+        self._calibration_id = calibration.calibration_id if calibration is not None and calibration.ready else None
+        self.table_limited = self._calibration_id is not None and self._roi.width < 10**8
+        self._missing_limit = config.missing_frames
+        self._learned = _optional_pipeline(config, self._roi, ballnet)
+        if self._learned is not None and model is not None:
+            raise ValueError("BallNet and BlurBall are exclusive")
+        self._model: object | None = None
+        if self._learned is None:
+            self._model = model if model is not None else _optional_model(config.model_path)
+        if self._learned is None and self._model is None and (
             not config.ball.configured or config.ball.hsv_lower is None or config.ball.hsv_upper is None
         ):
             raise ValueError("ball color is not configured")
@@ -92,10 +108,6 @@ class BallTracker:
         self._upper = config.ball.hsv_upper or (0, 0, 0)
         self._min_diameter = config.min_diameter_px
         self._max_diameter = config.max_diameter_px
-        self._missing_limit = config.missing_frames
-        self._roi = _search_roi(config.roi, calibration)
-        self._calibration_id = calibration.calibration_id if calibration is not None and calibration.ready else None
-        self.table_limited = self._calibration_id is not None and self._roi.width < 10**8
         self._older: bytes | None = None
         self._previous: bytes | None = None
         self._last_ns: int | None = None
@@ -103,7 +115,14 @@ class BallTracker:
         self._state: list[float] | None = None
         self._cov: list[list[float]] | None = None
 
+    @property
+    def pipeline(self) -> BallNetPipeline | None:
+        """The BallNet path (per-stage ``last_ms``), or None on the HSV/BlurBall path."""
+        return self._learned
+
     def update(self, frame: Frame) -> TrackSample:
+        if self._learned is not None:
+            return _checked(self._from_learned(frame))
         pixels = _bgr_bytes(frame)
         chosen = _from_model(self._model, pixels, frame.width, frame.height, self._min_diameter)
         if chosen is None and self._color_on:
@@ -142,6 +161,24 @@ class BallTracker:
             return _checked(self._missing(frame))
         assert self._state is not None
         return _checked(self._predicted(frame, self._state[0], self._state[1]))
+
+    def _from_learned(self, frame: Frame) -> TrackSample:
+        assert self._learned is not None
+        hit = self._learned.step(frame)
+        if hit is None:
+            return self._missing(frame)
+        if hit.kind == "observed":
+            return TrackSample(
+                frame_seq=frame.frame_seq,
+                capture_monotonic_ns=frame.capture_monotonic_ns,
+                detected=True,
+                x_px=hit.x,
+                y_px=hit.y,
+                observation_kind="observed",
+                confidence=min(max(hit.prob, 0.0), 1.0),
+                calibration_id=self._calibration_id,
+            )
+        return self._predicted(frame, hit.x, hit.y)
 
     def _observed(self, frame: Frame, blob: _Blob) -> TrackSample:
         if self._state is None or self._cov is None:
@@ -242,6 +279,28 @@ def _optional_model(model_path: str | None) -> object | None:
     from table_tennis.vision.blurball import BlurBallDetector
 
     return BlurBallDetector(model_path)
+
+
+def _optional_pipeline(config: VisionConfig, roi: Roi, net: PatchScorer | None) -> BallNetPipeline | None:
+    """BallNet path when weights are configured or a scorer is passed in. Imports numpy/OpenCV lazily."""
+    if net is None and not config.ballnet_path:
+        return None
+    from table_tennis.vision.mht import TrackerParams
+    from table_tennis.vision.pipeline import BallNetPipeline
+
+    if net is None:
+        from table_tennis.vision.ballnet import load_ballnet
+
+        net = load_ballnet(config.ballnet_path)
+    params = TrackerParams()
+    params = replace(params, coast=min(params.coast, config.missing_frames - 1))
+    return BallNetPipeline(
+        net,
+        work_width=config.work_width_px,
+        compensate=config.compensate_motion,
+        roi=None if roi.width >= 10**8 else roi,
+        tracker_params=params,
+    )
 
 
 def _from_model(

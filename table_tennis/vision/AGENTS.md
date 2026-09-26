@@ -10,4 +10,5 @@
 - `confidence` je model score, ne kalibrisana verovatnoća. Nestanak loptice nije dokaz poena.
 - OpenCV/numpy samo iz `requirements-vision.txt`, u zasebnom venv-u; ne uvoziti iz `core/`.
 - BlurBall je naučeni detektor (`blurball.py`). Težine su van gita. Torch se ne uvozi na importu paketa.
+- BallNet put (`candidates.py` -> `ballnet.py` -> `mht.py`, spojen u `pipeline.py`) je samo numpy/OpenCV; `.npz` težine su van gita.
 - Snimci, težine i veliki fajlovi ne idu u Git.
