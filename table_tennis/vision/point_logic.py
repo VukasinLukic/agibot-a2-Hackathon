@@ -27,6 +27,9 @@ from table_tennis.vision.track import TrackSample
 
 GONE_NS = 500_000_000
 LONG_GAP_NS = 2_000_000_000
+# After the ball crossed the net at least once, this long without it means the
+# rally is over even when the picture never showed how.
+UNCLEAR_GONE_NS = 3_000_000_000
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +59,7 @@ class PointFold:
         self._closed = False
         self._start: int | None = None
         self._verdict: Verdict | None = None
+        self._crossings = 0
 
     def extend(self, samples: list[TrackSample], events: list[RallyEvent]) -> None:
         if not self._ready or self._closed or self._verdict is not None:
@@ -117,11 +121,26 @@ class PointFold:
         self._gap = True
         self._finish(last, sample.frame_seq)
 
+    def ended_without_verdict(self, now_ns: int) -> bool:
+        """The rally is over and there is no point to propose: time to ask the players.
+
+        Only after real play. A rally that closes during the serve preparation
+        (ball tossed, carried, bounced while waiting) is not a question.
+        """
+        if not self._ready or self._verdict is not None:
+            return False
+        if self._play.phase == "play" and (self._terminal or self._closed):
+            return True
+        last = self._last
+        return self._crossings >= 1 and last is not None and now_ns - last.capture_monotonic_ns >= UNCLEAR_GONE_NS
+
     def _cross(self, sample: TrackSample) -> None:
         assert sample.x_px is not None and sample.y_px is not None
         half = _image_half(sample.x_px, sample.y_px, self._calibration)
         previous = self._previous_half
         previous_seq = self._previous_seq
+        if half is not None and previous is not None and half != previous:
+            self._crossings += 1
         if (
             half is not None
             and previous is not None

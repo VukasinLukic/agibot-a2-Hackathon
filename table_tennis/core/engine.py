@@ -70,6 +70,8 @@ class MatchState(BaseModel):
     ready: Readiness = Field(default_factory=Readiness)
     active_rally_id: Optional[str] = None
     active_proposal: Optional[PointProposal] = None
+    # Rally for which vision already said "saw the end, no winner" (one question per rally).
+    unclear_rally_id: Optional[str] = None
     paused_from: Optional[str] = None
     points: list[PointRecord] = Field(default_factory=list)
     ended_by_operator: bool = False
@@ -188,6 +190,9 @@ def apply_event(state: Optional[MatchState], event: Any) -> MatchState:
     elif t == "point.proposed":
         s.active_proposal = p.proposal
         s.status = "pending_decision"
+    elif t == "point.unclear":
+        # A question for the players, not a decision: status and score stay.
+        s.unclear_rally_id = p.rally_id
     elif t == "point.confirmed":
         s.points.append(PointRecord(event_id=event.event_id, rally_id=p.rally_id, winner_id=p.winner_id))
         _clear_rally(s)
@@ -398,6 +403,15 @@ def decide(state: MatchState, command: Any, actor: str, ctx: EngineContext) -> l
             state,
         )
         return [f.make("point.proposed", {"proposal": prop.model_dump()})]
+
+    if t == "point.unclear":
+        _require(state.scoring_mode == "assisted", "proposals_disabled", "CV signals are only accepted in assisted mode", state)
+        _require(state.ready.camera_ready, "camera_not_ready", "camera is not ready", state)
+        _require(status == "rally", "invalid_state", f"no open rally to ask about (status {status})", state)
+        _require(pl.rally_id == state.active_rally_id, "stale_rally", "rally is not active", state)
+        if state.unclear_rally_id == pl.rally_id:
+            return []  # already asked for this rally
+        return [f.make("point.unclear", {"rally_id": pl.rally_id, "reason": pl.reason})]
 
     if t == "point.confirm":
         _require(status == "pending_decision", "invalid_state", f"nothing to confirm (status {status})", state)

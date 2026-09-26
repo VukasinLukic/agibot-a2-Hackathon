@@ -77,6 +77,11 @@ def _game_point_leader(a: int, b: int, target: int) -> Optional[str]:
     return None
 
 
+# A proposal at or above this model score is announced as seen, not as a guess.
+# Players still confirm it; only the wording changes.
+SURE_CONFIDENCE = 0.8
+
+
 class Commentator:
     def __init__(self, jokes: Optional[JokeBank] = None):
         # Personalised LLM lines for the corporate persona (off unless TT_LLM_JOKES=1).
@@ -117,7 +122,11 @@ class Commentator:
             return self._point_line(event, snapshot, persona, pick)
 
         if et == "point.proposed":
-            return pick("point.proposed", winner=_name(snapshot, p.proposal.winner_id))
+            slot = "point.proposed.sure" if p.proposal.confidence >= SURE_CONFIDENCE else "point.proposed"
+            return pick(slot, winner=_name(snapshot, p.proposal.winner_id))
+
+        if et == "point.unclear":
+            return pick("point.unclear")
 
         if et == "score.corrected":
             new = p.new_score

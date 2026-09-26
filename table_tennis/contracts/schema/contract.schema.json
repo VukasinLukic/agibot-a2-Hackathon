@@ -18,6 +18,7 @@
           "point.award": "#/$defs/PointAwardCommand",
           "point.confirm": "#/$defs/PointConfirmCommand",
           "point.propose": "#/$defs/PointProposeCommand",
+          "point.unclear": "#/$defs/PointUnclearCommand",
           "point.undo": "#/$defs/PointUndoCommand",
           "rally.arm": "#/$defs/RallyArmCommand",
           "rally.let": "#/$defs/RallyLetCommand",
@@ -35,6 +36,9 @@
         },
         {
           "$ref": "#/$defs/PointProposeCommand"
+        },
+        {
+          "$ref": "#/$defs/PointUnclearCommand"
         },
         {
           "$ref": "#/$defs/PointConfirmCommand"
@@ -89,6 +93,7 @@
           "persona.changed": "#/$defs/PersonaChangedEvent",
           "point.confirmed": "#/$defs/PointConfirmedEvent",
           "point.proposed": "#/$defs/PointProposedEvent",
+          "point.unclear": "#/$defs/PointUnclearEvent",
           "rally.armed": "#/$defs/RallyArmedEvent",
           "rally.let": "#/$defs/RallyLetEvent",
           "readiness.changed": "#/$defs/ReadinessChangedEvent",
@@ -110,6 +115,9 @@
         },
         {
           "$ref": "#/$defs/PointProposedEvent"
+        },
+        {
+          "$ref": "#/$defs/PointUnclearEvent"
         },
         {
           "$ref": "#/$defs/PointConfirmedEvent"
@@ -2746,6 +2754,188 @@
       "title": "PointProposedPayload",
       "type": "object"
     },
+    "PointUnclearCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "command_id": {
+          "format": "uuid",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "type": {
+          "const": "point.unclear",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/PointUnclearPayload"
+        }
+      },
+      "required": [
+        "command_id",
+        "type",
+        "payload"
+      ],
+      "title": "PointUnclearCommand",
+      "type": "object"
+    },
+    "PointUnclearEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "format": "uuid",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "match_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Match Id"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "causation_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "type": {
+          "const": "point.unclear",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/PointUnclearEventPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "match_id",
+        "revision",
+        "occurred_at",
+        "received_at",
+        "type",
+        "payload"
+      ],
+      "title": "PointUnclearEvent",
+      "type": "object"
+    },
+    "PointUnclearEventPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "rally_id": {
+          "format": "uuid",
+          "title": "Rally Id",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "rally_id"
+      ],
+      "title": "PointUnclearEventPayload",
+      "type": "object"
+    },
+    "PointUnclearPayload": {
+      "additionalProperties": false,
+      "description": "Vision saw the rally end but cannot name a winner. Never changes the score.",
+      "properties": {
+        "rally_id": {
+          "format": "uuid",
+          "title": "Rally Id",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        }
+      },
+      "required": [
+        "rally_id"
+      ],
+      "title": "PointUnclearPayload",
+      "type": "object"
+    },
     "PointUndoCommand": {
       "additionalProperties": false,
       "properties": {
@@ -4127,6 +4317,7 @@
               "persona.changed": "#/$defs/PersonaChangedEvent",
               "point.confirmed": "#/$defs/PointConfirmedEvent",
               "point.proposed": "#/$defs/PointProposedEvent",
+              "point.unclear": "#/$defs/PointUnclearEvent",
               "rally.armed": "#/$defs/RallyArmedEvent",
               "rally.let": "#/$defs/RallyLetEvent",
               "readiness.changed": "#/$defs/ReadinessChangedEvent",
@@ -4148,6 +4339,9 @@
             },
             {
               "$ref": "#/$defs/PointProposedEvent"
+            },
+            {
+              "$ref": "#/$defs/PointUnclearEvent"
             },
             {
               "$ref": "#/$defs/PointConfirmedEvent"

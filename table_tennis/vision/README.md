@@ -6,6 +6,7 @@ Praćenje loptice i jedan predlog poena po razmeni. Paket ne piše rezultat i ne
 
 - `camera.ready.set` (actor `vision`)
 - `point.propose` sa razlogom `service_fault`, `out_after_hit`, `double_bounce` ili `missed_return`
+- `point.unclear` kad je razmena gotova, a pobednik se ne vidi: posle prave igre (faza `play` zatvorena bez presude, ili loptica bar jednom prešla mrežu pa je nema 3 s). Jednom po razmeni. Rezultat se ne menja; robot pita „Ko je osvojio poen?”, a operater dodirom dodeljuje poen. Predlog sa `confidence` ≥ 0.8 robot izgovara kao viđen („Poen X. Potvrdite”), niži kao nesiguran.
 
 `confidence` je skor modela, ne kalibrisana verovatnoća. Predikcija i nestanak loptice sami nisu poen. `benchmark.AUTOMATIC_ENABLED` ostaje false.
 

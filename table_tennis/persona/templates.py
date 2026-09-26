@@ -55,6 +55,14 @@ REGULAR: dict[str, list[str]] = {
         "Ovaj poen nisam dobro video. Mislim da je poen {winner}. Potvrdite, molim vas.",
         "Nisam siguran ko je osvojio poen. Predlog: {winner}. Molim potvrdu.",
     ],
+    "point.proposed.sure": [
+        "Poen {winner}. Potvrdite, molim vas.",
+        "Video sam: poen {winner}. Molim potvrdu.",
+    ],
+    "point.unclear": [
+        "Nisam video kraj poena. Ko je osvojio poen?",
+        "Ovaj poen mi je promakao. Ko je dobio poen?",
+    ],
     "score.corrected": ["Ispravka. Rezultat je {score}"],
     "rally.let": ["Ponavljamo poen.", "Let. Igramo ponovo."],
     "match.finished": [
@@ -123,6 +131,14 @@ CORPORATE: dict[str, list[str]] = {
     "point.proposed": [
         "Ovaj poen nisam dobro video, a ne volim da nagađam. Mislim da je poen {winner}. Potvrdite, molim vas.",
         "Za ovaj poen treba mi potpis. Predlog: {winner}. Molim potvrdu.",
+    ],
+    "point.proposed.sure": [
+        "Po mom izveštaju, poen {winner}. Molim potpis.",
+        "Poen {winner}, uredno zabeleženo. Potvrdite, molim vas.",
+    ],
+    "point.unclear": [
+        "Ovaj poen nije ušao u izveštaj. Ko je osvojio poen?",
+        "Kamera je bila na pauzi za kafu. Ko je dobio poen?",
     ],
     "score.corrected": [
         "Ispravka iz računovodstva. Zvanično: {score}",

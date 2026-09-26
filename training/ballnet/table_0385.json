@@ -1,0 +1,76 @@
+{
+  "ready": true,
+  "reason": "ready",
+  "calibration_id": "e40fa654-a4e2-4a91-afde-fff24b412885",
+  "camera_id": "CHEST_LEFT_FISHEYE",
+  "width": 1920,
+  "height": 1080,
+  "frame_seq": 0,
+  "corner_order": [
+    "end_a_0",
+    "end_a_1",
+    "end_b_0",
+    "end_b_1"
+  ],
+  "corners_px": [
+    [
+      505,
+      632
+    ],
+    [
+      43,
+      925
+    ],
+    [
+      1890,
+      925
+    ],
+    [
+      1370,
+      640
+    ]
+  ],
+  "net_px": [
+    [
+      982,
+      920
+    ],
+    [
+      962,
+      640
+    ]
+  ],
+  "ends": {
+    "end_a": [
+      0,
+      1
+    ],
+    "end_b": [
+      2,
+      3
+    ]
+  },
+  "table_plane_mm": {
+    "width": 1525.0,
+    "length": 2740.0
+  },
+  "homography": [
+    [
+      0.07224460882296327,
+      -7.811448293925485,
+      4900.35179430531
+    ],
+    [
+      -2.129115306284423,
+      -3.357171576067081,
+      3196.935666030646
+    ],
+    [
+      4.737351441467572e-05,
+      -0.0027294552970012066,
+      1.0
+    ]
+  ],
+  "created_at": "2026-09-26T22:12:23.904000+00:00",
+  "plane_note": "homography is the table plane; an airborne ball projected onto it is not a bounce"
+}

@@ -271,6 +271,26 @@ def manual_game(d: Driver) -> None:
         d.expect("13 : 11" in out["display"]["text"], "fake screen shows the same final score")
 
 
+def unclear_point(d: Driver) -> None:
+    """Assisted: vision saw the rally end without a winner; the robot asks, the score stays."""
+    _setup(d, camera=True)
+    rally = d.arm()
+    ask = {"rally_id": rally, "reason": "rally ended without a clear point"}
+    d.rejected("forbidden_actor", "point.unclear", ask, status=403)
+    res = d.ok("point.unclear", ask, actor="sim")
+    s = res["snapshot"]
+    d.expect(s["status"] == "rally" and s["score_by_player"] == {"p1": 0, "p2": 0}, "question changes neither status nor score")
+    again = d.ok("point.unclear", ask, actor="sim")
+    d.expect(again["event_ids"] == [], "second question for the same rally is a no-op")
+    d.ok("point.award", {"rally_id": rally, "winner_id": "p2", "reason": "unknown"})
+    d.rejected("invalid_state", "point.unclear", ask, actor="sim")
+    d.settle()
+    out = d.outputs()
+    if out:
+        lines = [x["text"] for x in out.get("speech", [])]
+        d.expect(any("Ko je" in t and "poen?" in t for t in lines), "robot asks who won the point")
+
+
 def disputed_point(d: Driver) -> None:
     """Assisted mode: CV proposal -> operator confirm; commentary uses the exact score."""
     _setup(d, scoring_mode="assisted", persona="corporate", camera=True)
@@ -307,6 +327,7 @@ SCENARIOS: dict[str, Callable[[Driver], None]] = {
     "persona_change": persona_change,
     "manual-game": manual_game,
     "disputed-point": disputed_point,
+    "unclear-point": unclear_point,
 }
 
 FIXTURE_SCENARIOS = [name for name in SCENARIOS if "-" not in name]

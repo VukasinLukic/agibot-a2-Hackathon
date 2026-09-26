@@ -169,7 +169,7 @@ def test_role_catalogue_is_complete():
 
 def test_templates_have_all_slots():
     for slot in ("match.started", "point", "server_change", "deuce", "tie", "game_point", "game_point_saved",
-                 "point.proposed", "score.corrected", "rally.let", "match.finished", "match.finished.none",
+                 "point.proposed", "point.proposed.sure", "point.unclear", "score.corrected", "rally.let", "match.finished", "match.finished.none",
                  "persona.changed"):
         assert REGULAR[slot] and CORPORATE[slot], slot
 
@@ -204,3 +204,32 @@ def test_camera_and_operator_readiness_stay_silent(runtime):
     d.ok("operator.ready.set", {"ready": True}, expected_revision=None)
     d.settle()
     assert rt.speech.spoken == []
+
+
+@pytest.mark.parametrize("persona", ["regular", "corporate"])
+def test_sure_proposal_is_announced_as_seen_and_unsure_as_a_guess(runtime, persona):
+    rt, ids = runtime
+    d = InProcessDriver(rt, ids=ids)
+    d.create(scoring_mode="assisted", persona=persona, calibration_id="cal-1")
+    d.ok("robot.ready.set", {"ready": True, "reason": "manual_arrival"}, expected_revision=None)
+    d.ok("camera.ready.set", {"ready": True, "reason": "sim camera"}, actor="sim", expected_revision=None)
+    d.ok("match.start")
+    table = REGULAR if persona == "regular" else CORPORATE
+    spoken = []
+    for confidence in (0.95, 0.4):
+        rally = d.arm()
+        snap = d.snapshot()
+        proposal = {
+            "proposal_id": d.new_id(), "rally_id": rally, "winner_id": "p2", "confidence": confidence,
+            "reason": "missed_return", "calibration_id": snap["calibration_id"],
+            "assignment_version": snap["assignment_version"], "capture_start_seq": 1, "capture_end_seq": 2,
+            "evidence_ref": None,
+        }
+        d.ok("point.propose", proposal, actor="sim")
+        d.settle()
+        spoken.append(rt.speech.spoken[-1]["text"])
+        d.ok("point.confirm", {"proposal_id": proposal["proposal_id"]})
+        d.settle()
+    winner = "Marko"
+    assert spoken[0] in [line.format(winner=winner) for line in table["point.proposed.sure"]]
+    assert spoken[1] in [line.format(winner=winner) for line in table["point.proposed"]]

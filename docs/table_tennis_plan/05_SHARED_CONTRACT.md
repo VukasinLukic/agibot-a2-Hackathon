@@ -101,6 +101,7 @@ UI šalje backendu komande; CV šalje predloge; samo backend emituje potvrđene 
 | match.start | {} | operator |
 | rally.arm | {} | operator; kasnije kontrolisani orchestrator |
 | point.propose | PointProposal | vision adapter ili eksplicitni simulator |
+| point.unclear | rally_id, reason | vision adapter ili simulator; samo u `rally`, assisted, jednom po razmeni, ne menja stanje ni rezultat (robot pita „Ko je osvojio poen?”) |
 | point.confirm | proposal_id | operator |
 | point.award | rally_id, winner_id, reason | operator |
 | rally.let | rally_id, reason | operator |
@@ -141,7 +142,7 @@ Primer CV komande:
 
 ## 6. Događaji i rezultat
 
-Backend emituje: `match.created`, `match.started`, `rally.armed`, `point.proposed`, `point.confirmed`, `rally.let`, `score.corrected`, `match.paused`, `match.resumed`, `match.finished`, `persona.changed`, `sides.changed`, `calibration.changed`, `readiness.changed`.
+Backend emituje: `match.created`, `match.started`, `rally.armed`, `point.proposed`, `point.unclear`, `point.confirmed`, `rally.let`, `score.corrected`, `match.paused`, `match.resumed`, `match.finished`, `persona.changed`, `sides.changed`, `calibration.changed`, `readiness.changed`.
 
 Score događaji sadrže winner_id za poen, rally_id, reason, previous_score, new_score i post-commit snapshot. `score.corrected` dodatno sadrži target_event_id. Ovo su potvrđene činjenice za ekran i glas.
 

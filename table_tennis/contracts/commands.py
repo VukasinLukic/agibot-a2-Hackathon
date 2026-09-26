@@ -34,6 +34,13 @@ class PointAwardPayload(ContractModel):
     reason: PointReason = "unknown"
 
 
+class PointUnclearPayload(ContractModel):
+    """Vision saw the rally end but cannot name a winner. Never changes the score."""
+
+    rally_id: UUIDStr
+    reason: Optional[ShortText] = None
+
+
 class RallyLetPayload(ContractModel):
     rally_id: UUIDStr
     reason: Optional[ShortText] = None
@@ -91,6 +98,11 @@ class RallyArmCommand(_CommandBase):
 class PointProposeCommand(_CommandBase):
     type: Literal["point.propose"]
     payload: PointProposal
+
+
+class PointUnclearCommand(_CommandBase):
+    type: Literal["point.unclear"]
+    payload: PointUnclearPayload
 
 
 class PointConfirmCommand(_CommandBase):
@@ -163,6 +175,7 @@ CommandEnvelope = Annotated[
         MatchStartCommand,
         RallyArmCommand,
         PointProposeCommand,
+        PointUnclearCommand,
         PointConfirmCommand,
         PointAwardCommand,
         RallyLetCommand,
@@ -186,6 +199,7 @@ CommandType = Literal[
     "match.start",
     "rally.arm",
     "point.propose",
+    "point.unclear",
     "point.confirm",
     "point.award",
     "rally.let",
@@ -210,6 +224,7 @@ COMMAND_PERMISSIONS: dict[str, frozenset[str]] = {
     "match.start": frozenset({"operator"}),
     "rally.arm": frozenset({"operator"}),
     "point.propose": frozenset({"vision", "sim"}),
+    "point.unclear": frozenset({"vision", "sim"}),
     "point.confirm": frozenset({"operator"}),
     "point.award": frozenset({"operator"}),
     "rally.let": frozenset({"operator"}),

@@ -40,6 +40,10 @@ export function MatchView({ snapshot, events, send, pendingIntent, locked }: Mat
     });
   };
 
+  // Vision saw this rally end but could not name a winner: the robot asks out loud.
+  const unclear =
+    status === 'rally' && rallyId !== null && events.some((e) => e.type === 'point.unclear' && e.payload.rally_id === rallyId);
+
   const lastPoint = events.find((e) => e.type === 'point.confirmed' && e.event_id === snapshot.last_point_event_id);
   const lastWinner = lastPoint?.type === 'point.confirmed' ? playerName(snapshot, lastPoint.payload.winner_id) : null;
   const canUndo = Boolean(snapshot.last_point_event_id) && status !== 'setup';
@@ -85,6 +89,14 @@ export function MatchView({ snapshot, events, send, pendingIntent, locked }: Mat
             Potvrdi poen
           </button>
           <p className="mt-2 text-center text-sm">Nije tačno? Dodirni polovinu stola pravog igrača.</p>
+        </section>
+      )}
+
+      {unclear && (
+        <section className="rounded-2xl border-2 border-[var(--tt-ink)] bg-[var(--tt-paper)] p-4">
+          <p className="tt-label">Kamera nije sigurna</p>
+          <p className="tt-display mt-1 text-2xl font-extrabold">Ko je osvojio poen?</p>
+          <p className="mt-1 text-sm">Dodirni polovinu stola igrača koji je dobio poen.</p>
         </section>
       )}
 
