@@ -30,7 +30,7 @@ log = logging.getLogger("table_tennis.service")
 
 # Which events produce which side-effect jobs.
 SPEECH_EVENT_TYPES = frozenset(
-    {"match.started", "point.proposed", "point.confirmed", "rally.let", "score.corrected", "match.finished", "persona.changed",
+    {"match.started", "point.proposed", "point.unclear", "point.confirmed", "rally.let", "score.corrected", "match.finished", "persona.changed",
      # robot arrival / failed call; the commentator decides what (if anything) to say
      "readiness.changed"}
 )

@@ -51,6 +51,7 @@ class RallyJudge:
         self._fold_key: tuple[str, str | None, str | None] | None = None
         self._folded = (0, 0)
         self._quiet: str | None = None
+        self._unclear_sent = False
 
     def add(self, sample: TrackSample, rally_id: str | None = None) -> None:
         if sample.proves_bounce:
@@ -118,6 +119,35 @@ class RallyJudge:
         self._command = propose_command(snapshot, proposal, command_id=self._new_id())
         return self._command
 
+    def unclear_command(self, snapshot: Any) -> dict[str, Any] | None:
+        """One ``point.unclear`` per rally: the rally ended and vision cannot name a winner.
+
+        Call after ``proposal_command`` returned nothing for the same snapshot.
+        It never changes the score; the robot asks the players and the operator awards.
+        """
+        if self._unclear_sent or self._closed or self._command is not None or self._fold is None:
+            return None
+        if getattr(snapshot, "scoring_mode", "assisted") != "assisted" or not _snapshot_ready(snapshot):
+            return None
+        if getattr(snapshot, "status", None) != "rally" or snapshot.active_proposal_id is not None:
+            return None
+        if snapshot.active_rally_id is None or snapshot.active_rally_id != self._rally_id or not self._samples:
+            return None
+        if not self._fold.ended_without_verdict(self._samples[-1].capture_monotonic_ns):
+            return None
+        from table_tennis.contracts import parse_command
+
+        command = {
+            "command_id": self._new_id(),
+            "expected_revision": snapshot.revision,
+            "type": "point.unclear",
+            "payload": {"rally_id": snapshot.active_rally_id, "reason": "rally ended without a clear point"},
+        }
+        parse_command(command)
+        self._unclear_sent = True
+        _LOG.info("rally %s ended without a clear point; asking the players", snapshot.active_rally_id)
+        return command
+
     def transport_retry(self) -> dict[str, Any] | None:
         """The same command bytes, including command_id and expected_revision."""
         return self._command
@@ -148,6 +178,7 @@ class RallyJudge:
         self._fold_key = None
         self._folded = (0, 0)
         self._quiet = None
+        self._unclear_sent = False
         self._clear_sound()
 
     def _clear_sound(self) -> None:
@@ -244,6 +275,8 @@ class MatchVisionProducer:
                     if heard is not None:
                         self._judge.hear(heard)
                 command = self._judge.proposal_command(snapshot)
+                if command is None:
+                    command = self._judge.unclear_command(snapshot)
                 if command is None:
                     continue
                 reply = sink(command)

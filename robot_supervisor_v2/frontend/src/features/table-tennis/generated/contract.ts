@@ -17,7 +17,7 @@ export type ServiceMode = "mock" | "real";
 export type RobotCallState = "requested" | "validating" | "moving" | "arrived" | "ready" | "failed" | "busy" | "cancel_requested" | "cancelled";
 export type RobotAvailability = "available" | "busy" | "offline" | "simulated";
 export type NavigationState = "idle" | "validating" | "moving" | "arrived" | "failed" | "cancelling";
-export type CommandType = "match.start" | "rally.arm" | "point.propose" | "point.confirm" | "point.award" | "rally.let" | "point.undo" | "match.pause" | "match.resume" | "match.end" | "persona.set" | "sides.set" | "calibration.set" | "robot.ready.set" | "camera.ready.set" | "operator.ready.set";
+export type CommandType = "match.start" | "rally.arm" | "point.propose" | "point.unclear" | "point.confirm" | "point.award" | "rally.let" | "point.undo" | "match.pause" | "match.resume" | "match.end" | "persona.set" | "sides.set" | "calibration.set" | "robot.ready.set" | "camera.ready.set" | "operator.ready.set";
 
 export interface CalibrationChangedEvent {
   schema_version?: "1.0";
@@ -429,6 +429,37 @@ export interface PointProposedPayload {
   proposal: PointProposal;
 }
 
+export interface PointUnclearCommand {
+  schema_version?: "1.0";
+  command_id: string;
+  expected_revision?: number | null;
+  type: "point.unclear";
+  payload: PointUnclearPayload;
+}
+
+export interface PointUnclearEvent {
+  schema_version?: "1.0";
+  event_id: string;
+  match_id: string | null;
+  revision: number | null;
+  occurred_at: string;
+  received_at: string;
+  causation_id?: string | null;
+  type: "point.unclear";
+  payload: PointUnclearEventPayload;
+}
+
+export interface PointUnclearEventPayload {
+  rally_id: string;
+  reason?: string | null;
+}
+
+/** Vision saw the rally end but cannot name a winner. Never changes the score. */
+export interface PointUnclearPayload {
+  rally_id: string;
+  reason?: string | null;
+}
+
 export interface PointUndoCommand {
   schema_version?: "1.0";
   command_id: string;
@@ -655,7 +686,7 @@ export interface SidesSetPayload {
 export interface StreamEventMessage {
   kind?: "event";
   cursor: number;
-  event: MatchCreatedEvent | MatchStartedEvent | RallyArmedEvent | PointProposedEvent | PointConfirmedEvent | RallyLetEvent | ScoreCorrectedEvent | MatchPausedEvent | MatchResumedEvent | MatchFinishedEvent | PersonaChangedEvent | SidesChangedEvent | CalibrationChangedEvent | ReadinessChangedEvent | RobotCallUpdatedEvent;
+  event: MatchCreatedEvent | MatchStartedEvent | RallyArmedEvent | PointProposedEvent | PointUnclearEvent | PointConfirmedEvent | RallyLetEvent | ScoreCorrectedEvent | MatchPausedEvent | MatchResumedEvent | MatchFinishedEvent | PersonaChangedEvent | SidesChangedEvent | CalibrationChangedEvent | ReadinessChangedEvent | RobotCallUpdatedEvent;
 }
 
 /** SSE ``event: snapshot``. Sent first, after resync and after each commit. */
@@ -677,8 +708,8 @@ export interface VisionObservation {
   calibration_id?: string | null;
 }
 
-export type CommandEnvelope = MatchStartCommand | RallyArmCommand | PointProposeCommand | PointConfirmCommand | PointAwardCommand | RallyLetCommand | PointUndoCommand | MatchPauseCommand | MatchResumeCommand | MatchEndCommand | PersonaSetCommand | SidesSetCommand | CalibrationSetCommand | RobotReadySetCommand | CameraReadySetCommand | OperatorReadySetCommand;
-export type EventEnvelope = MatchCreatedEvent | MatchStartedEvent | RallyArmedEvent | PointProposedEvent | PointConfirmedEvent | RallyLetEvent | ScoreCorrectedEvent | MatchPausedEvent | MatchResumedEvent | MatchFinishedEvent | PersonaChangedEvent | SidesChangedEvent | CalibrationChangedEvent | ReadinessChangedEvent | RobotCallUpdatedEvent;
+export type CommandEnvelope = MatchStartCommand | RallyArmCommand | PointProposeCommand | PointUnclearCommand | PointConfirmCommand | PointAwardCommand | RallyLetCommand | PointUndoCommand | MatchPauseCommand | MatchResumeCommand | MatchEndCommand | PersonaSetCommand | SidesSetCommand | CalibrationSetCommand | RobotReadySetCommand | CameraReadySetCommand | OperatorReadySetCommand;
+export type EventEnvelope = MatchCreatedEvent | MatchStartedEvent | RallyArmedEvent | PointProposedEvent | PointUnclearEvent | PointConfirmedEvent | RallyLetEvent | ScoreCorrectedEvent | MatchPausedEvent | MatchResumedEvent | MatchFinishedEvent | PersonaChangedEvent | SidesChangedEvent | CalibrationChangedEvent | ReadinessChangedEvent | RobotCallUpdatedEvent;
 
 export type CommandOf<T extends CommandType> = Extract<CommandEnvelope, { type: T }>;
 export type EventType = EventEnvelope['type'];

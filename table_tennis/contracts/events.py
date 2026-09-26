@@ -64,6 +64,11 @@ class PointProposedPayload(ContractModel):
     proposal: PointProposal
 
 
+class PointUnclearEventPayload(ContractModel):
+    rally_id: UUIDStr
+    reason: Optional[ShortText] = None
+
+
 class PointConfirmedPayload(ContractModel):
     rally_id: UUIDStr
     winner_id: PlayerId
@@ -175,6 +180,11 @@ class PointProposedEvent(_EventBase):
     payload: PointProposedPayload
 
 
+class PointUnclearEvent(_EventBase):
+    type: Literal["point.unclear"]
+    payload: PointUnclearEventPayload
+
+
 class PointConfirmedEvent(_EventBase):
     type: Literal["point.confirmed"]
     payload: PointConfirmedPayload
@@ -236,6 +246,7 @@ EventEnvelope = Annotated[
         MatchStartedEvent,
         RallyArmedEvent,
         PointProposedEvent,
+        PointUnclearEvent,
         PointConfirmedEvent,
         RallyLetEvent,
         ScoreCorrectedEvent,
