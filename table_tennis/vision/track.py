@@ -114,6 +114,8 @@ class BallTracker:
         self._misses = 0
         self._state: list[float] | None = None
         self._cov: list[list[float]] | None = None
+        self._held: tuple[float, float] | None = None
+        self._gap = 0
 
     @property
     def pipeline(self) -> BallNetPipeline | None:
@@ -163,11 +165,17 @@ class BallTracker:
         return _checked(self._predicted(frame, self._state[0], self._state[1]))
 
     def _from_learned(self, frame: Frame) -> TrackSample:
+        """Hold the last ball through gaps shorter than ``missing_frames``.
+
+        The learned tracker coasts for a couple of frames, then returns nothing.
+        Those empty frames stay ``predicted`` until the configured limit, the same
+        rule as the colour tracker. One weak frame is not a missed return.
+        """
         assert self._learned is not None
         hit = self._learned.step(frame)
-        if hit is None:
-            return self._missing(frame)
-        if hit.kind == "observed":
+        if hit is not None and hit.kind == "observed":
+            self._gap = 0
+            self._held = (hit.x, hit.y)
             return TrackSample(
                 frame_seq=frame.frame_seq,
                 capture_monotonic_ns=frame.capture_monotonic_ns,
@@ -178,7 +186,14 @@ class BallTracker:
                 confidence=min(max(hit.prob, 0.0), 1.0),
                 calibration_id=self._calibration_id,
             )
-        return self._predicted(frame, hit.x, hit.y)
+        if self._held is None or self._gap + 1 >= self._missing_limit:
+            self._held = None
+            self._gap = 0
+            return self._missing(frame)
+        self._gap += 1
+        if hit is not None and hit.kind == "predicted":
+            return self._predicted(frame, hit.x, hit.y)
+        return self._predicted(frame, self._held[0], self._held[1])
 
     def _observed(self, frame: Frame, blob: _Blob) -> TrackSample:
         if self._state is None or self._cov is None:

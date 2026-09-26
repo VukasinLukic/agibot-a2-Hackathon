@@ -9,9 +9,11 @@
 - `fake.py`: radni fake ekran, gest i navigator (dry-run, sve se beleži u FakeOutputLog).
 - `call_service.py`: idempotentan poziv, single flight (`robot_busy`), persistencija,
   posle restarta nedovršen poziv postaje `failed` (ishod nepoznat).
-- `a2_adapters.py`: scaffold sa oznakama `REAL:` gde ide postojeći A2 kod
-  (screen_manip, gestures/motion_player, nav_missions/a2_nav). `dry_run=False`
-  odbija rad bez eksplicitnog transporta.
+- `a2_adapters.py`: ekran i gest i dalje imaju `REAL:` oznake. Navigacija u
+  pravom režimu čita `nav.facts` / `nav.points`, šalje `nav.request` tek posle
+  potvrde rute i sa `target_id` sa mape, a `tick` preko `nav.status` vodi poziv
+  do `ready` ili `cancelled`. `dry_run=False` i dalje odbija rad bez transporta.
+  Lažni navigator se ne menja.
 - `gesture_output.py`: jedan kratak gest između poena. `winner_id` ide kroz
   `robot_side_by_player` tek pri reprodukciji, pa zamena strana važi. `accepted`
   nije `completed`. Undo briše samo red. Započet gest se ne vraća unazad.
@@ -30,8 +32,9 @@
   Podrazumevane činjenice su spreman robot, da mock demo i dalje prođe put do `ready`.
 - `readiness.py` je čista presuda ready/busy/failed iz činjenica koje `a2_nav.preflight`
   već čita (E-stop, walking akcija, lokalizacija, mapa, sveža poza, zauzet poziv).
-  Ne uvozi `robot_services` i ne otvara mrežu. Čitanje tih činjenica sa robota dolazi
-  kasnije, iza eksplicitnog real režima, pozivom postojećeg `a2_nav` — taj klijent se ne menja.
+  Ne uvozi `robot_services` i ne otvara mrežu. Pravi režim puni `NavFacts` iz
+  odgovora transporta (`facts_from_reply`); prazan odgovor nije spreman robot.
+  `a2_nav` se ne menja i ne uvozi se ovde.
 - Tuđi paketi se ne menjaju: `contracts/`, `core/`, `api/`, `storage/`, `sim/`,
   `vision/`, `persona/`, frontend, niti `a2_nav.py`, `nav_missions.py`, gestovi i ekran.
   Hod, gest i ekran kasnije idu kroz te postojeće module.

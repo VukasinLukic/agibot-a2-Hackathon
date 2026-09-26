@@ -75,6 +75,29 @@ class A2FisheyeTests(unittest.TestCase):
         self.assertTrue(capture.camera_missing)
         self.assertFalse(reader.released)
 
+    def test_one_empty_read_does_not_drop_the_camera(self) -> None:
+        image = _image((7, 8, 9))
+
+        class _Flaky:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def read(self):
+                self.calls += 1
+                if self.calls == 1:
+                    return False, None
+                if self.calls == 2:
+                    return True, image
+                return False, None
+
+        reader = _Flaky()
+        with A2FisheyeCapture("CHEST_LEFT_FISHEYE", reader=reader, now_ns=_Clock()) as capture:
+            frames = list(capture)
+        self.assertEqual([frame.frame_seq for frame in frames], [0])
+        self.assertTrue(capture.camera_missing)
+        self.assertEqual(capture.stats.frames_dropped, 1)
+        self.assertEqual(reader.calls, 5)
+
     def test_table_marks_must_clear_the_edge(self) -> None:
         reader = _Reader([_image((1, 2, 3))])
         with A2FisheyeCapture("CHEST_RIGHT_FISHEYE", reader=reader, now_ns=_Clock(), margin_px=2) as capture:

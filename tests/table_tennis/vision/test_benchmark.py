@@ -11,7 +11,7 @@ if str(REPO_ROOT) not in sys.path:
 from table_tennis.vision.benchmark import AUTOMATIC_ENABLED, RallyLabel, evaluate
 from table_tennis.vision.capture import CaptureStats
 from table_tennis.vision.events import RallyJudge
-from test_events import RALLY, _calibration, _sample, _snapshot
+from test_events import RALLY, _calibration, _crossing, _sample, _snapshot
 
 
 def _label(rally_id: str, split: str = "final", winner: str | None = "p1", **kwargs: object) -> RallyLabel:
@@ -95,9 +95,9 @@ class BenchmarkTests(unittest.TestCase):
         calibration = _calibration()
         cal = calibration.calibration_id or ""
         judge = RallyJudge(calibration)
-        judge.add(_sample(2, "observed", 50, 24, cal))
-        judge.add(_sample(4, "observed", 50, 56, cal))
-        judge.add(_sample(5, "missing", None, None, cal))
+        for sample in _crossing(cal):
+            judge.add(sample)
+        judge.add(_sample(7, "missing", None, None, cal))
         command = judge.proposal_command(_snapshot(cal))
         self.assertIsNotNone(command)
         report = evaluate([_label(RALLY)], {RALLY: [command]})

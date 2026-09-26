@@ -17,6 +17,8 @@ from table_tennis.vision.capture import CaptureStats
 from table_tennis.vision.frame import ORIGIN_A2_FISHEYE, Frame
 
 FISHEYE_ALIASES = ("CHEST_LEFT_FISHEYE", "CHEST_RIGHT_FISHEYE")
+# One empty read is a hiccup. The camera is missing only after this many in a row.
+_READ_FAILURES = 3
 
 
 def require_raw_fisheye(device: str) -> str:
@@ -92,12 +94,17 @@ class A2FisheyeCapture:
         reader = self._reader
         if reader is None:
             raise RuntimeError("capture is not open")
+        missed_reads = 0
         while True:
             ok, image = reader.read()
             if not ok or image is None:
-                self.camera_missing = True
-                self.stats.frames_dropped += 1
-                return
+                missed_reads += 1
+                if missed_reads >= _READ_FAILURES:
+                    self.camera_missing = True
+                    self.stats.frames_dropped += 1
+                    return
+                continue
+            missed_reads = 0
             payload = _sample_bytes(image)
             if payload == self._previous:
                 self.stats.duplicate_frames += 1

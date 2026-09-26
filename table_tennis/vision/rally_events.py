@@ -4,8 +4,9 @@ A bounce is a sharp down-to-up turn of the image y velocity. A hit is a flip
 of the x velocity with speed on both sides (the ball goes back across the
 table). Both need three observed samples close in time, so an event comes out
 one sample late. With a ready calibration a bounce must project inside the
-table (plus a small margin); a bounce in a hand or on the floor is dropped,
-and the table half is named. Without calibration ``side`` stays None.
+table (plus a small margin); a bounce in a hand or on the floor is dropped.
+The half is the same 8% net split as a point proposal, so a bounce in the net
+band is dropped too. Without calibration ``side`` stays None.
 
 Thresholds are for a 960 px wide working frame and scale with the frame width.
 On the tuning clip (handheld phone, 30 fps) 23 of 26 labeled table bounces
@@ -18,6 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from table_tennis.vision.calibration import TABLE_LENGTH_MM, TABLE_WIDTH_MM, TableCalibration
+from table_tennis.vision.table import table_half
 from table_tennis.vision.track import TrackSample
 
 REFERENCE_WIDTH_PX = 960
@@ -108,7 +110,7 @@ class RallyEventDetector:
             return None
         if not (-margin <= projected.y_mm <= TABLE_LENGTH_MM + margin):
             return None
-        return "end_a" if projected.y_mm < TABLE_LENGTH_MM / 2.0 else "end_b"
+        return table_half(projected.y_mm)
 
     @staticmethod
     def _event(kind: str, sample: TrackSample, side: str | None, confidence: float) -> RallyEvent:

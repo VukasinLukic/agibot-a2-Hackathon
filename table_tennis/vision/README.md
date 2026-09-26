@@ -45,7 +45,7 @@ Na robotu, samo na PC2 gde ROS vidi kameru, dozvoljena su dva sirova chest fishe
 - `CHEST_LEFT_FISHEYE` (`/aima/hal/fish_eye_camera/chest_left/color`)
 - `CHEST_RIGHT_FISHEYE` (`/aima/hal/fish_eye_camera/chest_right/color`)
 
-Podrazumevani je levi. Interactive H.264 i svaki topic koji se završava na `/h264` se odbijaju: red od oko 120 kadrova kasni i do pet sekundi. Kad `read()` prestane da vraća sliku, `camera_missing` postaje istinit, `camera.ready.set` ide na false i predlozi staju.
+Podrazumevani je levi. Interactive H.264 i svaki topic koji se završava na `/h264` se odbijaju: red od oko 120 kadrova kasni i do pet sekundi. Kamera se proglašava izgubljenom tek posle tri uzastopna prazna `read()`. Tada `camera_missing` postaje istinit, `camera.ready.set` ide na false i predlozi staju.
 
 ```python
 from table_tennis.vision.a2 import A2FisheyeCapture
@@ -90,9 +90,11 @@ https://cloud.cs.uni-tuebingen.de/index.php/s/6Z8TpM3sXRKHzGC
 
 `RallyJudge` predlaže samo jasan promašen povratak: lopta je viđena na obe polovine, van pojasa mreže (8% dužine), pa track pređe u `missing`. Pobednik je igrač koji nije na prijemnoj strani (`court_end_by_player`). Isti pikseli prate strane stola, ne sliku levo/desno.
 
-`MatchVisionProducer` prvo šalje `camera.ready.set`, pa najviše jedan `point.propose` po rally-ju, i samo dok je `scoring_mode` jednak `assisted`. Komanda ide na `POST /api/table-tennis/matches/{id}/commands` sa actorom `vision`. Rally, `calibration_id` i `assignment_version` dolaze iz trenutnog snapshot-a. Isti `command_id` ostaje pri ponovnom slanju. Posle 409 predlog se baca i ne šalje se ponovo sa novim `expected_revision`.
+`MatchVisionProducer` prvo šalje `camera.ready.set`, pa najviše jedan `point.propose` po rally-ju, i samo dok je `scoring_mode` jednak `assisted`. Predlog traži odskok na prijemnoj polovini (`RallyEventDetector`): lopta koja samo preleti polovinu nije poen. `confidence` je najslabiji skor viđene loptice u toj razmeni. Rally, `calibration_id` i `assignment_version` dolaze iz trenutnog snapshot-a. Isti `command_id` ostaje pri ponovnom slanju. Posle 409 predlog se baca i ne šalje se ponovo sa novim `expected_revision`.
 
-Zvuk, ako je uključen, javlja zaključak preko `RallyJudge.hear`. Predlog tada ide samo kad zvuk i slika imaju istog pobednika i razlog `missed_return`. Detalj signala je u `sound/README.md`. Fixture sa istim poljima: `fixtures/missed_return.json`.
+Živi proces je `python -m table_tennis.vision.live`. On čita snapshot i šalje komande na `POST /api/table-tennis/matches/{id}/commands` sa `TT_VISION_TOKEN`. Telo ne imenuje actora.
+
+Zvuk, ako je prosleđen, mora prvo da zaključi. Predlog ide samo kad zvuk i slika imaju istog pobednika i razlog `missed_return`. Kontakt čiji je `last_contact_ns` pre početka ove razmene se ignoriše. Detalj signala je u `sound/README.md`. Fixture sa poljima komande: `fixtures/missed_return.json`.
 
 ## Benchmark
 
@@ -106,7 +108,7 @@ Kad je `ballnet_path` postavljen, `BallTracker` ne zove HSV ni BlurBall (`model_
 2. `ballnet.py`: mala CNN nad patch-om 32 × 32 (B, G, R, diff), ceo kadar u jednom batch-u. `ballnet.onnx` ide kroz OpenCV DNN (oko 2 ms za 40 kandidata na laptopu), `.npz` (`c0w … l1b`) kroz čist numpy (oko 11 ms). Isti izlaz, razlika ispod 1e-6. Torch se ne uvozi.
 3. `mht.py`: više hipoteza (mht3). Skor traga: logit, neto brzina, kazna za jedan pogodak, ivicu i sitan okvir; histereza `thr_new`/`thr_conf`. Samo potvrđen trag ide u `predicted`. Pikseli važe na 960 × 540, vreme u kadrovima od 30 fps (iz `capture_monotonic_ns`). Parametri su u `TrackerParams`; `thr_new` se bira ponovo za svaku novu težinu.
 
-Izlaz je isti `TrackSample`, u pikselima originalnog kadra. `confidence` je skor mreže za taj kandidat. `coast` nije duži od `missing_frames - 1`.
+Izlaz je isti `TrackSample`, u pikselima originalnog kadra. `confidence` je skor mreže za taj kandidat. `coast` nije duži od `missing_frames - 1`. Prazan kadar posle poslednje loptice ostaje `predicted` dok ne prođe `missing_frames`, pa tek onda `missing`. Jedan slab kadar usred razmene nije promašen povratak.
 
 Offline prolaz kroz snimak, sa CSV-om, overlay-em i vremenom po koraku:
 
@@ -131,7 +133,7 @@ Jedan snimak, jedna kamera i jedna loptica. Na A2 fisheye kadru brojevi nisu dok
 
 `rally_events.RallyEventDetector` čita `TrackSample` redom. Odskok je oštar obrt brzine po y (dole pa gore), udarac je obrt brzine po x. Treba mu tri uzastopna posmatranja, pa događaj kasni jedan kadar. Sa kalibracijom odskok mora pasti na sto (± 60 mm) i dobija polovinu (`end_a` / `end_b`); odskok u ruci ili na podu se odbacuje. Na neviđenim polovinama snimka nađeno je 23 od 26 označenih odskoka. Udarac je često zaklonjen reketom: nedostatak udarca znači „ne znam”.
 
-To je dokaz za predlog, ne poen. `TrackSample.proves_bounce` ostaje False, a `RallyJudge` ga još ne koristi.
+`RallyJudge` predlaže poen samo ako je poslednji takav događaj odskok na prijemnoj polovini, pa track pređe u `missing`. `TrackSample.proves_bounce` i dalje ostaje False: odskok je poseban događaj, ne polje uzorka.
 
 ## Granice
 

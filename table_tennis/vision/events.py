@@ -1,11 +1,14 @@
 """One point proposal per rally, built with the existing fixture command path.
 
-A proposal is only a clear missed return: the ball was seen on both halves of
-the table, then the track went missing on the far half. Predicted samples and
-a missing sample by themselves are not a winner. When sound has been heard,
-it must name the same winner or the rally stays silent. The command is
-``point.propose`` from ``stub.build_proposal``. This module does not score
-and does not choose the server. ``AUTOMATIC_ENABLED`` is not changed here.
+A proposal is only a clear missed return: the ball was seen on both halves,
+the last event before it disappeared is a bounce on the receiving half, and
+then the track went missing. A ball that only flies over a half is not a
+winner. Predicted samples and a missing sample by themselves are not a point.
+When a sound source is attached, the proposal waits until sound concludes and
+names the same winner. A contact from before this rally is ignored. The
+command is ``point.propose`` from ``stub.build_proposal``. This module does
+not score and does not choose the server. ``AUTOMATIC_ENABLED`` is not changed
+here.
 
 ``MatchVisionProducer`` is the only live producer. Do not run it in the same
 process as ``FixtureVisionProducer``.
@@ -17,11 +20,10 @@ import uuid
 from collections.abc import Callable
 from typing import Any
 
-from table_tennis.vision.calibration import TABLE_LENGTH_MM, TableCalibration
+from table_tennis.vision.calibration import TableCalibration
+from table_tennis.vision.rally_events import RallyEvent, RallyEventDetector
+from table_tennis.vision.table import table_half
 from table_tennis.vision.track import TrackSample
-
-_NET_BAND = 0.08
-_CONFIDENCE = 0.8
 
 
 class RallyJudge:
@@ -32,22 +34,32 @@ class RallyJudge:
         self._new_id = new_id or (lambda: str(uuid.uuid4()))
         self._samples: list[TrackSample] = []
         self._rally_id: str | None = None
+        self._rally_started_ns: int | None = None
         self._command: dict[str, Any] | None = None
         self._closed = False
+        self._sound_required = False
         self._sound_consulted = False
         self._sound: dict[str, Any] | None = None
+        self._detector = RallyEventDetector(calibration.width, calibration)
+        self._last_event: RallyEvent | None = None
 
     def add(self, sample: TrackSample, rally_id: str | None = None) -> None:
         if sample.proves_bounce:
             raise ValueError("a track sample cannot prove a bounce")
         sample.as_observation()
         if rally_id is not None and rally_id != self._rally_id:
-            self._samples.clear()
-            self._command = None
-            self._closed = False
-            self._clear_sound()
+            self._begin_rally(rally_id)
+        elif self._rally_id is None:
             self._rally_id = rally_id
+        if self._rally_started_ns is None:
+            self._rally_started_ns = sample.capture_monotonic_ns
         self._samples.append(sample)
+        for event in self._detector.add(sample):
+            self._last_event = event
+
+    def require_sound(self) -> None:
+        """Do not propose until ``hear`` has seen this rally's sound conclusion."""
+        self._sound_required = True
 
     def hear(self, proposal: dict[str, Any] | None) -> None:
         """Remember the sound conclusion for this rally. Sound does not send it."""
@@ -67,6 +79,10 @@ class RallyJudge:
         if found is None:
             return None
         winner_id, start_seq, end_seq = found
+        if self._sound_required and not self._sound_consulted:
+            return None
+        if _sound_stale(self._sound, self._rally_started_ns):
+            return None
         if self._sound_consulted and not _sound_agrees(self._sound, winner_id):
             self._closed = True
             return None
@@ -76,7 +92,7 @@ class RallyJudge:
             snapshot,
             {
                 "winner_id": winner_id,
-                "confidence": _CONFIDENCE,
+                "confidence": _observed_confidence(self._samples),
                 "reason": "missed_return",
                 "capture_start_seq": start_seq,
                 "capture_end_seq": end_seq,
@@ -105,10 +121,16 @@ class RallyJudge:
             return
         if rally_id == self._rally_id:
             return
+        self._begin_rally(rally_id)
+
+    def _begin_rally(self, rally_id: str | None) -> None:
         self._rally_id = rally_id
+        self._rally_started_ns = None
         self._samples.clear()
         self._command = None
         self._closed = False
+        self._last_event = None
+        self._detector.reset()
         self._clear_sound()
 
     def _clear_sound(self) -> None:
@@ -139,19 +161,17 @@ class RallyJudge:
                 missing_seq = sample.frame_seq
         if len(sides) < 2 or missing_seq is None:
             return None
-        return _other_player(snapshot.court_end_by_player, sides[-1][0]), sides[0][1], missing_seq
+        receiver = sides[-1][0]
+        bounce = self._last_event
+        if bounce is None or bounce.kind != "bounce" or bounce.side != receiver or bounce.frame_seq > last_observed:
+            return None
+        return _other_player(snapshot.court_end_by_player, receiver), sides[0][1], missing_seq
 
     def _side(self, x_px: float, y_px: float) -> str | None:
         projected = self._calibration.project_to_table_plane(x_px, y_px)
         if not projected.inside_table:
             return None
-        middle = TABLE_LENGTH_MM / 2.0
-        band = TABLE_LENGTH_MM * _NET_BAND
-        if projected.y_mm < middle - band:
-            return "end_a"
-        if projected.y_mm > middle + band:
-            return "end_b"
-        return None
+        return table_half(projected.y_mm)
 
 
 class MatchVisionProducer:
@@ -178,6 +198,8 @@ class MatchVisionProducer:
         self._judge = judge
         self._capture = capture
         self._sound = sound
+        if sound is not None:
+            judge.require_sound()
         self._new_id = new_id or (lambda: str(uuid.uuid4()))
         self._closed = False
         self._camera_ready = False
@@ -205,15 +227,6 @@ class MatchVisionProducer:
             self.sent.append(command)
             if _is_conflict(reply):
                 self._judge.on_conflict(snapshot)
-        if self._sound is not None and self._judge.transport_retry() is None and not self._closed:
-            snapshot = context_provider()
-            self._judge.hear(None)
-            command = self._judge.proposal_command(snapshot)
-            if command is not None:
-                reply = sink(command)
-                self.sent.append(command)
-                if _is_conflict(reply):
-                    self._judge.on_conflict(snapshot)
         if self._camera_lost():
             self._set_camera(sink, False, "camera_missing")
 
@@ -224,7 +237,7 @@ class MatchVisionProducer:
         return self._capture is not None and bool(getattr(self._capture, "camera_missing", False))
 
     def _set_camera(self, sink: Callable[[dict[str, Any]], Any], ready: bool, reason: str) -> None:
-        if self._camera_ready == ready and self.sent:
+        if self._camera_ready == ready:
             return
         from table_tennis.contracts import parse_command
 
@@ -243,6 +256,21 @@ class MatchVisionProducer:
 def _snapshot_ready(snapshot: Any) -> bool:
     ready = getattr(snapshot, "ready", None)
     return bool(getattr(ready, "camera_ready", False) and getattr(ready, "calibration_ready", False))
+
+
+def _observed_confidence(samples: list[TrackSample]) -> float:
+    values = [sample.confidence for sample in samples if sample.observation_kind == "observed"]
+    if not values:
+        return 0.0
+    return min(max(min(values), 0.0), 1.0)
+
+
+def _sound_stale(proposal: dict[str, Any] | None, rally_started_ns: int | None) -> bool:
+    """A conclusion whose last contact is from before this rally does not count."""
+    if not isinstance(proposal, dict) or rally_started_ns is None:
+        return False
+    contact = proposal.get("last_contact_ns")
+    return type(contact) is int and contact < rally_started_ns
 
 
 def _sound_agrees(proposal: dict[str, Any] | None, winner_id: str) -> bool:

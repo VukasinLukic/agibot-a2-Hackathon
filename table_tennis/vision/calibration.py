@@ -22,9 +22,8 @@ from typing import Protocol, Sequence
 from table_tennis.vision.a2 import marks_inside
 from table_tennis.vision.frame import Frame
 from table_tennis.vision.image import BgrImage
+from table_tennis.vision.table import TABLE_LENGTH_MM, TABLE_WIDTH_MM
 
-TABLE_WIDTH_MM = 1525.0
-TABLE_LENGTH_MM = 2740.0
 CORNER_ORDER = ("end_a_0", "end_a_1", "end_b_0", "end_b_1")
 PLANE_NOTE = "homography is the table plane; an airborne ball projected onto it is not a bounce"
 
@@ -164,6 +163,67 @@ def write_calibration(path: Path | str, calibration: TableCalibration) -> None:
     if not calibration.ready or calibration.calibration_id is None:
         raise ValueError("only a ready calibration is written")
     Path(path).write_text(json.dumps(calibration.to_json(), indent=2), encoding="utf-8")
+
+
+def read_calibration(path: Path | str) -> TableCalibration:
+    """Read a file written by ``write_calibration``. A calibration that is not ready is refused."""
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or data.get("ready") is not True or not data.get("calibration_id"):
+        raise ValueError("calibration file is not ready")
+    homography = data.get("homography")
+    if not isinstance(homography, list) or len(homography) != 3:
+        raise ValueError("calibration file has no homography")
+    corners = _points(data.get("corners_px"), 4)
+    net = _points(data.get("net_px"), 2)
+    order = data.get("corner_order")
+    if not isinstance(order, list) or tuple(order) != CORNER_ORDER:
+        raise ValueError("calibration corner_order is not end_a_0, end_a_1, end_b_0, end_b_1")
+    return TableCalibration(
+        ready=True,
+        reason=str(data.get("reason") or "ready"),
+        calibration_id=str(data["calibration_id"]),
+        camera_id=str(data["camera_id"]),
+        width=_positive_int(data.get("width"), "width"),
+        height=_positive_int(data.get("height"), "height"),
+        frame_seq=_non_negative_int(data.get("frame_seq"), "frame_seq"),
+        corner_order=CORNER_ORDER,
+        corners_px=corners,
+        net_px=(net[0], net[1]),
+        homography=_homography(homography),
+        created_at=str(data.get("created_at") or ""),
+    )
+
+
+def _points(value: object, count: int) -> tuple[tuple[int, int], ...]:
+    if not isinstance(value, list) or len(value) != count:
+        raise ValueError(f"expected {count} points")
+    points: list[tuple[int, int]] = []
+    for point in value:
+        if not isinstance(point, list) or len(point) != 2:
+            raise ValueError(f"expected {count} points")
+        points.append((_non_negative_int(point[0], "x"), _non_negative_int(point[1], "y")))
+    return tuple(points)
+
+
+def _homography(rows: list[object]) -> tuple[tuple[float, float, float], ...]:
+    parsed: list[tuple[float, float, float]] = []
+    for row in rows:
+        if not isinstance(row, list) or len(row) != 3:
+            raise ValueError("calibration file has no homography")
+        parsed.append((float(row[0]), float(row[1]), float(row[2])))
+    return tuple(parsed)
+
+
+def _positive_int(value: object, name: str) -> int:
+    if type(value) is not int or isinstance(value, bool) or value <= 0:
+        raise ValueError(f"{name} must be a positive int")
+    return value
+
+
+def _non_negative_int(value: object, name: str) -> int:
+    if type(value) is not int or isinstance(value, bool) or value < 0:
+        raise ValueError(f"{name} must be a non-negative int")
+    return value
 
 
 def mark_ends(image: BgrImage, calibration: TableCalibration) -> BgrImage:
