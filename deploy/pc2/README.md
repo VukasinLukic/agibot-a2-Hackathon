@@ -182,5 +182,5 @@ Lokalna verifikacija ove izmene: `pytest tests/table_tennis tests/test_pc2_deplo
 - Fizički robot nije testiran ovim izmenama; preflight ne proverava mrežu cloud provajdera, dozvole ključeva, ALSA, ROS ni balans.
 - Provider/jezik mora biti podržana kombinacija. Raniji `unsupported_language` ne rešava se promenom Git grane.
 - Ako postoji Docker RAG na 8098, ne startovati paralelni Python RAG. Pregledani launcher ne koristi Compose i ne prosleđuje root `livekit.yaml` LiveKit-u.
-- Polazni dependency audit prijavio je 8 frontend nalaza; nije rađen automatski major upgrade usred deployment popravke.
+- Polazni dependency audit prijavio je 8 frontend nalaza. Kompatibilno ažuriranje lockfile-a bez `--force` uklonilo je 5 high i 2 moderate nalaza. Ostaje 1 low nalaz u esbuild Windows development serveru (GHSA-g7r4-m6w7-qqqr); ponovljeni `npm audit fix` ga nije rešio. Ne izlagati razvojni server nepoverljivoj mreži. Na PC2 se služi statički `dist`, ne esbuild dev server. Nije rađen prisilni major upgrade.
 - Git guard nije zamena za specijalizovan audit istorije. Stari privatni podaci, ako su ikada commitovani, zahtevaju rotaciju ključeva i odvojeno dogovoreno čišćenje, ne force-push tokom hakatona.
