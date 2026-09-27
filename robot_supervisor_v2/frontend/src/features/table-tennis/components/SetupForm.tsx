@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { CreateMatchRequest, Persona, PlayerId, ScoringMode } from '../generated/contract';
 import { newId } from '../api/client';
-import { DEFAULT_TABLE_ID } from '../config';
+import { DEFAULT_TABLE_ID, STORAGE_KEYS, storageGet, storageSet } from '../config';
 import { PERSONAS, ROLES, roleRank } from '../roles';
 
 const NAME_MAX = 40;
@@ -26,7 +26,8 @@ export function SetupForm({ busy, onCreate }: SetupFormProps) {
   const [firstServer, setFirstServer] = useState<PlayerId>('p1');
   const [leftOfRobot, setLeftOfRobot] = useState<PlayerId>('p1');
   const [endAPlayer, setEndAPlayer] = useState<PlayerId>('p1');
-  const [calibrationId, setCalibrationId] = useState('');
+  // Last used calibration id: the camera cannot propose without it, so it is prefilled.
+  const [calibrationId, setCalibrationId] = useState(() => storageGet(STORAGE_KEYS.calibrationId) ?? '');
   const [mode, setMode] = useState<ScoringMode>('manual');
   // One id per form: a retried submit is idempotent on the backend.
   const [commandId] = useState(newId);
@@ -67,6 +68,8 @@ export function SetupForm({ busy, onCreate }: SetupFormProps) {
       court_end_by_player: p1AtEndA ? { p1: 'end_a', p2: 'end_b' } : { p1: 'end_b', p2: 'end_a' },
       calibration_id: calibrationId.trim() || null,
     });
+    if (calibrationId.trim()) storageSet(STORAGE_KEYS.calibrationId, calibrationId.trim());
+    else if (mode === 'assisted') console.warn('[TT] novi meč „Kamera, uz potvrdu” bez calibration_id — kamera neće predlagati');
   };
 
   return (

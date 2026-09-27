@@ -34,6 +34,21 @@ export interface UseMatchResult {
   resync: () => Promise<void>;
 }
 
+/** Console trace for on-robot debugging: state plus the reason the camera cannot propose. */
+function logSnapshot(s: MatchSnapshot): void {
+  console.info(`[TT] meč ${s.match_id.slice(0, 8)} rev ${s.revision} status=${s.status} mode=${s.scoring_mode}`, {
+    score: s.score_by_player,
+    ready: s.ready,
+    calibration_id: s.calibration_id,
+    active_rally_id: s.active_rally_id,
+    active_proposal: s.active_proposal,
+  });
+  if (s.scoring_mode !== 'assisted') console.warn('[TT] kamera: meč nije „Kamera, uz potvrdu” — predlozi su isključeni');
+  else if (!s.calibration_id) console.warn('[TT] kamera: meč nema calibration_id — pauza → Postavi kalibraciju');
+  else if (!s.ready.camera_ready) console.warn('[TT] kamera: camera_ready=false — vision proces ne radi ili gleda drugi meč');
+  else if (s.status === 'between_rallies') console.warn('[TT] kamera: čeka „Servis — kamera gleda” (rally.arm)');
+}
+
 function isNewer(prev: MatchSnapshot | null, next: MatchSnapshot): boolean {
   return !prev || prev.match_id !== next.match_id || next.revision >= prev.revision;
 }
@@ -52,6 +67,7 @@ export function useMatch(matchId: string | null): UseMatchResult {
 
   const upsert = useCallback((next: MatchSnapshot) => {
     if (!isNewer(snapshotRef.current, next)) return;
+    if (snapshotRef.current?.revision !== next.revision || snapshotRef.current?.match_id !== next.match_id) logSnapshot(next);
     snapshotRef.current = next;
     setSnapshot(next);
   }, []);
@@ -85,7 +101,10 @@ export function useMatch(matchId: string | null): UseMatchResult {
 
     const stream = openMatchStream(matchId, {
       onSnapshot: (snap) => upsert(snap),
-      onEvent: (event) => setEvents((prev) => [event, ...prev].slice(0, MAX_EVENTS)),
+      onEvent: (event) => {
+        console.info(`[TT] događaj ${event.type} rev ${event.revision}`, event.payload);
+        setEvents((prev) => [event, ...prev].slice(0, MAX_EVENTS));
+      },
       onState: (state, detail) => {
         setConnection(state);
         setConnectionDetail(detail ?? null);

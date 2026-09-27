@@ -31,6 +31,7 @@ export const STORAGE_KEYS = {
   robotTarget: 'tt.robotTarget',
   robotCallId: 'tt.robotCallId',
   operatorToken: 'tt.operatorToken',
+  calibrationId: 'tt.calibrationId',
 } as const;
 
 /** Token entered in the app wins over the build-time/default token. */
