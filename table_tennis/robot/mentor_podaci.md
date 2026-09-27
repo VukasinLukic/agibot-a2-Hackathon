@@ -13,9 +13,48 @@ Posle termina:
 - u `table_tennis/config.local.yaml` (nije u git-u) ide samo ime tačke, pored `table-1`;
 - `map_id`, `point_id` i metri ne idu u dugme.
 
-Datum:
-Commit na robotu (`git log --oneline -1` u checkout-u koji robot stvarno izvršava):
+Datum: 2026-09-27
+Commit na robotu (`git log --oneline -1` u checkout-u koji robot stvarno izvršava): `467a185 Merge pull request #23 from VukasinLukic/persone` (checkout `/agibot/data/home/agi/Desktop/CT/a2-team4`, `/agibot/humanoid-platform` je link na njega)
 Firmware (ako `status` ili mentor kaže):
+
+## 1b. `status` i `doctor` sa robota, 2026-09-27 posle restarta Supervisora (A2 config)
+
+`hostname -I`: `169.254.107.233 169.254.166.174 192.168.1.50 192.168.100.110 192.168.2.50 172.17.0.1` (PC2)
+
+`status`:
+
+- `localization running : True`
+- `current working map  : 1790423599533` (`team_4` `<-- current`)
+- `MC work_state        : McWorkState_ENABLED`
+- `MC action            : McAction_RL_WHOLE_BODY_EXT_JOINT_SERVO`
+- `walking / collided   : False / False`
+- `pnc last task        : id=163034944041965378 state=PncServiceState_IDLE info=task_canceled`
+- `waypoints in current map (0)` — `[!] fewer than 2 waypoints`
+
+`doctor`:
+
+- `E-stop               : clear  (empty reply = no flags set)`
+- `MC init_state        : McRobotInitState_STAND_READY`
+- `leg telemetry        : FROZEN`
+- `[FATAL] MC action is McAction_RL_WHOLE_BODY_EXT_JOINT_SERVO -- the legs CANNOT step`
+- `Legal route back: McAction_RL_WHOLE_BODY_EXT_JOINT_SERVO -> McAction_RL_LOCOMOTION_DEFAULT` (mentorov `arm`, nije pokretano)
+
+## 1c. Posle mentorove tačke i ARM-a, 2026-09-27
+
+`status`:
+
+- `MC action            : McAction_RL_LOCOMOTION_DEFAULT`
+- `waypoints in current map (1):`
+  `target_id=1  name='game_spot'  type=NaviPointType_NAVI_POINT  xy=(0.3,-2.25)`
+- `[!] fewer than 2 waypoints`
+
+`doctor`: `E-stop : clear`, `leg telemetry : live`, `VERDICT: no blocking condition found. A move should produce motion.`
+
+`GET /api/nav/status`: `can_walk: true`, `localization_running: true`, `blockers: []`, `stream_running: true`,
+`pose: {"x":0.3337,"y":-2.1676,"yaw":-3.14014}`, `hold.held: true`, `runner.active: false`.
+`fresh_pose: da`.
+
+Napomena: `GET /api/nav/maps/1790423599533/meta` i dalje vraća `"waypoints":[]`, dok `status` i `/api/nav/maps` (`waypoint_count 1`) vide tačku.
 
 ## 0. Da li smo na pravom računaru
 
@@ -53,14 +92,74 @@ python3 robot_services/autonomous_navigation/testing_controls/a2_nav.py doctor
 
 Zapiši da li je E-stop pritisnut. `status` E-stop ne ispisuje. `doctor` ispisuje.
 
+## 1a. HTTP sa laptopa (`http://192.168.2.50:8070`, samo GET), 2026-09-27
+
+Doslovno iz odgovora. `status` / `doctor` još nisu viđeni, pa polja iz koraka 1 ostaju prazna.
+
+`GET /api/health`: `{"status":"ok"}`
+
+`GET /api/nav/status`:
+
+- `localization_running`: `false`
+- `can_walk`: `false`
+- `mc_action`: `McAction_RL_WHOLE_BODY_EXT_JOINT_SERVO`
+- `mc_action_status`: `McActionStatus_RUNNING`
+- `work_state`: (nema u odgovoru)
+- `is_collisioned` / `HANGING`: (nema u odgovoru)
+- `pnc_state`: `PncServiceState_IDLE`
+- `pnc_info`: `task_canceled`
+- `pnc_task_id`: `163034944041965378`
+- `pose`: `null`
+- `pose_source`: `live-stream (/tf via a2_nav_stream)`
+- `stream_running`: `false`
+- `hold`: `{"held":false,"rearms":0,"suppressed":false,"engaged_for_s":0,"last_error":null}`
+- `runner`: `{"active":false}`
+- `blockers` (prepisano, ne izvršeno):
+
+```text
+MC action is McAction_RL_WHOLE_BODY_EXT_JOINT_SERVO — the legs cannot step. Run `a2_nav.py arm --execute` (it powers the legs) and re-check.
+Localization is not running — waypoint navigation is impossible until you relocalize.
+```
+
+`GET /api/nav/pose` (dva puta, ~10 s razmaka, isti odgovor):
+`{"pose":null,"stream_running":false,"note":"Pose is carried on the live stream. Open /api/nav/live/stream (the Navigation tab does this automatically) and it will appear."}`
+
+`fresh_pose`: (prazno, poza nije viđena)
+
+`GET /api/nav/maps`: `current_map_id` `1790423599533`
+
+| map_id | name | waypoint_count | is_current |
+|---|---|---|---|
+| 1790423599533 | team_4 | 0 | true |
+| 1790404351297 | Comrade_upstairs | 8 | false |
+| 1790322776568 | new_office | 2 | false |
+| 1788505998146 | test_li | 3 | false |
+| 1788445067182 | test_lab | 2 | false |
+| 1788258009653 | outside_fin | 12 | false |
+| 1787219401251 | test_big | 11 | false |
+| 1787218451104 | test_2 | 0 | false |
+| 1787217883051 | test1 | 0 | false |
+| 1781615359434 | Power platform v2 | 2 | false |
+| 1781614578142 | power platform | 2 | false |
+
+Endpoint ne ispisuje tačke (`target_id` / `name` / `xy`). Lista tačaka čeka `status`.
+
+`GET /api/nav/run`: `{"active":false}`
+
+`GET /api/nav/arm`: `{"held":false,"rearms":0,"suppressed":false,"engaged_for_s":0,"last_error":null}`
+
+`GET /api/nav/idle-motion`: `{"neck_enabled":true,"player_status":"MotionCommandStatus_IDLE","current_motion":"灵动环顾4.mcap","time_to_end_ms":"-4877"}`
+
+`GET /api/nav/gestures?refresh=true`: `catalog` `agibot_a2_ultra`, `safety_pool` `safe_only`, `controller_error` `null`.
+
 ## 2. Sudijska tačka
 
 Sa liste iz koraka 1 izaberi jednu tačku pored stola, onu koju mentor potvrdi. Ostale ostaju kao komentar, ne kao dugme.
 
-- name (jedino ovo kasnije ide u `config.local.yaml`):
-- point_id (na ekranu je `target_id`):
-- x:
-- y:
+- name (jedino ovo kasnije ide u `config.local.yaml`): game_spot
+- point_id (na ekranu je `target_id`): 1
+- x: 0.3
+- y: -2.25
 - da li gleda u sto, i na koju stranu: da / ne
 
 `referee-spot` nije ime sa mape dok ga neko nije tako sačuvao na tabletu.
@@ -116,10 +215,12 @@ Mentor drži E-stop i uključuje ARM. Prostor oko ruke je prazan. Jedan pokret, 
 
 Tražimo ime sa živog spiska, ne broj. Ako imena nema, upiši `nema`.
 
-- wave (mah po dolasku):
-- point left (poen igraču sa robotove leve):
-- point right (poen igraču sa robotove desne):
-- nod thanks (zahvalnost na kraju):
+- wave (mah po dolasku): `wave`, durations_s `7.16`
+- point left (poen igraču sa robotove leve): `point left`, durations_s `6.13`
+- point right (poen igraču sa robotove desne): `point right`, durations_s `18.26`
+- nod thanks (zahvalnost na kraju): `nod thanks`, durations_s `9.37`
+
+(iz `GET /api/nav/gestures?refresh=true`, 2026-09-27. Ime nađeno; da li se ruka pomera nije provereno, gest nije puštan.)
 
 `handshake` se ne šalje.
 

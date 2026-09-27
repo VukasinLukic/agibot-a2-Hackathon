@@ -88,8 +88,10 @@ async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, 
     }
   }
   if (!res.ok) {
+    console.warn(`[TT] ${method} ${path} -> ${res.status}`, parsed);
     throw new ApiError(res.status, isErrorResponse(parsed) ? parsed : null, `HTTP ${res.status}`);
   }
+  if (method === 'POST') console.info(`[TT] ${method} ${path} -> ${res.status}`, body);
   return parsed as T;
 }
 
