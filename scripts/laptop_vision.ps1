@@ -25,6 +25,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $Repo = Split-Path -Parent $PSScriptRoot
 Set-Location $Repo
+if (-not (Test-Path $Python)) {
+    Write-Host "nema $Python, koristim python sa PATH-a"
+    $Python = 'python'
+}
 $Kit = Join-Path $Repo 'table_tennis\var\vision\kit'
 $RemoteVision = "$RemoteRepo/table_tennis/var/vision"
 New-Item -ItemType Directory -Force $Kit | Out-Null

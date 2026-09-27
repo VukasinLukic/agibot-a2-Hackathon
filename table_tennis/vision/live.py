@@ -89,10 +89,29 @@ def deliver_command(send: Callable[[dict[str, Any]], dict[str, Any]], command: d
 
 
 def _log_reply(command: dict[str, Any], reply: dict[str, Any]) -> None:
+    """200 is success and stays quiet. A 409 is logged and is not sent again."""
     status = reply.get("status")
-    if status in (200, 409):
+    if status == 200:
         return
-    _LOG.warning("command %s rejected (%s): %s", command.get("type"), status, reply.get("body"))
+    body = reply.get("body")
+    if status == 409:
+        _LOG.warning("command %s rejected (409): %s", command.get("type"), _conflict_text(body))
+        return
+    _LOG.warning("command %s rejected (%s): %s", command.get("type"), status, body)
+
+
+def _conflict_text(body: Any) -> str:
+    error = body.get("error") if isinstance(body, dict) and isinstance(body.get("error"), dict) else body
+    if isinstance(error, dict):
+        code = error.get("code")
+        message = error.get("message") or error.get("detail")
+        if code and message:
+            return f"{code}: {message}"
+        if code:
+            return str(code)
+        if message:
+            return str(message)
+    return str(body)
 
 
 def run_match(
