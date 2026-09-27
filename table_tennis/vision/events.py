@@ -32,6 +32,11 @@ _READY_RETRY_S = 3.0
 _NOTE_REPEAT_S = 5.0
 
 
+# Below this the weakest ball sighting of the rally is too unsure to name a winner;
+# the robot asks the players instead (a wrong name is worse in a demo than a question).
+MIN_PROPOSAL_CONFIDENCE = 0.2
+
+
 class RallyJudge:
     def __init__(self, calibration: TableCalibration, *, new_id: Callable[[], str] | None = None) -> None:
         if not calibration.ready or calibration.calibration_id is None or calibration.homography is None:
@@ -54,6 +59,7 @@ class RallyJudge:
         self._quiet: str | None = None
         self._noted_at = 0.0
         self._unclear_sent = False
+        self._doubtful = False
 
     def add(self, sample: TrackSample, rally_id: str | None = None) -> None:
         if sample.proves_bounce:
@@ -92,6 +98,10 @@ class RallyJudge:
         if found is None:
             return None
         winner_id, reason, start_seq, end_seq = found
+        if _observed_confidence(self._samples) < MIN_PROPOSAL_CONFIDENCE:
+            self._note("proposal too unsure; asking the players")
+            self._doubtful = True
+            return None
         if self._sound_required and not self._sound_consulted:
             self._note("sound has not concluded")
             return None
@@ -135,7 +145,7 @@ class RallyJudge:
             return None
         if snapshot.active_rally_id is None or snapshot.active_rally_id != self._rally_id or not self._samples:
             return None
-        if not self._fold.ended_without_verdict(self._samples[-1].capture_monotonic_ns):
+        if not self._doubtful and not self._fold.ended_without_verdict(self._samples[-1].capture_monotonic_ns):
             return None
         from table_tennis.contracts import parse_command
 
@@ -182,6 +192,7 @@ class RallyJudge:
         self._quiet = None
         self._noted_at = 0.0
         self._unclear_sent = False
+        self._doubtful = False
         self._clear_sound()
 
     def _clear_sound(self) -> None:
@@ -207,6 +218,11 @@ class RallyJudge:
         self._fold.extend(self._samples[self._folded[0] :], self._events[self._folded[1] :])
         self._folded = (len(self._samples), len(self._events))
         found = self._fold.verdict()
+        if found is None and self._fold.serve_aborted():
+            # Nobody presses Servis again after a ball tossed away before the serve;
+            # without this the open rally stays closed to vision until the next point.
+            self._fold = PointFold(key[0], ends, self._calibration)  # _folded keeps the old samples out
+            self._detector.reset()
         if found is None:
             return None
         return found.winner_id, found.reason, found.start_seq, found.end_seq

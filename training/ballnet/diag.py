@@ -6,6 +6,7 @@ Every rally that closes without a proposal is re-armed, as an operator pressing
 Servis would. THR_NEW / THR_CONF env vars override the MHT output thresholds.
 """
 import dataclasses
+import os
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -23,7 +24,7 @@ from table_tennis.vision.video import VideoFileCapture
 
 VIDEO, CAL, START = sys.argv[1], sys.argv[2], float(sys.argv[3])
 cal = read_calibration(CAL)
-config = dataclasses.replace(load_example_config(), ballnet_path=str(ROOT / "models" / "ballnet" / "ballnet.onnx"), model_path=None, work_width_px=int(sys.argv[4]) if len(sys.argv) > 4 else 960)
+config = dataclasses.replace(load_example_config(), ballnet_path=os.environ.get("BALLNET") or str(ROOT / "models" / "ballnet" / "ballnet.onnx"), model_path=None, work_width_px=int(sys.argv[4]) if len(sys.argv) > 4 else 960)
 tracker = BallTracker(config, cal)
 import os
 if os.environ.get("THR_NEW"):

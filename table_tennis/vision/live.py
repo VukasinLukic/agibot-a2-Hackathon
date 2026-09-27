@@ -428,11 +428,15 @@ class _ClipSink:
             writer = ClipWriter(path, first[1].width, first[1].height, period)
             writer.__enter__()
             _LOG.info("recording %s", path)
-            writer.write_frame(first[1])
-            item = second
-            while item is not None:
-                writer.write_frame(item[1])
-                item = self._queue.get()
+            # Capture time of every frame, to line the clip up with a mic recording.
+            with open(str(path) + ".stamps.txt", "w", encoding="ascii") as stamps:
+                writer.write_frame(first[1])
+                stamps.write(f"{first[0]}\n")
+                item = second
+                while item is not None:
+                    writer.write_frame(item[1])
+                    stamps.write(f"{item[0]}\n")
+                    item = self._queue.get()
         except (OSError, ValueError) as error:
             _LOG.warning("recording stopped: %s", error)
         finally:

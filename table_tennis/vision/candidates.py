@@ -35,6 +35,9 @@ class CandidateParams:
     compensate: bool = True
     feature_width: int = 320
     max_features: int = 200
+    # Also a ball darker than both old frames: in front of a bright window the ball
+    # is not brighter than what it covers. Off keeps the original behaviour.
+    darker: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,7 +139,13 @@ class CandidateSource:
         local_2 = cv2.dilate(warped_2, _KERNEL)
         # uint8 subtract saturates at 0; the threshold is positive, so the mask is the same.
         brighter = cv2.min(cv2.subtract(current, local_1), cv2.subtract(current, local_2))
-        mask = cv2.morphologyEx((brighter > self.params.threshold).view(np.uint8), cv2.MORPH_CLOSE, _KERNEL)
+        moved = brighter > self.params.threshold
+        if self.params.darker:
+            dim_1 = cv2.erode(warped_1, _KERNEL)
+            dim_2 = cv2.erode(warped_2, _KERNEL)
+            darker = cv2.min(cv2.subtract(dim_1, current), cv2.subtract(dim_2, current))
+            moved |= darker > self.params.threshold
+        mask = cv2.morphologyEx(moved.view(np.uint8), cv2.MORPH_CLOSE, _KERNEL)
         count, labels, stats, centroids = cv2.connectedComponentsWithStats(mask)
         self._bgr = bgr
         self._current = current
@@ -156,6 +165,10 @@ class CandidateSource:
             # Signed, as in the prototype: closing may add pixels darker than the old frames.
             here = current[rows, cols].astype(np.int16)
             lift = np.minimum(here - local_1[rows, cols], here - local_2[rows, cols])[inside]
+            if self.params.darker:
+                drop = np.minimum(dim_1[rows, cols] - here, dim_2[rows, cols] - here)[inside]
+                if drop.mean() > lift.mean():
+                    lift = drop  # contrast is how far it stands out, either way
             found.append(
                 Candidate(
                     x=float(centroids[index, 0]) + x0,

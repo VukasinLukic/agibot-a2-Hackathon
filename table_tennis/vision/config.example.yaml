@@ -27,5 +27,8 @@ ballnet_path: null
 ballnet:
   # Frames wider than this are downscaled first. Tuned at 960.
   work_width_px: 960
-  # Align the two previous frames to the current one (camera on the robot).
-  compensate_motion: true
+  # Align the two previous frames to the current one. Off on the robot: with ARM
+  # it stands still, and alignment only added candidates (noise) and CPU.
+  compensate_motion: false
+  # Also a ball darker than the background (in front of a bright window).
+  detect_darker: false

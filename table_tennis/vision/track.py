@@ -11,6 +11,8 @@ With ``ballnet_path`` the frame goes through ``pipeline.BallNetPipeline``
 
 from __future__ import annotations
 
+import math
+
 import csv
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -300,6 +302,7 @@ def _optional_pipeline(config: VisionConfig, roi: Roi, net: PatchScorer | None) 
     """BallNet path when weights are configured or a scorer is passed in. Imports numpy/OpenCV lazily."""
     if net is None and not config.ballnet_path:
         return None
+    from table_tennis.vision.candidates import CandidateParams
     from table_tennis.vision.mht import TrackerParams
     from table_tennis.vision.pipeline import BallNetPipeline
 
@@ -315,6 +318,7 @@ def _optional_pipeline(config: VisionConfig, roi: Roi, net: PatchScorer | None) 
         compensate=config.compensate_motion,
         roi=None if roi.width >= 10**8 else roi,
         tracker_params=params,
+        candidate_params=CandidateParams(compensate=config.compensate_motion, darker=config.detect_darker),
     )
 
 
@@ -490,9 +494,16 @@ def _search_roi(roi: Roi | None, calibration: TableCalibration | None) -> Roi:
         return roi
     xs = [point[0] for point in calibration.corners_px]
     ys = [point[1] for point in calibration.corners_px]
-    span = max(ys) - min(ys)
-    top = max(0, min(ys) - span)
-    table = Roi(min(xs), top, max(xs) - min(xs) + 1, max(ys) - top + 1)
+    # Table length in px, end A middle to end B middle. The low chest fisheye bends the
+    # near half below the corners, players hit behind the ends and the arc rises well
+    # above the table: the corner box alone cut a quarter of the ball on the robot clip.
+    c = calibration.corners_px
+    length = math.hypot((c[2][0] + c[3][0] - c[0][0] - c[1][0]) / 2, (c[2][1] + c[3][1] - c[0][1] - c[1][1]) / 2)
+    span = max(max(ys) - min(ys), 0.35 * length)
+    side = 0.15 * length
+    left = max(0, int(min(xs) - side))
+    top = max(0, int(min(ys) - span))
+    table = Roi(left, top, int(max(xs) + side) - left + 1, int(max(ys) + 0.3 * length) - top + 1)
     if roi is None:
         return table
     x0 = max(roi.x, table.x)

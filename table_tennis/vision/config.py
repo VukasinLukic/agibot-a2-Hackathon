@@ -42,6 +42,7 @@ class VisionConfig:
     ballnet_path: str | None = None
     work_width_px: int = 960
     compensate_motion: bool = True
+    detect_darker: bool = False
 
     @classmethod
     def from_mapping(cls, data: dict[str, object]) -> VisionConfig:
@@ -77,6 +78,7 @@ class VisionConfig:
             ballnet_path=ballnet_path,
             work_width_px=_optional_work_width(ballnet_raw),
             compensate_motion=_optional_bool(ballnet_raw, "compensate_motion", True),
+            detect_darker=_optional_bool(ballnet_raw, "detect_darker", False),
         )
 
 

@@ -50,6 +50,18 @@ class RallyEventTests(unittest.TestCase):
         events = _feed(detector, [_obs(1, 40, 50), _obs(2, 44, 58), _obs(3, 48, 52)])
         self.assertEqual([(e.kind, e.frame_seq, e.side) for e in events], [("bounce", 2, "end_b")])
 
+    def test_flat_bottom_bounce_from_a_low_camera(self) -> None:
+        # Down, one near-still sample at the bottom, up: the chest camera's view of a bounce.
+        detector = RallyEventDetector(100, _calibration())
+        events = _feed(detector, [_obs(1, 40, 50), _obs(2, 42, 57), _obs(3, 44, 57.2), _obs(4, 46, 51)])
+        self.assertEqual([(e.kind, e.frame_seq, e.side) for e in events], [("bounce", 3, "end_b")])
+
+    def test_bounce_past_the_far_side_line_still_names_the_half(self) -> None:
+        # Across the table the low camera is unreliable; along the table it is not.
+        detector = RallyEventDetector(100, _calibration())
+        events = _feed(detector, [_obs(1, 84, 50), _obs(2, 86, 58), _obs(3, 88, 52)])
+        self.assertEqual([(e.kind, e.side) for e in events], [("bounce", "end_b")])
+
     def test_bounce_off_the_table_is_dropped(self) -> None:
         detector = RallyEventDetector(100, _calibration())
         self.assertEqual(_feed(detector, [_obs(1, 92, 70), _obs(2, 94, 78), _obs(3, 96, 72)]), [])

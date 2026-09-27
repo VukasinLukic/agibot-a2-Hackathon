@@ -27,6 +27,11 @@ TURN_SPEED_PX_S = 120.0
 HIT_SPEED_PX_S = 150.0
 MAX_GAP_NS = 100_000_000
 TABLE_MARGIN_MM = 60.0
+# ponytail: the A2 chest camera sits near table height, so across the table a few px
+# are hundreds of mm and a bouncing ball (center above the surface) projects past the
+# far edge. Only the along-table half decides a point; upgrade: project the contact
+# point (ball bottom) with a camera height model instead of a wider margin.
+ACROSS_MARGIN_MM = 500.0
 _MERGE_NS = 50_000_000
 
 
@@ -61,10 +66,12 @@ class RallyEventDetector:
         if self._recent and sample.capture_monotonic_ns - self._recent[-1].capture_monotonic_ns > MAX_GAP_NS:
             self._recent.clear()
         self._recent.append(sample)
-        del self._recent[:-3]
+        del self._recent[:-4]
         if len(self._recent) < 3:
             return []
-        event = self._classify(*self._recent)
+        event = self._classify(*self._recent[-3:])
+        if event is None and len(self._recent) == 4:
+            event = self._flat_bottom(*self._recent)
         if event is None:
             return []
         last = self._last
@@ -101,12 +108,28 @@ class RallyEventDetector:
             return self._event("bounce", b, side, confidence)
         return None
 
+    def _flat_bottom(self, a: TrackSample, b: TrackSample, c: TrackSample, d: TrackSample) -> RallyEvent | None:
+        """Down, one near-still sample at the bottom, up. A low camera sees the bounce as a flat step."""
+        assert a.y_px is not None and b.y_px is not None and c.y_px is not None and d.y_px is not None
+        dt1 = (b.capture_monotonic_ns - a.capture_monotonic_ns) / 1e9
+        dt3 = (d.capture_monotonic_ns - c.capture_monotonic_ns) / 1e9
+        if dt1 <= 0 or dt3 <= 0:
+            return None
+        if (b.y_px - a.y_px) / dt1 < self._turn or (d.y_px - c.y_px) / dt3 > -self._turn:
+            return None
+        low = b if b.y_px >= c.y_px else c  # larger image y is the contact
+        assert low.x_px is not None
+        side = self._table_side(low.x_px, low.y_px)
+        if self._calibration is not None and side is None:
+            return None
+        return self._event("bounce", low, side, min(a.confidence, b.confidence, c.confidence, d.confidence))
+
     def _table_side(self, x_px: float, y_px: float) -> str | None:
         if self._calibration is None:
             return None
         projected = self._calibration.project_to_table_plane(x_px, y_px)
         margin = TABLE_MARGIN_MM
-        if not (-margin <= projected.x_mm <= TABLE_WIDTH_MM + margin):
+        if not (-ACROSS_MARGIN_MM <= projected.x_mm <= TABLE_WIDTH_MM + ACROSS_MARGIN_MM):
             return None
         if not (-margin <= projected.y_mm <= TABLE_LENGTH_MM + margin):
             return None

@@ -60,6 +60,7 @@ class PointFold:
         self._start: int | None = None
         self._verdict: Verdict | None = None
         self._crossings = 0
+        self._along_seen: tuple[float, float] | None = None  # ball's min/max share along the table axis
 
     def extend(self, samples: list[TrackSample], events: list[RallyEvent]) -> None:
         if not self._ready or self._closed or self._verdict is not None:
@@ -111,6 +112,9 @@ class PointFold:
                 return
             self._gap = False
             self._cross(sample)
+            along = self._along(sample.x_px, sample.y_px)
+            lo, hi = self._along_seen or (along, along)
+            self._along_seen = (min(lo, along), max(hi, along))
             self._last = sample
             return
         last = self._last
@@ -132,7 +136,24 @@ class PointFold:
         if self._play.phase == "play" and (self._terminal or self._closed):
             return True
         last = self._last
-        return self._crossings >= 1 and last is not None and now_ns - last.capture_monotonic_ns >= UNCLEAR_GONE_NS
+        # The chest camera often loses the ball on the half in front of the windows, so a
+        # bounce plus a quarter of the table in flight also counts as real play; tapping
+        # the ball in place before the serve does not travel that far.
+        played = self._crossings >= 1 or (bool(self._bounces) and self._travel() >= 0.25)
+        return played and last is not None and now_ns - last.capture_monotonic_ns >= UNCLEAR_GONE_NS
+
+    def serve_aborted(self) -> bool:
+        """The rally closed before any stroke: the serve starts over, nothing to ask or propose."""
+        return self._verdict is None and (self._terminal or self._closed) and self._play.phase == "service"
+
+    def _travel(self) -> float:
+        """How far the ball went along the table axis in the image, as a share of the table."""
+        return 0.0 if self._along_seen is None else self._along_seen[1] - self._along_seen[0]
+
+    def _along(self, x_px: float, y_px: float) -> float:
+        near, far = _mid(self._calibration, 0, 1), _mid(self._calibration, 2, 3)
+        span = (far[0] - near[0]) ** 2 + (far[1] - near[1]) ** 2
+        return ((x_px - near[0]) * (far[0] - near[0]) + (y_px - near[1]) * (far[1] - near[1])) / span if span > 0 else 0.0
 
     def _cross(self, sample: TrackSample) -> None:
         assert sample.x_px is not None and sample.y_px is not None

@@ -65,6 +65,41 @@ class UnclearTests(unittest.TestCase):
         self.assertIsNone(judge.proposal_command(snapshot))
         self.assertIsNone(judge.unclear_command(snapshot))
 
+    def test_bounce_and_long_flight_on_one_half_asks(self) -> None:
+        # The far half is lost against the windows: no crossing, but a bounce and real travel.
+        cal = _calibration().calibration_id
+        seen = [_at(1, 50, 18, cal), _at(2, 50, 24, cal), _at(3, 50, 32, cal), _at(4, 50, 30, cal), _at(5, 50, 26, cal)]
+        judge, snapshot = _judge([*seen, _gone(6, seen[-1], 3.1, cal)])
+        self.assertIsNone(judge.proposal_command(snapshot))
+        self.assertEqual(judge.unclear_command(snapshot)["type"], "point.unclear")
+
+    def test_ball_tossed_away_before_the_serve_does_not_blind_the_rally(self) -> None:
+        cal = _calibration().calibration_id
+        judge, snapshot = _judge([])
+        tossed = [_at(1, 50, 22, cal), _at(2, 50, 18, cal), _at(3, 50, 12, cal)]
+        for sample in [*tossed, _gone(4, tossed[-1], 0.6, cal)]:
+            judge.add(sample, RALLY)
+            self.assertIsNone(judge.proposal_command(snapshot))
+        base = 10 * _S
+        seen = [TrackSample(s, base + s * 33_333_333, True, 50, y, "observed", 0.8, cal)
+                for s, y in ((11, 18), (12, 24), (13, 32), (14, 30), (15, 26))]
+        for sample in [*seen, _gone(16, seen[-1], 3.1, cal)]:
+            judge.add(sample, RALLY)
+            judge.proposal_command(snapshot)
+        self.assertEqual(judge.unclear_command(snapshot)["type"], "point.unclear")
+
+    def test_unsure_point_becomes_a_question(self) -> None:
+        import dataclasses
+
+        from tests.table_tennis.vision.test_events import _crossing
+
+        cal = _calibration().calibration_id
+        weak = [dataclasses.replace(s, confidence=0.05) if s.observation_kind == "observed" else s for s in _crossing(cal)]
+        judge, snapshot = _judge(weak)
+        self.assertIsNone(judge.proposal_command(snapshot), "0.05 is too unsure to name a winner")
+        self.assertEqual(judge.unclear_command(snapshot)["type"], "point.unclear")
+        self.assertIsNone(judge.unclear_command(snapshot), "one question per rally")
+
     def test_manual_scoring_and_other_rally_stay_silent(self) -> None:
         cal = _calibration().calibration_id
         played = self._crossed(cal)

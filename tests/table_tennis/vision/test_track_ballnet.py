@@ -207,6 +207,27 @@ class CandidateTests(unittest.TestCase):
         self.assertEqual(found, [])
 
 
+    def test_darker_ball_in_front_of_a_bright_wall_needs_the_darker_option(self) -> None:
+        import numpy as np
+
+        from table_tennis.vision.candidates import CandidateParams, CandidateSource
+
+        def run(darker: bool) -> list[object]:
+            source = CandidateSource(640, 360, CandidateParams(compensate=False, darker=darker))
+            found: list[object] = []
+            for t in range(4):
+                frame = np.full((360, 640, 3), 230, np.uint8)
+                x = 100 + 30 * t
+                frame[195:205, x - 5 : x + 5] = 150  # gray ball over a window
+                found = source.step(frame)
+            return found
+
+        self.assertEqual(run(False), [])
+        hits = run(True)
+        self.assertEqual(len(hits), 1)
+        self.assertAlmostEqual(hits[0].x, 189.5, delta=2)
+
+
 class TrackerTests(unittest.TestCase):
     def test_flying_ball_beats_a_static_and_a_one_frame_distractor(self) -> None:
         from table_tennis.vision.mht import Tracker
@@ -364,7 +385,7 @@ class BallNetConfigTests(unittest.TestCase):
         example = load_example_config()
         self.assertIsNone(example.ballnet_path)
         self.assertEqual(example.work_width_px, 960)
-        self.assertTrue(example.compensate_motion)
+        self.assertFalse(example.compensate_motion)  # robot stands still under ARM
         bare = VisionConfig.from_mapping(self._mapping())
         self.assertIsNone(bare.ballnet_path)
         self.assertEqual(bare.work_width_px, 960)

@@ -21,11 +21,13 @@
 #   TT_API_URL        default http://127.0.0.1:8070 (Supervisor)
 #   MATCH_ID          default latest
 #   DEVICE            default CHEST_LEFT_FISHEYE (raw fisheye only; /h264 is refused)
-#   BALLNET           default table_tennis/var/vision/ballnet.onnx
+#   BALLNET           default models/ballnet/ballnet_robot.onnx (fine-tuned on robot clips)
 #   CALIBRATION       default table_tennis/var/vision/table.json
 #   FRAME             default table_tennis/var/vision/kadar.png (grab)
 #   VISION_CONFIG     optional vision yaml for --config
 #   RECORD_DIR        default table_tennis/var/vision/clips
+#   AUDIO_DEVICE      record also records the raw mic (e.g. mic48k); audio-bridge must be stopped
+#   AUDIO_CHANNELS    default 8 (AIUI array; channels 2-5 carry the mic)
 #   TT_VISION_CPUS    optional taskset core list, for example 6-7
 #   PY                default /usr/bin/python3 (ROS Humble rclpy is Python 3.10)
 set -euo pipefail
@@ -35,7 +37,7 @@ KIT="$REPO/table_tennis/var/vision"
 TT_API_URL="${TT_API_URL:-http://127.0.0.1:8070}"
 MATCH_ID="${MATCH_ID:-latest}"
 DEVICE="${DEVICE:-CHEST_LEFT_FISHEYE}"
-BALLNET="${BALLNET:-$KIT/ballnet.onnx}"
+BALLNET="${BALLNET:-$REPO/models/ballnet/ballnet_robot.onnx}"
 CALIBRATION="${CALIBRATION:-$KIT/table.json}"
 FRAME="${FRAME:-$KIT/kadar.png}"
 RECORD_DIR="${RECORD_DIR:-$KIT/clips}"
@@ -278,8 +280,18 @@ cmd_record() {
   echo "snimak ~$((need / 1024)) MB, slobodno $((free / 1024)) MB na $RECORD_DIR"
   (( free > need + 2 * 1024 * 1024 )) || die "nema dovoljno mesta; smanji sekunde ili postavi RECORD_DIR"
   live_args
+  local audio_pid=
+  if [[ -n "${AUDIO_DEVICE:-}" ]]; then
+    # Raw mic next to the video, same monotonic clock (table_tennis/sound reads wav + .clock.json).
+    # The device must be free: stop audio-bridge first, or it holds the mic.
+    local wav="${out%.ttclip}.wav"
+    "$PY" -c 'import json,sys,time; json.dump({"start_monotonic_ns": time.monotonic_ns(), "sample_rate_hz": 48000}, open(sys.argv[1], "w"))' "$wav.clock.json"
+    run_cmd arecord -q -D "$AUDIO_DEVICE" -f S16_LE -r 48000 -c "${AUDIO_CHANNELS:-8}" -d "$seconds" "$wav" &
+    audio_pid=$!
+  fi
   # SIGINT lets live close the clip and patch the frame count in the header.
   run_cmd timeout --foreground --signal=INT --kill-after=20 "$seconds" "${LIVE[@]}" --dry-run --record "$out" || true
+  [[ -n "$audio_pid" ]] && { wait "$audio_pid" || warn "arecord nije uspeo (mikrofon zauzet? zaustavi audio-bridge)"; ls -lh "${out%.ttclip}.wav"; }
   [[ -f "$out" ]] || die "snimak nije napravljen"
   cmd_fix_clip "$out"
   ls -lh "$out"
