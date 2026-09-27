@@ -141,6 +141,24 @@ class LiveClientTests(unittest.TestCase):
             deliver_command(lambda _: {"status": 403, "body": {"detail": "actor"}}, {"type": "point.propose"})
         self.assertIn("403", logged.output[0])
 
+    def test_a_conflict_is_logged_once_and_not_sent_again(self) -> None:
+        seen: list[str] = []
+
+        def send(command: dict[str, object]) -> dict[str, object]:
+            seen.append(str(command["command_id"]))
+            return {"status": 409, "body": {"code": "stale_revision", "message": "expected_revision 1 != current 2"}}
+
+        with self.assertLogs("table_tennis.vision.live", level="WARNING") as logged:
+            reply = deliver_command(send, {"type": "point.propose", "command_id": "same"})
+        self.assertEqual(reply["status"], 409)
+        self.assertEqual(seen, ["same"])
+        self.assertIn("rejected (409): stale_revision: expected_revision 1 != current 2", logged.output[0])
+
+    def test_a_successful_command_stays_quiet(self) -> None:
+        with self.assertNoLogs("table_tennis.vision.live", level="WARNING"):
+            reply = deliver_command(lambda _: {"status": 200, "body": {}}, {"type": "point.propose", "command_id": "ok"})
+        self.assertEqual(reply["status"], 200)
+
     def test_a_failed_recording_does_not_hang_on_close(self) -> None:
         from table_tennis.vision.image import BgrImage
 

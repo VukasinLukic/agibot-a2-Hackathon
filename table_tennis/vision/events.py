@@ -29,6 +29,7 @@ from table_tennis.vision.track import TrackSample
 
 _LOG = logging.getLogger(__name__)
 _READY_RETRY_S = 3.0
+_NOTE_REPEAT_S = 5.0
 
 
 class RallyJudge:
@@ -51,6 +52,7 @@ class RallyJudge:
         self._fold_key: tuple[str, str | None, str | None] | None = None
         self._folded = (0, 0)
         self._quiet: str | None = None
+        self._noted_at = 0.0
         self._unclear_sent = False
 
     def add(self, sample: TrackSample, rally_id: str | None = None) -> None:
@@ -178,6 +180,7 @@ class RallyJudge:
         self._fold_key = None
         self._folded = (0, 0)
         self._quiet = None
+        self._noted_at = 0.0
         self._unclear_sent = False
         self._clear_sound()
 
@@ -209,9 +212,12 @@ class RallyJudge:
         return found.winner_id, found.reason, found.start_seq, found.end_seq
 
     def _note(self, reason: str) -> None:
-        if reason == self._quiet:
+        """Log why nothing was sent. The same reason repeats every few seconds, not every frame."""
+        now = time.monotonic()
+        if reason == self._quiet and now - self._noted_at < _NOTE_REPEAT_S:
             return
         self._quiet = reason
+        self._noted_at = now
         _LOG.info("no proposal: %s", reason)
 
 
