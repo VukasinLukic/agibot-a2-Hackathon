@@ -1,6 +1,7 @@
 Param(
-    [int]$Port = $(if ($env:ROBOT_SUPERVISOR_PORT) { [int]$env:ROBOT_SUPERVISOR_PORT } else { 8080 }),
-    [string]$HostAddress = $(if ($env:ROBOT_SUPERVISOR_HOST) { $env:ROBOT_SUPERVISOR_HOST } else { "0.0.0.0" })
+    [int]$Port = 0,
+    [string]$HostAddress = '',
+    [string]$PythonPath = ''
 )
 
 $ErrorActionPreference = "Stop"
@@ -54,13 +55,14 @@ if (Test-Path $EnvPath) {
     }
 }
 
-# Activate venv
-$VenvActivate = "c:\Users\rokma\Documents\CTSI\HumanoidTest\MicStreamTest\.venv12\Scripts\Activate.ps1"
-if (-not (Test-Path $VenvActivate)) {
-    Write-Error "Virtualenv not found at $VenvActivate. Create it first."
+# Resolve after loading .env; never use another developer's absolute path.
+if ($Port -eq 0) { $Port = if ($env:ROBOT_SUPERVISOR_PORT) { [int]$env:ROBOT_SUPERVISOR_PORT } else { 8070 } }
+if (-not $HostAddress) { $HostAddress = if ($env:ROBOT_SUPERVISOR_HOST) { $env:ROBOT_SUPERVISOR_HOST } else { '127.0.0.1' } }
+if (-not $PythonPath) { $PythonPath = Join-Path $WorkDir '.venv\Scripts\python.exe' }
+if (-not (Test-Path -LiteralPath $PythonPath)) {
+    Write-Error "Supervisor Python not found at $PythonPath. Pass -PythonPath explicitly if needed."
     exit 1
 }
-. $VenvActivate
 
 $ApiScript = Join-Path $WorkDir "robot_supervisor_v2\run_api.py"
 if (-not (Test-Path $ApiScript)) {
@@ -68,4 +70,5 @@ if (-not (Test-Path $ApiScript)) {
     exit 1
 }
 
-python $ApiScript --host $HostAddress --port $Port
+& $PythonPath $ApiScript --host $HostAddress --port $Port
+exit $LASTEXITCODE

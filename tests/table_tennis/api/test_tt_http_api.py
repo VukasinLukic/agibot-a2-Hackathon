@@ -300,6 +300,10 @@ def test_supervisor_enabled_with_token(tmp_path, monkeypatch):
 def test_run_demo_port_and_host(tmp_path, monkeypatch):
     for k in list(TOKEN_ENV) + ["TT_CONFIG", "TT_HOST", "TT_PORT", "TT_MODE"]:
         monkeypatch.delenv(k, raising=False)
+    # This case tests unauthenticated LAN rejection; default auth is now token.
+    # Without explicit local mode it starts a real blocking uvicorn server.
+    monkeypatch.setenv("TT_AUTH_MODE", "local")
+    monkeypatch.setattr("uvicorn.run", lambda *a, **kw: pytest.fail("Validation test must never start a server"))
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.bind(("127.0.0.1", 0))

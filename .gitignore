@@ -32,7 +32,6 @@ yolo26n.pt
 
 .env ctguest
 .claude/agents/robot-supervisor-export-auditor.md
-.gitignore
 SURVEY_GATHERING_IMPROVEMENT_PLAN.md
 .claude/settings.json
 
@@ -41,3 +40,27 @@ table_tennis/var/
 table_tennis/config.local.yaml
 
 docs/*.docx
+
+# Private deployment files and backups (including nested copies).
+.env.*
+!.env.example
+!.env.detector.template
+!*.env.example
+*.env
+*.bak
+*.bak_*
+*.bak.*
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+titan_ed25519*
+authorized_keys*
+.deploy-private/
+artifacts/
+.pytest_cache/
+node_modules/
+tt.tgz
+*.incoming
+team4-*.tar.gz
+TEAM4_RELEASE.json

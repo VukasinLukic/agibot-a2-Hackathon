@@ -1,3 +1,4 @@
+// Archived: orphan IGRA screen; its API/types are not part of the A2 team4 app.
 import { useEffect, useState } from 'react';
 import { RefreshCw, Trophy, Users } from 'lucide-react';
 import { toast } from 'sonner';

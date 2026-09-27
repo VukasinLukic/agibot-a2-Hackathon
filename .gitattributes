@@ -1,1 +1,6 @@
 *.sh text eol=lf
+*.py text eol=lf
+
+# Old hand-built archive is not a deployment source of truth.
+/tt.tgz export-ignore
+"/Dokumenti backup staro" export-ignore

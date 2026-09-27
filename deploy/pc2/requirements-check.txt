@@ -1,0 +1,3 @@
+# Only offline preflight dependencies. Not the complete Supervisor/robot runtime.
+PyYAML>=6.0,<7
+python-dotenv>=1.0,<2
