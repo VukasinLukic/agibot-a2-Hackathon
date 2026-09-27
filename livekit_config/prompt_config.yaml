@@ -1,6 +1,6 @@
 active:
   core_mode: main
-  persona: comtrade_host
+  persona: titan_sudija
   context: comtrade_office
   phase: reception_host
 composition_order:
