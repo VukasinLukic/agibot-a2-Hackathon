@@ -235,7 +235,7 @@ scripts/robot_vision.sh record 60     # dva-tri puta po 60 s, igrači igraju pra
 | `no proposal: camera or calibration is not ready` | meč nema `calibration_id`, ili backend nije primio `camera.ready` | proveri ID u meču; bez `--dry-run` proces sam šalje ready |
 | `no proposal: scoring mode is not assisted` | meč je „Mi, dodirom” | nov meč sa „Kamera, uz potvrdu” |
 | `no proposal: match is not in a rally` / `rally is not open` | niko nije pritisnuo „Servis — kamera gleda”, ili predlog već čeka | pritisni Servis pre svakog poena; potvrdi predlog koji čeka |
-| u dry-run-u ima `would send point.propose`, a u `run` predloga nema | backend je odbio predlog sa 409 (npr. `camera_not_ready`, `stale_calibration`); 409 se u logu ne ispisuje | proveri „Kamera” u aplikaciji i `calibration_id` |
+| u dry-run-u ima `would send point.propose`, a u `run` predloga nema | backend je odbio predlog sa 409 (npr. `stale_revision`, `stale_calibration`); u logu piše `command point.propose rejected (409): <kod>: <poruka>`, a razmena se zatvara | pročitaj taj red, pa proveri „Kamera” i `calibration_id` |
 | proces izađe, u aplikaciji kamera nije spremna (`camera_missing`) | tri uzastopna čitanja bez kadra: topic je stao | `scripts/robot_vision.sh check` (sekcije ROS i capture), pa ponovo `run` |
 | `Timed out waiting for first ROS 2 camera frame` | ROS nije učitan, pogrešan `ROS_DOMAIN_ID`, ili topic ne postoji | ROS opcija 1 pri prijavi; `check`; pitaj mentora |
 | `… is not a raw chest fisheye topic` | `DEVICE` nije `CHEST_LEFT_FISHEYE`/`CHEST_RIGHT_FISHEYE` (H.264 se odbija) | `DEVICE=CHEST_LEFT_FISHEYE` |

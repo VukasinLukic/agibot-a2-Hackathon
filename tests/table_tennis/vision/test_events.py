@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -18,7 +19,7 @@ from table_tennis.contracts import MatchSnapshot
 from table_tennis.core.ports import SequentialIdGenerator
 from table_tennis.vision.benchmark import AUTOMATIC_ENABLED
 from table_tennis.vision.calibration import CalibrationGate
-from table_tennis.vision.events import MatchVisionProducer, RallyJudge
+from table_tennis.vision.events import _NOTE_REPEAT_S, MatchVisionProducer, RallyJudge
 from table_tennis.vision.frame import ORIGIN_A2_FISHEYE, Frame
 from table_tennis.vision.image import BgrImage
 from table_tennis.vision.track import TrackSample
@@ -305,6 +306,20 @@ class EventTests(unittest.TestCase):
         self.judge.add(_sample(4, "observed", 50, 56, cal))
         self.judge.add(_sample(7, "missing", None, None, cal))
         self.assertIsNone(self.judge.proposal_command(_snapshot(cal)))
+
+    def test_the_same_silence_repeats_only_after_a_few_seconds(self) -> None:
+        cal = self.calibration.calibration_id or ""
+        snap = _snapshot(cal).model_copy(update={"scoring_mode": "manual"})
+        with self.assertLogs("table_tennis.vision.events", level="INFO") as logged:
+            self.assertIsNone(self.judge.proposal_command(snap))
+        self.assertEqual(logged.output, ["INFO:table_tennis.vision.events:no proposal: scoring mode is not assisted"])
+        with self.assertNoLogs("table_tennis.vision.events", level="INFO"):
+            self.assertIsNone(self.judge.proposal_command(snap))
+        self.judge._noted_at = time.monotonic() - _NOTE_REPEAT_S - 0.1
+        with self.assertLogs("table_tennis.vision.events", level="INFO") as again:
+            self.assertIsNone(self.judge.proposal_command(snap))
+        self.assertEqual(again.output, ["INFO:table_tennis.vision.events:no proposal: scoring mode is not assisted"])
+        self.assertIsNone(self.judge._command)
 
     def test_sound_that_has_not_concluded_blocks_the_proposal(self) -> None:
         cal = self.calibration.calibration_id or ""
